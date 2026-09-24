@@ -2,6 +2,7 @@ import { compare, hash } from 'bcryptjs'
 import type { NextAuthOptions } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { db } from './db'
+import { AUTH_SECRET } from './auth-secret'
 
 const BCRYPT_SALT_ROUNDS = 12
 
@@ -108,7 +109,7 @@ export const authOptions: NextAuthOptions = {
       },
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: AUTH_SECRET,
 }
 
 export async function hashPassword(password: string): Promise<string> {

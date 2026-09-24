@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
+import { AUTH_SECRET } from '@/lib/auth-secret'
 
 const RATE_LIMIT_MAP = new Map<string, { count: number; resetAt: number }>()
 const MW_RATE_LIMIT = 200          // global : 200 req/min/IP
@@ -54,14 +55,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith('/api/admin')) {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+    const token = await getToken({ req: request, secret: AUTH_SECRET })
     if (!token || !token.id) {
       return NextResponse.json({ success: false, error: 'Non autorise' }, { status: 401 })
     }
   }
 
   if (pathname.startsWith('/admin') && !pathname.startsWith('/api/') && pathname !== '/admin/login') {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+    const token = await getToken({ req: request, secret: AUTH_SECRET })
     if (!token || !token.id) {
       const loginUrl = new URL('/admin/login', request.url)
       loginUrl.searchParams.set('callbackUrl', pathname)
@@ -70,7 +71,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname === '/auth/login') {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+    const token = await getToken({ req: request, secret: AUTH_SECRET })
     if (token && token.id) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url))
     }

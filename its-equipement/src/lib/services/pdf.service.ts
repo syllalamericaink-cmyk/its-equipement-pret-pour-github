@@ -2,6 +2,7 @@ import PDFDocument from 'pdfkit'
 import crypto from 'crypto'
 import { db } from '../db'
 import { getSetting, getSettingNumber } from './settings.service'
+import { AUTH_SECRET } from '../auth-secret'
 import fs from 'fs'
 import path from 'path'
 import type { Quote, QuoteItem, Personalization, ProductVariant, PersonalizationOption, QuoteRequest, Client } from '@prisma/client'
@@ -235,6 +236,6 @@ export async function generateQuotePdf(quoteId: string): Promise<string> {
 }
 
 export function getSecureDownloadToken(quoteId: string): string {
-  const secret = process.env.NEXTAUTH_SECRET ?? ''
+  const secret = AUTH_SECRET
   return crypto.createHmac('sha256', secret).update(quoteId).digest('hex')
 }

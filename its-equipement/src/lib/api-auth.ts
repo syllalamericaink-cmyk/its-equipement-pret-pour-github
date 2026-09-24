@@ -1,6 +1,7 @@
 import { getToken } from 'next-auth/jwt'
 import { unauthorized } from './api-response'
 import { db } from './db'
+import { AUTH_SECRET } from './auth-secret'
 import type { NextRequest } from 'next/server'
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -46,7 +47,7 @@ export async function requireAdmin(request: NextRequest) {
 
     const token = await getToken({
       req: request,
-      secret: process.env.NEXTAUTH_SECRET,
+      secret: AUTH_SECRET,
     })
 
     if (!token?.id) {
