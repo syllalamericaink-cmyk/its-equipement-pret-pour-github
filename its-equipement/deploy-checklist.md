@@ -1,0 +1,22 @@
+# Liste de vérification de déploiement — EquipPro
+
+- [ ] Schema Prisma : provider=postgresql, @db.Decimal sur tous les champs Decimal
+- [ ] Variables d'environnement : toutes les clés .env sont documentées
+- [ ] Build production : `next build` passe sans erreur
+- [ ] TypeScript : `tsc --noEmit` passe sans erreur
+- [ ] ESLint : `eslint .` passe sans erreur
+- [ ] Middleware : routes /admin/* et /api/admin/* protégées par JWT
+- [ ] Rate limiting : api-auth.ts et middleware.ts actifs
+- [ ] Headers sécurité : CSP, HSTS, X-Frame-Options, X-Content-Type-Options
+- [ ] Erreurs API : aucune fuite de stack trace ou détails internes
+- [ ] Upload fichiers : validation mime type + taille, pas de traversal
+- [ ] Webhook paiement : vérification HMAC avec timingSafeEqual
+- [ ] Secrets : NEXTAUTH_SECRET fort, aucun secret dans le bundle client
+- [ ] Base de données : migrations prêtes, seed fonctionnel
+- [ ] Fichiers statiques : logo.svg présent, public/ organisé
+- [ ] Sitemap : /sitemap.xml généré dynamiquement
+- [ ] Robots.txt : /robots.txt avec Disallow /admin/, /api/, /private/
+- [ ] SEO : metadata sur toutes les pages publiques, Open Graph
+- [ ] Accessibilité : aria-labels, lang=fr, labels associés aux inputs
+- [ ] Pages 404 : page _not-found générée
+- [ ] Build standalone : output: 'standalone' dans next.config

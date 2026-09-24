@@ -1,0 +1,130 @@
+export const QUOTE_REQUEST_STATUS = {
+  PENDING: 'PENDING',
+  REVIEWED: 'REVIEWED',
+  QUOTED: 'QUOTED',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  EXPIRED: 'EXPIRED',
+} as const
+
+export const QUOTE_STATUS = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED',
+} as const
+
+export const ORDER_STATUS = {
+  CONFIRMED: 'CONFIRMED',
+  ACOMPTE_RECU: 'ACOMPTE_RECU',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  READY: 'READY',
+  SHIPPED: 'SHIPPED',
+  DELIVERED: 'DELIVERED',
+  CANCELLED: 'CANCELLED',
+  PAIEMENT_A_LIVRAISON: 'PAIEMENT_A_LIVRAISON',
+} as const
+
+export const PAYMENT_STATUS = {
+  EN_ATTENTE: 'EN_ATTENTE',
+  PAYE: 'PAYE',
+  ECHEC: 'ECHEC',
+  ANNULE: 'ANNULE',
+  REMBOURSE: 'REMBOURSE',
+} as const
+
+export const PAYMENT_TYPE = {
+  DEPOSIT: 'DEPOSIT',
+  BALANCE: 'BALANCE',
+  FULL: 'FULL',
+} as const
+
+export const DELIVERY_STATUS = {
+  A_PREPARER: 'A_PREPARER',
+  PRETE: 'PRETE',
+  EN_LIVRAISON: 'EN_LIVRAISON',
+  LIVREE: 'LIVREE',
+} as const
+
+export const PAYMENT_METHOD = {
+  ON_DELIVERY: 'ON_DELIVERY',
+  DEPOSIT_PLUS_BALANCE: 'DEPOSIT_PLUS_BALANCE',
+} as const
+
+export const ADMIN_ROLE = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  ADMIN: 'ADMIN',
+  VIEWER: 'VIEWER',
+} as const
+
+export const UPLOAD_ENTITY_TYPE = {
+  PRODUCT: 'PRODUCT',
+  PERSONALIZATION: 'PERSONALIZATION',
+  QUOTE: 'QUOTE',
+  ORDER: 'ORDER',
+} as const
+
+export const SETTING_TYPE = {
+  STRING: 'STRING',
+  NUMBER: 'NUMBER',
+  BOOLEAN: 'BOOLEAN',
+  JSON: 'JSON',
+} as const
+
+export const NOTIFICATION_STATUS = {
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  FAILED: 'FAILED',
+} as const
+
+export const NOTIFICATION_CHANNEL = {
+  WHATSAPP: 'WHATSAPP',
+  EMAIL: 'EMAIL',
+} as const
+
+export const NOTIFICATION_TYPE = {
+  ORDER_CREATED: 'ORDER_CREATED',
+  DEPOSIT_RECEIVED: 'DEPOSIT_RECEIVED',
+  PRODUCTION_STARTED: 'PRODUCTION_STARTED',
+  ORDER_SHIPPED: 'ORDER_SHIPPED',
+  ORDER_DELIVERED: 'ORDER_DELIVERED',
+  QUOTE_REQUEST_RECEIVED: 'QUOTE_REQUEST_RECEIVED',
+} as const
+
+export const STOCK_MOVEMENT_TYPE = {
+  ENTREE: 'IN',
+  SORTIE: 'OUT',
+  RESERVATION: 'RESERVATION',
+  LIBERATION: 'RELEASE',
+  AJUSTEMENT: 'ADJUSTMENT',
+} as const
+
+export const PERSONALIZATION_OPTION_TYPE = {
+  LOGO: 'logo',
+  TEXT: 'text',
+} as const
+
+export const ADMIN_ACTION = {
+  CREATE: 'CREATE',
+  UPDATE: 'UPDATE',
+  DELETE: 'DELETE',
+  LOGIN: 'LOGIN',
+  LOGOUT: 'LOGOUT',
+  STATUS_CHANGE: 'STATUS_CHANGE',
+} as const
+
+export const APP_NAME = 'ITS Équipement'
+export const COMPANY_NAME = 'ITSchool & Dynamic Group'
+export const CONTACT_PHONE = '+225 07 79 07 45 47'
+export const CONTACT_WHATSAPP = 'https://wa.me/2250779074547?text=Bonjour%20ITS%20%C3%89quipement%2C%20je%20souhaite%20des%20informations%20sur%20vos%20produits%20EPI'
+export const CONTACT_EMAIL = 'contact@itschoolci.com'
+export const CONTACT_ADDRESS = 'Cocody 2 Plateaux, Cité Sanon — Abidjan'
+export const CATALOG_PDF_URL = '/catalogue-its-equipement.pdf'
+export const DEFAULT_TVA_RATE = 0.20
+export const DEFAULT_QUOTE_VALIDITY_DAYS = 30
+export const DEFAULT_DEPOSIT_PERCENTAGE = 50
+export const DEFAULT_BALANCE_PERCENTAGE = 50
+export const DEFAULT_CURRENCY = 'XOF'
+export const DEFAULT_ALERT_THRESHOLD = 10

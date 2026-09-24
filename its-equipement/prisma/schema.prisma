@@ -1,0 +1,567 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("ADMIN")
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  actionLogs AdminActionLog[]
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+  sortOrder   Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([parentId])
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+model Product {
+  id               String                  @id @default(cuid())
+  name             String
+  slug             String                  @unique
+  description      String
+  sku              String                  @unique
+  basePrice        Float                   @default(0)
+  categoryId       String
+  category         Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  isPersonalizable Boolean                 @default(false)
+  minQuantity      Int                     @default(1)
+  isActive         Boolean                 @default(true)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  variants               ProductVariant[]
+  images                 ProductImage[]
+  personalizationOptions PersonalizationOption[]
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([sku])
+}
+
+model ProductVariant {
+  id             String  @id @default(cuid())
+  productId      String
+  product        Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name           String
+  sku            String? @unique
+  priceModifier  Float   @default(0)
+  stock          Int     @default(0)
+  reservedStock  Int     @default(0)
+  alertThreshold Int     @default(10)
+  isActive       Boolean @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  quoteRequestItems QuoteRequestItem[]
+  quoteItems        QuoteItem[]
+  orderItems        OrderItem[]
+  stockMovements    StockMovement[]
+
+  @@index([productId])
+  @@index([isActive])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  altText   String?
+  sortOrder Int     @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([sortOrder])
+}
+
+model PersonalizationOption {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      String
+  label     String
+  isRequired Boolean @default(false)
+  config    Json?
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  personalizations Personalization[]
+
+  @@index([productId])
+  @@index([isActive])
+}
+
+model Client {
+  id          String         @id @default(cuid())
+  companyName String
+  contactName String
+  email       String
+  phone       String?
+  address     String?
+  city        String?
+  zipCode     String?
+  country     String         @default("France")
+  notes       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  quoteRequests QuoteRequest[]
+
+  @@index([email])
+  @@index([companyName])
+}
+
+model QuoteRequest {
+  id          String              @id @default(cuid())
+  reference   String              @unique
+  clientId    String
+  client      Client              @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  status      String              @default("PENDING")
+  notes       String?
+  adminNotes  String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  items         QuoteRequestItem[]
+  quotes        Quote[]
+  notifications  Notification[]
+
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model QuoteRequestItem {
+  id                  String          @id @default(cuid())
+  quoteRequestId      String
+  quoteRequest        QuoteRequest    @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+  productId           String
+  productVariantId    String?
+  productVariant      ProductVariant? @relation(fields: [productVariantId], references: [id])
+  productName         String
+  productBasePrice    Float
+  quantity            Int
+  hasPersonalization  Boolean         @default(false)
+  unitPrice           Float
+  lineTotal           Float
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  personalizations Personalization[]
+
+  @@index([quoteRequestId])
+  @@index([productId])
+}
+
+model Personalization {
+  id                      String               @id @default(cuid())
+  personalizationOptionId String
+  personalizationOption  PersonalizationOption @relation(fields: [personalizationOptionId], references: [id], onDelete: Cascade)
+  quoteRequestItemId      String?
+  quoteRequestItem        QuoteRequestItem?      @relation(fields: [quoteRequestItemId], references: [id], onDelete: Cascade)
+  quoteItemId             String?
+  quoteItem               QuoteItem?              @relation(fields: [quoteItemId], references: [id], onDelete: Cascade)
+  orderItemId             String?
+  orderItem               OrderItem?              @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  value                   Json
+  createdAt               DateTime              @default(now())
+
+  @@index([personalizationOptionId])
+  @@index([quoteRequestItemId])
+  @@index([quoteItemId])
+  @@index([orderItemId])
+}
+
+model Upload {
+  id          String   @id @default(cuid())
+  filename    String
+  originalName String
+  url         String
+  mimeType    String
+  size        Int
+  entityType  String
+  entityId    String?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+model Quote {
+  id             String              @id @default(cuid())
+  quoteRequestId String              @unique
+  quoteRequest   QuoteRequest        @relation(fields: [quoteRequestId], references: [id], onDelete: Restrict)
+  quoteNumber    String              @unique
+  pdfUrl         String?
+  pdfPath        String?
+  validUntil     DateTime
+  status         String              @default("DRAFT")
+  subtotalHT     Float               @default(0)
+  discountAmount Float               @default(0)
+  totalAmountHT  Float               @default(0)
+  tvaRate        Float               @default(0.20)
+  totalAmountTTC Float               @default(0)
+  conditions     String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  items         QuoteItem[]
+  orders        Order[]
+  publicOrders  PublicOrder[] @relation("OrderToQuote")
+  statusHistory QuoteStatusHistory[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model QuoteItem {
+  id                  String          @id @default(cuid())
+  quoteId             String
+  quote               Quote           @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  productId           String
+  productVariantId    String?
+  productVariant      ProductVariant? @relation(fields: [productVariantId], references: [id])
+  productName         String
+  unitPrice           Float
+  quantity            Int
+  lineTotal           Float
+  hasPersonalization  Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  personalizations Personalization[]
+  orderItems       OrderItem[]
+
+  @@index([quoteId])
+  @@index([productId])
+}
+
+model Order {
+  id                 String              @id @default(cuid())
+  quoteId            String              @unique
+  quote              Quote               @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  orderNumber        String              @unique
+  status             String              @default("CONFIRMED")
+  hasPersonalization  Boolean             @default(false)
+  paymentMethod      String              @default("ON_DELIVERY")
+  subtotalHT         Float               @default(0)
+  totalAmountHT      Float               @default(0)
+  tvaRate            Float               @default(0.20)
+  totalAmountTTC     Float               @default(0)
+  depositAmount      Float               @default(0)
+  depositPercentage  Float               @default(0)
+  balanceAmount      Float               @default(0)
+  balancePercentage  Float               @default(0)
+  notes              String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  items         OrderItem[]
+  payments      Payment[]
+  delivery      Delivery?
+  notifications Notification[]
+  statusHistory OrderStatusHistory[]
+
+  @@index([status])
+  @@index([paymentMethod])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id                  String          @id @default(cuid())
+  orderId             String
+  order               Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  quoteItemId         String?
+  quoteItem           QuoteItem?      @relation(fields: [quoteItemId], references: [id])
+  productId           String
+  productVariantId    String?
+  productVariant      ProductVariant? @relation(fields: [productVariantId], references: [id])
+  productName         String
+  unitPrice           Float
+  quantity            Int
+  lineTotal           Float
+  hasPersonalization  Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  personalizations Personalization[]
+  stockMovements  StockMovement[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([productVariantId])
+}
+
+model Payment {
+  id             String                @id @default(cuid())
+  orderId        String
+  order          Order                 @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type           String
+  amount         Float                 @default(0)
+  currency       String                @default("XOF")
+  method         String?
+  provider       String?
+  providerRef    String?
+  status         String                @default("EN_ATTENTE")
+  transactionRef String?
+  dueDate        DateTime?
+  paidAt         DateTime?
+  receiptUrl     String?
+  notes          String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  statusHistory PaymentStatusHistory[]
+
+  @@index([orderId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Delivery {
+  id                String   @id @default(cuid())
+  orderId           String   @unique
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status            String   @default("A_PREPARER")
+  trackingNumber    String?
+  carrier           String?
+  deliveryPerson    String?
+  shippingAddress   Json?
+  shippingFees      Float    @default(0)
+  estimatedDelivery DateTime?
+  deliveredAt       DateTime?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  statusHistory DeliveryStatusHistory[]
+
+  @@index([status])
+}
+
+model StockMovement {
+  id               String          @id @default(cuid())
+  orderItemId      String?
+  orderItem        OrderItem?      @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  productVariantId String
+  productVariant   ProductVariant  @relation(fields: [productVariantId], references: [id])
+  type             String
+  quantity         Int
+  reason           String?
+  createdAt        DateTime        @default(now())
+
+  @@index([orderItemId])
+  @@index([productVariantId])
+  @@index([type])
+}
+
+model Notification {
+  id             String        @id @default(cuid())
+  orderId        String?
+  order          Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  publicOrderId  String?
+  publicOrder    PublicOrder?  @relation(fields: [publicOrderId], references: [id], onDelete: SetNull)
+  quoteRequestId String?
+  quoteRequest   QuoteRequest? @relation(fields: [quoteRequestId], references: [id], onDelete: SetNull)
+  type           String
+  channel        String
+  to             String
+  subject        String?
+  message        String
+  status         String        @default("PENDING")
+  response       Json?
+  sentAt         DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@index([orderId])
+  @@index([publicOrderId])
+  @@index([quoteRequestId])
+  @@index([status])
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      String   @default("STRING")
+  label     String
+  category  String?
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
+
+model AdminActionLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  admin      Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  action     String
+  entityType String?
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([adminId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model QuoteStatusHistory {
+  id         String   @id @default(cuid())
+  quoteId    String
+  quote      Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  fromStatus String?
+  toStatus   String
+  changedBy  String?
+  createdAt  DateTime @default(now())
+
+  @@index([quoteId])
+  @@index([createdAt])
+}
+
+model OrderStatusHistory {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus String?
+  toStatus   String
+  changedBy  String?
+  createdAt  DateTime @default(now())
+
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+model PaymentStatusHistory {
+  id         String   @id @default(cuid())
+  paymentId  String
+  payment    Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  fromStatus String?
+  toStatus   String
+  changedBy  String?
+  createdAt  DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([createdAt])
+}
+
+model DeliveryStatusHistory {
+  id         String   @id @default(cuid())
+  deliveryId String
+  delivery   Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  fromStatus String?
+  toStatus   String
+  changedBy  String?
+  createdAt  DateTime @default(now())
+
+  @@index([deliveryId])
+  @@index([createdAt])
+}
+
+model PublicOrder {
+  id                String              @id @default(cuid())
+  orderNumber       String?
+  devisNumber       String?
+  status            String              @default("NOUVELLE_COMMANDE")
+  clientName        String
+  clientFirstName   String?
+  clientPhone       String
+  clientEmail       String?
+  clientType        String              @default("PARTICULIER")
+  companyName       String?
+  companyInfo       String?
+  requestType       String              @default("COMMANDE_SIMPLE")
+  // COMMANDE_SIMPLE | DEVIS | BON_COMMANDE | FNE
+  personalizationSummary String?
+  // Récap texte des personnalisations demandées
+  city              String
+  commune           String?
+  address           String?
+  deliveryComment   String?
+  subtotal          Float               @default(0)
+  deliveryFee       Float               @default(0)
+  total             Float               @default(0)
+  notificationStatus String              @default("PENDING")
+  notificationError  String?
+  devisPdfPath      String?
+  quoteId           String?
+  quote             Quote?             @relation("OrderToQuote", fields: [quoteId], references: [id])
+  statusHistory     PublicOrderStatusHistory[]
+  items             PublicOrderItem[]
+  notifications     Notification[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([orderNumber])
+  @@unique([devisNumber])
+  @@index([status])
+  @@index([createdAt])
+  @@index([clientEmail])
+  @@index([orderNumber])
+  @@index([devisNumber])
+}
+
+model PublicOrderItem {
+  id               String       @id @default(cuid())
+  publicOrderId    String
+  publicOrder      PublicOrder @relation(fields: [publicOrderId], references: [id], onDelete: Cascade)
+  productId        String
+  productName      String
+  productSlug      String
+  productSku       String?
+  variantId        String?
+  variantName      String?
+  quantity         Int
+  unitPrice        Float
+  lineTotal        Float
+  hasPersonalization Boolean      @default(false)
+  personalizationData Json?
+  createdAt        DateTime    @default(now())
+
+  @@index([publicOrderId])
+  @@index([productId])
+}
+
+model PublicOrderStatusHistory {
+  id         String       @id @default(cuid())
+  publicOrderId String
+  publicOrder PublicOrder @relation(fields: [publicOrderId], references: [id], onDelete: Cascade)
+  fromStatus String?
+  toStatus   String
+  changedBy  String?
+  createdAt  DateTime    @default(now())
+
+  @@index([publicOrderId])
+  @@index([createdAt])
+}
