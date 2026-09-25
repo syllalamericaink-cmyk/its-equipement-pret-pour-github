@@ -32,3 +32,4 @@ Voir **GUIDE-DEPLOIEMENT** (GitHub → Neon → Vercel) et `INSTALL.md`.
 | `npm run db:push` | Synchroniser le schéma Prisma avec la base |
 | `npm run db:seed` | Créer le compte admin (mot de passe aléatoire affiché une fois) |
 | `npx tsx scripts/reset-admin-password.ts` | Régénérer le mot de passe admin perdu (écrit CREDENTIALS-ADMIN.txt) |
+.
