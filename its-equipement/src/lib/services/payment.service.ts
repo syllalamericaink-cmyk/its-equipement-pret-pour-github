@@ -148,6 +148,15 @@ export async function confirmPayment(paymentId: string, data: {
   })
   if (!payment) throw new Error('Paiement introuvable')
 
+  // Payment confirmation must be idempotent and must never move a terminal
+  // payment back to PAYE.
+  if (payment.status === 'PAYE') {
+    return payment
+  }
+  if (payment.status !== 'EN_ATTENTE') {
+    throw new Error(`Paiement non confirmable depuis le statut ${payment.status}`)
+  }
+
   await db.paymentStatusHistory.create({
     data: {
       paymentId,
