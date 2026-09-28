@@ -14,33 +14,22 @@ export interface PaymentProvider {
   }>
 }
 
-class CinetPayProvider implements PaymentProvider {
-  async initiatePayment(_data: {
-    amount: number
-    currency: string
-    reference: string
-    orderId: string
-    type: string
-  }): Promise<{ paymentUrl?: string; providerRef?: string }> {
-    return {
-      paymentUrl: `https://secure.cinetpay.com/pay/${_data.reference}`,
-      providerRef: `cp_${Date.now()}`,
-    }
-  }
-
-  async verifyPayment(_transactionRef: string): Promise<{
-    success: boolean
-    amount?: number
-    providerRef?: string
-  }> {
-    return {
-      success: true,
-      providerRef: _transactionRef,
-    }
+class ProviderNotConfiguredError extends Error {
+  constructor(provider: string) {
+    super(`Le fournisseur de paiement "[object Object]" n'est pas configure.`)
+    this.name = 'ProviderNotConfiguredError'
   }
 }
 
-class FedaPayProvider implements PaymentProvider {
+/**
+ * IMPORTANT:
+ * This project must never manufacture checkout URLs, provider references,
+ * or successful verification responses. Real provider adapters must be
+ * implemented against the provider's authenticated API before activation.
+ */
+class UnconfiguredPaymentProvider implements PaymentProvider {
+  constructor(private readonly provider: string) {}
+
   async initiatePayment(_data: {
     amount: number
     currency: string
@@ -48,10 +37,7 @@ class FedaPayProvider implements PaymentProvider {
     orderId: string
     type: string
   }): Promise<{ paymentUrl?: string; providerRef?: string }> {
-    return {
-      paymentUrl: `https://checkout.fedapay.com/${_data.reference}`,
-      providerRef: `fp_${Date.now()}`,
-    }
+    throw new ProviderNotConfiguredError(this.provider)
   }
 
   async verifyPayment(_transactionRef: string): Promise<{
@@ -59,19 +45,17 @@ class FedaPayProvider implements PaymentProvider {
     amount?: number
     providerRef?: string
   }> {
-    return {
-      success: true,
-      providerRef: _transactionRef,
-    }
+    throw new ProviderNotConfiguredError(this.provider)
   }
 }
 
 export function createProvider(provider: string): PaymentProvider | null {
-  switch (provider.toLowerCase()) {
+  const normalized = provider.trim().toLowerCase()
+
+  switch (normalized) {
     case 'cinetpay':
-      return new CinetPayProvider()
     case 'fedapay':
-      return new FedaPayProvider()
+      return new UnconfiguredPaymentProvider(normalized)
     default:
       return null
   }
