@@ -514,6 +514,8 @@ model PublicOrder {
   total             Float               @default(0)
   notificationStatus String              @default("PENDING")
   notificationError  String?
+  // Client-generated key prevents duplicate orders after retries or double clicks.
+  idempotencyKey    String?             @unique
   devisPdfPath      String?
   quoteId           String?
   quote             Quote?             @relation("OrderToQuote", fields: [quoteId], references: [id])

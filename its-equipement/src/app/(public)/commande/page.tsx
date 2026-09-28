@@ -117,7 +117,10 @@ export default function CommandePage() {
       // 1. Enregistrer la demande en base (POST API)
       const apiRes = await fetch('/api/public/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': crypto.randomUUID(),
+        },
         body: JSON.stringify({
           clientName: data.clientName,
           clientFirstName: data.clientFirstName || undefined,

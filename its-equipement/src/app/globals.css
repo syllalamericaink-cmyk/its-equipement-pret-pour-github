@@ -51,8 +51,11 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.38 0.14 260);
-  --primary-foreground: oklch(0.985 0 0);
+  /* ITS Équipement: navy and warm gold from the supplied brand mark. */
+  --brand-navy: #0b1730;
+  --brand-gold: #c99a3e;
+  --primary: #0b1730;
+  --primary-foreground: #fffdf7;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -118,6 +121,28 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+.brand-gold {
+  color: var(--brand-gold);
+}
+
+.brand-rule {
+  border-color: color-mix(in srgb, var(--brand-gold) 55%, transparent);
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--brand-gold) 75%, white);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

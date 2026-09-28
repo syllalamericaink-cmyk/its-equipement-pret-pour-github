@@ -52,19 +52,55 @@ export async function createPublicOrder(data: {
   devisMode?: boolean
   items: {
     productId: string
-    productName: string
-    productSlug: string
+    productName?: string
+    productSlug?: string
     productSku?: string
     variantId?: string
     variantName?: string
     quantity: number
-    unitPrice: number
-    lineTotal: number
-    hasPersonalization: boolean
+    unitPrice?: number
+    lineTotal?: number
+    hasPersonalization?: boolean
     personalizationData?: Record<string, unknown>
   }[]
+  idempotencyKey?: string
 }) {
-  const subtotal = data.items.reduce((sum, item) => sum + item.lineTotal, 0)
+  // Prices, names and stock-related state come from the database, never from the browser.
+  // The browser values are retained only as a compatibility input for older clients.
+  if (data.idempotencyKey) {
+    const existing = await db.publicOrder.findFirst({ where: { idempotencyKey: data.idempotencyKey } })
+    if (existing) return existing
+  }
+
+  const productIds = [...new Set(data.items.map((item) => item.productId))]
+  const products = await db.product.findMany({
+    where: { id: { in: productIds }, isActive: true },
+    include: { category: true, variants: { where: { isActive: true } } },
+  })
+  const productById = new Map(products.map((product) => [product.id, product]))
+  if (products.length !== productIds.length) throw new Error('Un produit n’est plus disponible')
+
+  const authoritativeItems = data.items.map((item) => {
+    const product = productById.get(item.productId)
+    if (!product) throw new Error('Produit introuvable')
+    const variant = item.variantId ? product.variants.find((candidate) => candidate.id === item.variantId) : undefined
+    if (item.variantId && !variant) throw new Error('Variante indisponible')
+    const unitPrice = product.basePrice + (variant?.priceModifier ?? 0)
+    return {
+      productId: product.id,
+      productName: product.name,
+      productSlug: product.slug,
+      productSku: variant?.sku ?? product.sku,
+      variantId: variant?.id,
+      variantName: variant?.name,
+      quantity: item.quantity,
+      unitPrice,
+      lineTotal: unitPrice * item.quantity,
+      hasPersonalization: item.hasPersonalization ?? false,
+      personalizationData: item.personalizationData,
+    }
+  })
+  const subtotal = authoritativeItems.reduce((sum, item) => sum + item.lineTotal, 0)
   const total = subtotal + data.deliveryFee
   const requestType = data.requestType ?? 'COMMANDE_SIMPLE'
 
@@ -91,8 +127,9 @@ export async function createPublicOrder(data: {
         deliveryFee: data.deliveryFee,
         total,
         notificationStatus: 'PENDING',
+        idempotencyKey: data.idempotencyKey,
         items: {
-          create: data.items.map(item => ({
+          create: authoritativeItems.map(item => ({
             productId: item.productId,
             productName: item.productName,
             productSlug: item.productSlug,
@@ -137,8 +174,9 @@ export async function createPublicOrder(data: {
       deliveryFee: data.deliveryFee,
       total,
       notificationStatus: 'PENDING',
+      idempotencyKey: data.idempotencyKey,
       items: {
-        create: data.items.map(item => ({
+        create: authoritativeItems.map(item => ({
           productId: item.productId,
           productName: item.productName,
           productSlug: item.productSlug,

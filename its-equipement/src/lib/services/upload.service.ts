@@ -35,6 +35,18 @@ export async function uploadFile(
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
 
+  // MIME and extension are client-controlled. Check file signatures before persisting.
+  const isJpeg = buffer.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))
+  const isPng = buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+  const isWebp = buffer.subarray(0, 4).toString() === 'RIFF' && buffer.subarray(8, 12).toString() === 'WEBP'
+  const isPdf = buffer.subarray(0, 5).toString() === '%PDF-'
+  const signatureMatches = (file.type === 'image/jpeg' && isJpeg) ||
+    (file.type === 'image/png' && isPng) ||
+    (file.type === 'image/webp' && isWebp) ||
+    (file.type === 'image/avif' && buffer.length > 12 && buffer.subarray(4, 8).toString() === 'ftyp') ||
+    (file.type === 'application/pdf' && isPdf)
+  if (!signatureMatches) throw new Error('Contenu de fichier invalide')
+
   const rawExt = path.extname(file.name).toLowerCase()
   const ext = ALLOWED_EXTENSIONS.has(rawExt) ? rawExt : '.bin'
   const uniqueName = `${randomUUID()}${ext}`

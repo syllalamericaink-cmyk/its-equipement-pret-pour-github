@@ -102,7 +102,10 @@ export default function DevisPage() {
       }
       const res = await fetch('/api/public/devis', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': crypto.randomUUID(),
+        },
         body: JSON.stringify(body),
       })
       const json = await res.json()
