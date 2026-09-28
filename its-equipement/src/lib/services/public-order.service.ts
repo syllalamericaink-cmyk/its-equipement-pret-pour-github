@@ -48,120 +48,134 @@ export async function createPublicOrder(data: {
   commune?: string
   address?: string
   deliveryComment?: string
-  deliveryFee: number
+  deliveryFee?: number
   devisMode?: boolean
   items: {
     productId: string
-    productName: string
-    productSlug: string
+    productName?: string
+    productSlug?: string
     productSku?: string
     variantId?: string
     variantName?: string
     quantity: number
-    unitPrice: number
-    lineTotal: number
+    unitPrice?: number
+    lineTotal?: number
     hasPersonalization: boolean
     personalizationData?: Record<string, unknown>
   }[]
 }) {
-  const subtotal = data.items.reduce((sum, item) => sum + item.lineTotal, 0)
-  const total = subtotal + data.deliveryFee
+  if (!data.items.length) throw new Error('La commande doit contenir au moins un produit')
+
+  // Server is the source of truth: never trust prices, names, variants or
+  // totals sent by the browser.
+  const productIds = [...new Set(data.items.map(item => item.productId))]
+  const products = await db.product.findMany({
+    where: { id: { in: productIds }, isActive: true },
+    include: { variants: { where: { isActive: true } } },
+  })
+  const productMap = new Map(products.map(product => [product.id, product]))
+
+  if (products.length !== productIds.length) {
+    throw new Error('Un ou plusieurs produits sont introuvables ou inactifs')
+  }
+
+  const authoritativeItems = data.items.map(item => {
+    const product = productMap.get(item.productId)!
+    const quantity = Number.isInteger(item.quantity) ? item.quantity : 0
+    if (quantity < product.minQuantity || quantity <= 0) {
+      throw new Error(`Quantite invalide pour ${product.name}`)
+    }
+
+    let variant = undefined
+    if (item.variantId) {
+      variant = product.variants.find(v => v.id === item.variantId)
+      if (!variant) throw new Error(`Variante invalide pour ${product.name}`)
+    }
+
+    const unitPrice = Number(product.basePrice) + Number(variant?.priceModifier ?? 0)
+    const lineTotal = Math.round(unitPrice * quantity * 100) / 100
+
+    return {
+      productId: product.id,
+      productName: product.name,
+      productSlug: product.slug,
+      productSku: product.sku,
+      variantId: variant?.id,
+      variantName: variant?.name,
+      quantity,
+      unitPrice,
+      lineTotal,
+      hasPersonalization: Boolean(item.hasPersonalization),
+      personalizationData: item.personalizationData,
+    }
+  })
+
+  const subtotal = authoritativeItems.reduce((sum, item) => sum + item.lineTotal, 0)
+  // Delivery pricing is currently server-controlled. The browser may not
+  // increase it by submitting an arbitrary deliveryFee.
+  const deliveryFee = 0
+  const total = Math.round((subtotal + deliveryFee) * 100) / 100
   const requestType = data.requestType ?? 'COMMANDE_SIMPLE'
+
+  const commonData = {
+    clientName: data.clientName,
+    clientFirstName: data.clientFirstName,
+    clientPhone: data.clientPhone,
+    clientEmail: data.clientEmail,
+    clientType: data.clientType,
+    companyName: data.companyName,
+    companyInfo: data.companyInfo,
+    requestType,
+    personalizationSummary: data.personalizationSummary,
+    city: data.city,
+    commune: data.commune,
+    address: data.address,
+    deliveryComment: data.deliveryComment,
+    subtotal,
+    deliveryFee,
+    total,
+    notificationStatus: 'PENDING' as const,
+    items: {
+      create: authoritativeItems.map(item => ({
+        productId: item.productId,
+        productName: item.productName,
+        productSlug: item.productSlug,
+        productSku: item.productSku,
+        variantId: item.variantId,
+        variantName: item.variantName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        lineTotal: item.lineTotal,
+        hasPersonalization: item.hasPersonalization,
+        personalizationData: item.personalizationData ?? undefined,
+      })) as Prisma.PublicOrderItemCreateWithoutPublicOrderInput[],
+    },
+  }
 
   if (data.devisMode) {
     const devisNumber = await generateDevisNumber()
-    const order = await db.publicOrder.create({
+    return db.publicOrder.create({
       data: {
+        ...commonData,
         devisNumber,
         status: 'DEVIS_ENVOYE',
-        clientName: data.clientName,
-        clientFirstName: data.clientFirstName,
-        clientPhone: data.clientPhone,
-        clientEmail: data.clientEmail,
-        clientType: data.clientType,
-        companyName: data.companyName,
-        companyInfo: data.companyInfo,
-        requestType,
-        personalizationSummary: data.personalizationSummary,
-        city: data.city,
-        commune: data.commune,
-        address: data.address,
-        deliveryComment: data.deliveryComment,
-        subtotal,
-        deliveryFee: data.deliveryFee,
-        total,
-        notificationStatus: 'PENDING',
-        items: {
-          create: data.items.map(item => ({
-            productId: item.productId,
-            productName: item.productName,
-            productSlug: item.productSlug,
-            productSku: item.productSku,
-            variantId: item.variantId,
-            variantName: item.variantName,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            lineTotal: item.lineTotal,
-            hasPersonalization: item.hasPersonalization,
-            personalizationData: item.personalizationData ?? undefined,
-          })) as Prisma.PublicOrderItemCreateWithoutPublicOrderInput[],
-        },
-        statusHistory: {
-          create: { toStatus: 'DEVIS_ENVOYE', changedBy: 'client' },
-        },
+        statusHistory: { create: { toStatus: 'DEVIS_ENVOYE', changedBy: 'client' } },
       },
       include: { items: true, statusHistory: true },
     })
-    return order
   }
 
   const orderNumber = await generateOrderNumber()
-  const order = await db.publicOrder.create({
+  return db.publicOrder.create({
     data: {
+      ...commonData,
       orderNumber,
       status: 'NOUVELLE_COMMANDE',
-      clientName: data.clientName,
-      clientFirstName: data.clientFirstName,
-      clientPhone: data.clientPhone,
-      clientEmail: data.clientEmail,
-      clientType: data.clientType,
-      companyName: data.companyName,
-      companyInfo: data.companyInfo,
-      requestType,
-      personalizationSummary: data.personalizationSummary,
-      city: data.city,
-      commune: data.commune,
-      address: data.address,
-      deliveryComment: data.deliveryComment,
-      subtotal,
-      deliveryFee: data.deliveryFee,
-      total,
-      notificationStatus: 'PENDING',
-      items: {
-        create: data.items.map(item => ({
-          productId: item.productId,
-          productName: item.productName,
-          productSlug: item.productSlug,
-          productSku: item.productSku,
-          variantId: item.variantId,
-          variantName: item.variantName,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          lineTotal: item.lineTotal,
-          hasPersonalization: item.hasPersonalization,
-          personalizationData: item.personalizationData ?? undefined,
-        })) as Prisma.PublicOrderItemCreateWithoutPublicOrderInput[],
-      },
-      statusHistory: {
-        create: { toStatus: 'NOUVELLE_COMMANDE', changedBy: 'client' },
-      },
+      statusHistory: { create: { toStatus: 'NOUVELLE_COMMANDE', changedBy: 'client' } },
     },
     include: { items: true, statusHistory: true },
   })
-
-  return order
 }
-
 async function generateDevisNumber(): Promise<string> {
   const year = new Date().getFullYear()
   for (let attempt = 0; attempt < 10; attempt++) {
