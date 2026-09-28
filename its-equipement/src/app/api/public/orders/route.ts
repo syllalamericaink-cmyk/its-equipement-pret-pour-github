@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     if (!body.clientName?.trim()) return error('Le nom est requis')
     if (!body.clientPhone?.trim()) return error('Le telephone est requis')
     if (!body.city?.trim()) return error('La ville est requise')
-    if (!body.items?.length) return error('La commande doit contenir au moins un produit')
+    if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 50) return error('La commande doit contenir entre 1 et 50 produits')
 
     const validTypes = ['PARTICULIER', 'ENTREPRISE']
     if (!validTypes.includes(body.clientType)) return error('Type de client invalide')
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       commune: body.commune?.trim(),
       address: body.address?.trim(),
       deliveryComment: body.deliveryComment?.trim(),
-      deliveryFee: Number(body.deliveryFee) || 0,
+      deliveryFee: 0,
       items: body.items.map((item: Record<string, unknown>) => ({
         productId: String(item.productId),
         productName: String(item.productName),
@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
         productSku: item.productSku ? String(item.productSku) : undefined,
         variantId: item.variantId ? String(item.variantId) : undefined,
         variantName: item.variantName ? String(item.variantName) : undefined,
-        quantity: Number(item.quantity) || 1,
-        unitPrice: Number(item.unitPrice) || 0,
-        lineTotal: Number(item.lineTotal) || 0,
+        quantity: Number.isInteger(item.quantity) ? Number(item.quantity) : 0,
+        unitPrice: undefined,
+        lineTotal: undefined,
         hasPersonalization: Boolean(item.hasPersonalization),
         personalizationData: item.personalizationData as Record<string, unknown> | undefined,
       })),
