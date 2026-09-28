@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft, Info } from 'lucide-react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCartStore } from '@/stores/cart-store'
@@ -50,7 +50,7 @@ export default function DevisPage() {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<DevisFormData>({
     resolver: zodResolver(devisSchema),
@@ -68,7 +68,7 @@ export default function DevisPage() {
     },
   })
 
-  const clientType = watch('clientType')
+  const clientType = useWatch({ control, name: 'clientType' })
 
   const onSubmit = async (data: DevisFormData) => {
     setSubmitting(true)
@@ -102,7 +102,10 @@ export default function DevisPage() {
       }
       const res = await fetch('/api/public/devis', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': crypto.randomUUID(),
+        },
         body: JSON.stringify(body),
       })
       const json = await res.json()

@@ -1,83 +1,44 @@
-import { success, error, serverError } from '@/lib/api-response'
+import { error, serverError, success } from '@/lib/api-response'
 import { createPublicOrder, sendOrderNotification } from '@/lib/services/public-order.service'
 import { checkApiRateLimit } from '@/lib/api-auth'
+import { publicOrderSchema } from '@/lib/validation/public-order'
 import type { NextRequest } from 'next/server'
 
+/** Public order creation. The request is validated here; totals are recalculated in the service. */
 export async function POST(request: NextRequest) {
   try {
-    if (!checkApiRateLimit(request)) {
-      return error('Trop de requetes. Reessayez dans une minute.', 429)
+    if (!checkApiRateLimit(request)) return error('Trop de requêtes. Réessayez dans une minute.', 429)
+
+    const raw = await request.json()
+    const parsed = publicOrderSchema.safeParse(raw)
+    if (!parsed.success) {
+      return error('Les informations de commande sont invalides.', 400)
     }
 
-    const body = await request.json()
-
-    if (!body.clientName?.trim()) return error('Le nom est requis')
-    if (!body.clientPhone?.trim()) return error('Le telephone est requis')
-    if (!body.city?.trim()) return error('La ville est requise')
-    if (!body.items?.length) return error('La commande doit contenir au moins un produit')
-
-    const validTypes = ['PARTICULIER', 'ENTREPRISE']
-    if (!validTypes.includes(body.clientType)) return error('Type de client invalide')
-
-    if (body.clientType === 'ENTREPRISE' && !body.companyName?.trim()) {
-      return error('Le nom de l\'entreprise est requis')
-    }
-
-    const validRequestTypes = ['COMMANDE_SIMPLE', 'DEVIS', 'BON_COMMANDE', 'FNE']
-    const requestType = body.requestType ?? 'COMMANDE_SIMPLE'
-    if (!validRequestTypes.includes(requestType)) {
-      return error('Type de demande invalide')
-    }
-
-    // Pour devis, bon de commande ou FNE, les infos entreprise sont requises
-    if (requestType !== 'COMMANDE_SIMPLE') {
-      if (!body.companyName?.trim()) {
-        return error('Le nom de l\'entreprise est requis pour ce type de demande')
-      }
-      if (!body.companyInfo?.trim()) {
-        return error('Les informations de l\'entreprise sont requises pour ce type de demande')
-      }
-    }
-
-    if (body.clientEmail?.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(body.clientEmail.trim())) return error('Email invalide')
+    const idempotencyKey = request.headers.get('Idempotency-Key')?.trim()
+    if (idempotencyKey && (idempotencyKey.length < 16 || idempotencyKey.length > 100)) {
+      return error('Clé de requête invalide.', 400)
     }
 
     const order = await createPublicOrder({
-      clientName: body.clientName.trim(),
-      clientFirstName: body.clientFirstName?.trim() || undefined,
-      clientPhone: body.clientPhone.trim(),
-      clientEmail: body.clientEmail?.trim()?.toLowerCase() || undefined,
-      clientType: body.clientType,
-      companyName: body.companyName?.trim() || undefined,
-      companyInfo: body.companyInfo?.trim() || undefined,
-      requestType,
-      personalizationSummary: body.personalizationSummary?.trim() || undefined,
-      city: body.city.trim(),
-      commune: body.commune?.trim(),
-      address: body.address?.trim(),
-      deliveryComment: body.deliveryComment?.trim(),
-      deliveryFee: Number(body.deliveryFee) || 0,
-      items: body.items.map((item: Record<string, unknown>) => ({
-        productId: String(item.productId),
-        productName: String(item.productName),
-        productSlug: String(item.productSlug),
-        productSku: item.productSku ? String(item.productSku) : undefined,
-        variantId: item.variantId ? String(item.variantId) : undefined,
-        variantName: item.variantName ? String(item.variantName) : undefined,
-        quantity: Number(item.quantity) || 1,
-        unitPrice: Number(item.unitPrice) || 0,
-        lineTotal: Number(item.lineTotal) || 0,
-        hasPersonalization: Boolean(item.hasPersonalization),
-        personalizationData: item.personalizationData as Record<string, unknown> | undefined,
-      })),
+      ...parsed.data,
+      clientEmail: parsed.data.clientEmail || undefined,
+      items: parsed.data.items,
+      idempotencyKey,
     })
 
-    sendOrderNotification(order.id).catch(() => {})
+    // WhatsApp is deliberately decoupled from order creation: a provider outage must not
+    // make a valid order disappear. The admin retry action remains the source of recovery.
+    sendOrderNotification(order.id).catch(() => undefined)
 
-    return success({ orderNumber: order.orderNumber, id: order.id, requestType })
-  } catch {
+    return success({ orderNumber: order.orderNumber, devisNumber: order.devisNumber, id: order.id, requestType: order.requestType })
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : ''
+    if (message.includes('indisponible') || message.includes('introuvable') || message.includes('Variante')) {
+      return error(message, 409)
+    }
+    // Keep provider/database details out of the public response. Log correlation can be
+    // added by the hosting platform without exposing secrets to customers.
     return serverError()
   }
 }

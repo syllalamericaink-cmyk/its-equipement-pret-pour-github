@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft, Info, MessageCircle, Clock } from 'lucide-react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCartStore } from '@/stores/cart-store'
@@ -62,7 +62,7 @@ export default function CommandePage() {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -84,9 +84,7 @@ export default function CommandePage() {
     },
   })
 
-  const clientType = watch('clientType')
-  const requestType = watch('requestType')
-  const hasPersonalization = watch('hasPersonalization')
+  const { clientType, requestType, hasPersonalization } = useWatch({ control })
   const needsCompanyInfo = requestType !== 'COMMANDE_SIMPLE' || clientType === 'ENTREPRISE'
 
   const onSubmit = async (data: CheckoutFormData) => {
@@ -117,7 +115,10 @@ export default function CommandePage() {
       // 1. Enregistrer la demande en base (POST API)
       const apiRes = await fetch('/api/public/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': crypto.randomUUID(),
+        },
         body: JSON.stringify({
           clientName: data.clientName,
           clientFirstName: data.clientFirstName || undefined,

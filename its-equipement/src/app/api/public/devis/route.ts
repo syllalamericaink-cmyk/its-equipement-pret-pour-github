@@ -10,6 +10,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    const idempotencyKey = request.headers.get('Idempotency-Key')?.trim()
+    if (idempotencyKey && (idempotencyKey.length < 16 || idempotencyKey.length > 100)) {
+      return error('Clé de requête invalide.', 400)
+    }
 
     if (!body.clientName?.trim()) return error('Le nom est requis')
     if (!body.clientPhone?.trim()) return error('Le telephone est requis')
@@ -48,6 +52,7 @@ export async function POST(request: NextRequest) {
       deliveryComment: body.deliveryComment?.trim(),
       deliveryFee: Number(body.deliveryFee) || 0,
       devisMode: true,
+      idempotencyKey,
       items: body.items.map((item: Record<string, unknown>) => ({
         productId: String(item.productId),
         productName: String(item.productName),
