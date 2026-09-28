@@ -33,9 +33,6 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   serverExternalPackages: ['pdfkit'],
   // output: "standalone",
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   reactStrictMode: false,
   async headers() {
     return [
