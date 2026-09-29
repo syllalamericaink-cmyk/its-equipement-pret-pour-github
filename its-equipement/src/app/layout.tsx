@@ -1,11 +1,17 @@
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Archivo, Barlow_Condensed, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { APP_NAME, COMPANY_NAME } from "@/constants"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const archivo = Archivo({
+  variable: "--font-archivo",
+  subsets: ["latin"],
+})
+
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-barlow",
+  weight: ["500", "600", "700"],
   subsets: ["latin"],
 })
 
@@ -59,10 +65,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
-      >
+    <html
+      lang="fr"
+      suppressHydrationWarning
+      className={`${archivo.variable} ${barlowCondensed.variable} ${geistMono.variable}`}
+    >
+      <body className="antialiased bg-background text-foreground">
         {children}
         <Toaster />
       </body>

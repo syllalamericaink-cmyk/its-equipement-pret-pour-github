@@ -1,109 +1,107 @@
 import Link from 'next/link'
-import Image from 'next/image'
-import { Phone, Mail, MapPin } from 'lucide-react'
-import { CONTACT_PHONE, CONTACT_EMAIL, CONTACT_ADDRESS, CONTACT_WHATSAPP } from '@/constants'
+import { CONTACT_PHONE, CONTACT_EMAIL, CONTACT_ADDRESS } from '@/constants'
+
+const offreLinks = [
+  { href: '/produits', label: 'EPI' },
+  { href: '/produits', label: 'EPC' },
+  { href: '/produits', label: 'Vêtements de travail' },
+  { href: '/produits', label: 'Chaussures' },
+  { href: '/#personnalisation', label: 'Personnalisation' },
+]
+
+const entrepriseLinks = [
+  { href: '/a-propos', label: 'Notre méthode' },
+  { href: '/livraison', label: 'Zones de livraison' },
+  { href: '/demande-devis', label: 'Demande de devis' },
+  { href: '/contact', label: 'Contact' },
+]
 
 export function PublicFooter() {
   return (
-    <footer className="mt-auto border-t bg-background" role="contentinfo">
-      <div className="container mx-auto px-4 py-10 sm:py-12">
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="col-span-2 sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-2 mb-3">
-              <Image
-                src="/logo-its-equipement.jpg"
-                alt="ITS Équipement"
-                width={32}
-                height={32}
-                className="rounded-md object-contain"
-              />
-              <div className="flex flex-col">
-                <span className="font-bold text-sm">ITS Équipement</span>
-                <span className="text-[10px] text-muted-foreground">ITSchool & Dynamic Group</span>
-              </div>
+    <footer className="bg-its-dark text-white" role="contentinfo">
+      <div className="container mx-auto px-4 pb-8 pt-14 sm:pt-16">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
+          {/* Identité */}
+          <div>
+            <div className="flex items-center gap-3">
+              <span
+                className="flex h-11 w-11 items-center justify-center bg-its-lime font-display text-xl font-bold tracking-tight text-its-dark"
+                aria-hidden="true"
+              >
+                ITS
+              </span>
+              <span className="font-display text-xl font-bold tracking-tight">ITS ÉQUIPEMENT</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Votre partenaire EPI & EPC en Côte d'Ivoire. Équipements de protection individuelle et collectifs, vêtements de travail personnalisés.
+            <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/60">
+              Équipements de protection individuelle et collective, vêtements de travail et
+              personnalisation pour les professionnels en Côte d’Ivoire.
             </p>
           </div>
 
+          {/* Offre */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold">Navigation</h3>
-            <ul className="space-y-2.5">
-              <li>
-                <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center">
-                  Accueil
-                </Link>
-              </li>
-              <li>
-                <Link href="/produits" className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center">
-                  Catalogue
-                </Link>
-              </li>
-              <li>
-                <Link href="/demande-devis" className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center">
-                  Demander un devis
-                </Link>
-              </li>
+            <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-its-lime">Offre</h3>
+            <ul className="mt-4 space-y-2.5">
+              {offreLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="flex min-h-[32px] items-center text-sm text-white/80 transition-colors hover:text-its-lime"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
+          {/* Entreprise */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold">Entreprise</h3>
-            <ul className="space-y-2.5">
-              <li>
-                <Link href="/a-propos" className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center">
-                  À propos
-                </Link>
-              </li>
-              <li>
-                <Link href="/livraison" className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center">
-                  Livraison
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center">
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link href="/conditions" className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center">
-                  Conditions générales de vente
-                </Link>
-              </li>
-              <li>
-                <Link href="/legal" className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center">
-                  Mentions légales
-                </Link>
-              </li>
+            <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-its-lime">Entreprise</h3>
+            <ul className="mt-4 space-y-2.5">
+              {entrepriseLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="flex min-h-[32px] items-center text-sm text-white/80 transition-colors hover:text-its-lime"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          <div className="col-span-2 sm:col-span-1">
-            <h3 className="mb-3 text-sm font-semibold">Contacts</h3>
-            <ul className="space-y-2.5">
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone className="h-4 w-4 shrink-0" />
-                <a href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`} className="hover:text-foreground transition-colors">
-                  {CONTACT_PHONE}
-                </a>
-              </li>
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="h-4 w-4 shrink-0" />
-                <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-foreground transition-colors">
-                  {CONTACT_EMAIL}
-                </a>
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>{CONTACT_ADDRESS}</span>
-              </li>
-            </ul>
+          {/* Contact direct */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-its-lime">Contact direct</h3>
+            <p className="mt-4">
+              <a
+                href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`}
+                className="font-display text-2xl font-bold tracking-tight text-white transition-colors hover:text-its-lime"
+              >
+                {CONTACT_PHONE}
+              </a>
+            </p>
+            <p className="mt-2">
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-sm text-white/80 transition-colors hover:text-its-lime">
+                {CONTACT_EMAIL}
+              </a>
+            </p>
+            <p className="mt-2 text-sm text-white/60">{CONTACT_ADDRESS}</p>
           </div>
         </div>
 
-        <div className="mt-8 border-t pt-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} ITSchool & Dynamic Group — ITS Équipement. Tous droits réservés.
+        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row">
+          <p>© {new Date().getFullYear()} ITS Équipement. Tous droits réservés.</p>
+          <div className="flex items-center gap-6">
+            <Link href="/legal" className="transition-colors hover:text-white">
+              Mentions légales
+            </Link>
+            <Link href="/conditions" className="transition-colors hover:text-white">
+              Politique de confidentialité
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

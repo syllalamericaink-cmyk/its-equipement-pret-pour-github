@@ -22,6 +22,7 @@ const securityHeaders = [
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "connect-src 'self' https://graph.facebook.com",
+      "frame-src 'self' https://www.openstreetmap.org",
       "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",
