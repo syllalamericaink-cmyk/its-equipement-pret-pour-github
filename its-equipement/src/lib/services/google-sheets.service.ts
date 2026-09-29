@@ -120,6 +120,33 @@ function buildRow(order: {
 }
 
 /**
+ * Vérifie que les identifiants du compte de service permettent bien de lire
+ * l'onglet de suivi. Utilisée par la route de diagnostic admin
+ * (/api/admin/integrations/status) pour valider la configuration.
+ */
+export async function checkSheetsAccess(): Promise<{ success: boolean; detail: string }> {
+  if (!isSheetsConfigured()) {
+    return { success: false, detail: 'Variables GOOGLE_SHEET_ID / GOOGLE_SHEETS_CLIENT_EMAIL / GOOGLE_SHEETS_PRIVATE_KEY manquantes' }
+  }
+  try {
+    const token = await getAccessToken()
+    const sheetId = process.env.GOOGLE_SHEET_ID as string
+    const tab = sheetTab()
+    const res = await fetch(
+      `${SHEETS_API}/${sheetId}/values/${encodeURIComponent(`${tab}!A1:A1`)}?majorDimension=ROWS`,
+      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10_000) },
+    )
+    const json = (await res.json()) as { error?: { message?: string }; values?: string[][] }
+    if (!res.ok || json.error) {
+      return { success: false, detail: json.error?.message ?? `HTTP ${res.status} — vérifier le partage du sheet avec le compte de service` }
+    }
+    return { success: true, detail: `Onglet « ${tab} » accessible (ligne 1 lue)` }
+  } catch (e) {
+    return { success: false, detail: e instanceof Error ? e.message : 'Erreur inconnue' }
+  }
+}
+
+/**
  * Synchronise (upsert) la ligne d'une commande dans le Google Sheet.
  * - Ligne absente → ajoutée à la fin.
  * - Ligne existante (même référence en colonne A) → mise à jour (statut, etc.).

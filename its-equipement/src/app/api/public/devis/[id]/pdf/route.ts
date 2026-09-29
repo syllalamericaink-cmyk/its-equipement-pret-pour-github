@@ -1,13 +1,61 @@
 import { db } from '@/lib/db'
-import { formatCurrency } from '@/lib/format'
 import { error, serverError } from '@/lib/api-response'
+import { montantEnLettresCfa } from '@/lib/number-to-words'
 import type { NextRequest } from 'next/server'
 import PDFDocument from 'pdfkit'
 import path from 'path'
 
-const PRIMARY_COLOR = '#0056A7'
-const DARK_COLOR = '#1a1a2e'
-const LIGHT_BG = '#f8f9fa'
+/**
+ * PDF de devis au format du modèle officiel « ITS & DGE » :
+ * en-tête société avec logo et activités, bloc client (Facturer à /
+ * Tél / Adresse / REFERENCE BC / DEVIS N° / Date), tableau produits
+ * (N°, Désignations, U, Qté, Prix Unitaire, R%, Prix U Net, Prix Total),
+ * TOTAL, conditions de paiement, ACOMPTE / NET A PAYER, montant arrêté
+ * en toutes lettres, cadre LA DIRECTION et pied de page RCCM.
+ */
+
+const INK = '#000000'
+
+/** Montant au format du modèle : « 1 500 CFA ». */
+function fmtCFA(montant: number): string {
+  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(montant) + ' CFA'
+}
+
+/** Dessine des segments [texte, gras, italique] sur une même ligne. */
+function richLine(
+  doc: PDFKit.PDFDocument,
+  segments: [string, boolean, boolean][],
+  x: number,
+  y: number,
+  size = 7.5,
+): void {
+  let cursor = x
+  for (const [text, bold, italic] of segments) {
+    doc.font(bold && italic ? 'Helvetica-BoldOblique' : bold ? 'Helvetica-Bold' : italic ? 'Helvetica-Oblique' : 'Helvetica')
+    doc.fontSize(size).fillColor(INK)
+    doc.text(text, cursor, y, { lineBreak: false })
+    cursor += doc.widthOfString(text)
+  }
+}
+
+function textRight(doc: PDFKit.PDFDocument, str: string, rightX: number, y: number, size: number, bold = false): void {
+  doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(size).fillColor(INK)
+  doc.text(str, rightX - doc.widthOfString(str), y, { lineBreak: false })
+}
+
+function textCenter(doc: PDFKit.PDFDocument, str: string, cx: number, y: number, size: number, bold = false, italic = false): void {
+  doc.font(bold && italic ? 'Helvetica-BoldOblique' : bold ? 'Helvetica-Bold' : italic ? 'Helvetica-Oblique' : 'Helvetica')
+  doc.fontSize(size).fillColor(INK)
+  doc.text(str, cx - doc.widthOfString(str) / 2, y, { lineBreak: false })
+}
+
+/** Tronque une chaîne pour tenir dans une largeur donnée (avec « … »). */
+function tronquer(doc: PDFKit.PDFDocument, str: string, maxWidth: number): string {
+  if (doc.widthOfString(str) <= maxWidth) return str
+  let s = str
+  while (s.length > 1 && doc.widthOfString(s + '…') > maxWidth) s = s.slice(0, -1)
+  return s + '…'
+}
 
 export async function GET(
   request: NextRequest,
@@ -25,116 +73,319 @@ export async function GET(
       return error('Devis introuvable', 404)
     }
 
-    const W = 595.28, H = 842, ML = 45, MR = 45, CW = W - ML - MR
+    // Capture pour usage dans les closures (narrowing non propagé)
+    const refDevis = devis.devisNumber
+    const W = 595.28, H = 842, ML = 40, MR = 40, CW = W - ML - MR
 
-    // Buffer-based PDF generation
     const buffers: Buffer[] = []
-    const doc = new PDFDocument({ size: 'A4' })
-
-    // Set up listeners BEFORE calling doc.end()
+    const doc = new PDFDocument({ size: 'A4', margin: 0 })
     const pdfReady = new Promise<Buffer>((resolve, reject) => {
       doc.on('data', (chunk: Buffer) => buffers.push(chunk))
       doc.on('end', () => resolve(Buffer.concat(buffers)))
       doc.on('error', reject)
     })
 
-    // --- PDF CONTENT ---
-    let y = H - 50
-    doc.rect(0, H - 8, W, 8).fill(PRIMARY_COLOR)
-    const logoPath = path.join(process.cwd(), 'public', 'logo-its-equipement.jpg')
-    try { doc.image(logoPath, ML, y - 44, { width: 44, height: 44 }) } catch {}
-    doc.font('Helvetica-Bold').fontSize(16).fillColor(DARK_COLOR)
-    doc.text('ITS EQUIPEMENT', ML + 53, y - 26)
-    doc.font('Helvetica').fontSize(8).fillColor('#555555')
-    doc.text('ITSchool & Dynamic Group', ML + 53, y - 39)
-    doc.text('contact@itschoolci.com | +225 07 79 07 45 47', ML + 53, y - 50)
-    doc.text("Cocody 2 Plateaux, Cite Sanon — Abidjan, Cote d'Ivoire", ML + 53, y - 61)
+    // ------------------------------------------------------------------
+    // Repères du tableau produits (8 colonnes, largeurs = modèle papier)
+    // ------------------------------------------------------------------
+    const COLW = [22, 197, 26, 32, 70, 26, 70, 72] // N° Désign. U Qté PU R% PUNet Total
+    const COLX: number[] = [ML]
+    for (let i = 1; i < COLW.length; i++) COLX.push(COLX[i - 1] + COLW[i - 1])
+    const HEADERS = ['N°', 'Désignations', 'U', 'Qté', 'Prix Unitaire', 'R%', 'Prix U Net', 'Prix Total']
 
-    const bx = W - MR - 155
-    doc.roundedRect(bx, y - 8, 155, 52, 4).lineWidth(0.5).stroke('#dddddd')
-    doc.font('Helvetica').fontSize(8).fillColor('#888888')
-    doc.text('DEVIS', bx + 10, y)
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(DARK_COLOR)
-    doc.text(`#${devis.devisNumber}`, bx + 10, y + 12)
-    doc.font('Helvetica').fontSize(8).fillColor('#888888')
-    const dateStr = new Date(devis.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    doc.text(dateStr, bx + 10, y + 28)
+    const MIN_LIGNES = 12 // le modèle réserve 12 lignes produits
 
-    y -= 75
-    doc.moveTo(ML, y).lineTo(W - MR, y).lineWidth(0.5).strokeColor('#cccccc').stroke()
-    y -= 15
+    // ------------------------------------------------------------------
+    // Helpers de mise en page
+    // ------------------------------------------------------------------
+    let y = 0
+    let pageNumber = 1
 
-    doc.roundedRect(ML, y - 80, CW, 80, 3).lineWidth(0.5).strokeColor('#e0e0e0').fill(LIGHT_BG)
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(DARK_COLOR)
-    doc.text('CLIENT', ML + 13, y - 18)
-    doc.font('Helvetica').fontSize(9).fillColor('#333333')
-    let cy = y - 33
-    if (devis.clientType === 'ENTREPRISE' && devis.companyName) { doc.text(devis.companyName, ML + 13, cy); cy -= 13 }
-    const fullName = devis.clientFirstName ? `${devis.clientFirstName} ${devis.clientName}` : devis.clientName
-    doc.text(fullName, ML + 13, cy); cy -= 13
-    doc.text(`Téléphone : ${devis.clientPhone}`, ML + 13, cy); cy -= 13
-    if (devis.clientEmail) { doc.text(`Email : ${devis.clientEmail}`, ML + 13, cy); cy -= 13 }
-    doc.text(`Type : ${devis.clientType === 'ENTREPRISE' ? 'Entreprise' : 'Particulier'}`, ML + 13, cy); cy -= 13
-    doc.text(`Ville : ${devis.city}${devis.commune ? ` — ${devis.commune}` : ''}`, ML + 13, cy); cy -= 13
-    if (devis.address) doc.text(`Adresse : ${devis.address}`, ML + 13, cy)
+    function cadre(x1: number, yy1: number, x2: number, yy2: number, lw = 1): void {
+      doc.lineWidth(lw).rect(x1, yy1, x2 - x1, yy2 - yy1).strokeColor(INK).stroke()
+    }
 
-    y -= 100
-    const colW = [CW * 0.28, CW * 0.15, CW * 0.15, CW * 0.10, CW * 0.16, CW * 0.16]
-    const colX = [ML]
-    for (let i = 1; i < colW.length; i++) colX.push(colX[i - 1] + colW[i - 1])
-    doc.rect(ML, y - 18, CW, 18).fill(DARK_COLOR)
-    doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#ffffff')
-    const hdr = ['Produit', 'Reference', 'Variante', 'Qte', 'Prix unit.', 'Total']
-    hdr.forEach((h, i) => doc.text(h, colX[i] + 4, y - 12, { width: colW[i] - 8 }))
-    y -= 20
+    function ligneH(yh: number, x1: number, x2: number, lw = 0.75): void {
+      doc.lineWidth(lw).moveTo(x1, yh).lineTo(x2, yh).strokeColor(INK).stroke()
+    }
 
-    devis.items.forEach((item: any, idx: number) => {
-      const rh = item.hasPersonalization ? 24 : 16
-      if (idx % 2 === 1) doc.rect(ML, y - rh, CW, rh).fill('#fafbfc')
-      doc.rect(ML, y - rh, CW, rh).lineWidth(0.2).strokeColor('#eeeeee').stroke()
-      doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#333333')
-      doc.text(item.productName || '', colX[0] + 4, y - 12, { width: colW[0] - 8, lineBreak: false })
-      if (item.hasPersonalization) {
-        doc.font('Helvetica').fontSize(6).fillColor('#7c3aed')
-        doc.text('Personnalisé', colX[0] + 4, y - 20, { width: colW[0] - 8, lineBreak: false })
+    function ligneV(xv: number, yy1: number, yy2: number, lw = 0.75): void {
+      doc.lineWidth(lw).moveTo(xv, yy1).lineTo(xv, yy2).strokeColor(INK).stroke()
+    }
+
+    function piedDePage(): void {
+      const fy = H - 42
+      doc.font('Helvetica').fontSize(7.5).fillColor(INK)
+      doc.text('Siège social: Abidjan 2 plateau cité sanon - RCCM:CI- ABJ-03-2021-B13-06005', ML, fy, {
+        width: CW,
+        align: 'center',
+      })
+    }
+
+    function enTeteSuite(): void {
+      // En-tête épuré pour les pages 2+
+      doc.font('Helvetica-BoldOblique').fontSize(12).fillColor(INK)
+      doc.text('ITS & DGE', ML, 28, { lineBreak: false })
+      const suiteLabel = `Devis ${refDevis} — suite (page ${pageNumber})`
+      doc.font('Helvetica').fontSize(8).fillColor(INK)
+      doc.text(suiteLabel, W - MR - doc.widthOfString(suiteLabel), 30, { lineBreak: false })
+      y = 60
+      enteteTableau()
+    }
+
+    function enteteTableau(): void {
+      const hh = 24
+      cadre(ML, y, W - MR, y + hh)
+      for (let i = 1; i < COLW.length; i++) ligneV(COLX[i], y, y + hh)
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(INK)
+      HEADERS.forEach((h, i) => {
+        const cx = COLX[i] + COLW[i] / 2
+        const lines = h.split(' ') // « Prix Unitaire » → 2 lignes si besoin
+        if (i === 1 || doc.widthOfString(h) <= COLW[i] - 6) {
+          textCenter(doc, h, cx, y + 8, 7.5, true)
+        } else {
+          textCenter(doc, lines[0], cx, y + 3.5, 7.5, true)
+          textCenter(doc, lines.slice(1).join(' '), cx, y + 13, 7.5, true)
+        }
+      })
+      y += hh
+    }
+
+    function ligneProduit(
+      num: string,
+      designation: string,
+      note: string | null,
+      unite: string,
+      qte: string,
+      pu: string,
+      remise: string,
+      punet: string,
+      total: string,
+    ): void {
+      const rh = note ? 22 : 15
+      if (y + rh > H - 130) {
+        piedDePage()
+        doc.addPage()
+        pageNumber++
+        enTeteSuite()
       }
-      doc.font('Helvetica').fontSize(7).fillColor('#555555')
-      doc.text(item.productSku || '-', colX[1] + 4, y - 12, { lineBreak: false })
-      doc.text(item.variantName || '-', colX[2] + 4, y - 12, { lineBreak: false })
-      doc.text(String(item.quantity), colX[3] + 4, y - 12, { lineBreak: false })
-      doc.text(formatCurrency(Number(item.unitPrice)), colX[4] + 4, y - 12, { lineBreak: false })
-      doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#333333')
-      doc.text(formatCurrency(Number(item.lineTotal)), colX[5] + 4, y - 12, { lineBreak: false })
-      y -= rh
+      cadre(ML, y, W - MR, y + rh, 0.75)
+      for (let i = 1; i < COLW.length; i++) ligneV(COLX[i], y, y + rh, 0.5)
+
+      doc.fillColor(INK)
+      textCenter(doc, num, COLX[0] + COLW[0] / 2, y + 4, 8)
+      doc.font('Helvetica').fontSize(8).fillColor(INK)
+      doc.text(tronquer(doc, designation, COLW[1] - 8), COLX[1] + 4, y + 4, { lineBreak: false })
+      if (note) {
+        doc.font('Helvetica-Oblique').fontSize(6.2).fillColor('#555555')
+        doc.text(tronquer(doc, note, COLW[1] - 8), COLX[1] + 4, y + 13, { lineBreak: false })
+      }
+      textCenter(doc, unite, COLX[2] + COLW[2] / 2, y + 4, 8)
+      textCenter(doc, qte, COLX[3] + COLW[3] / 2, y + 4, 8)
+      textRight(doc, pu, COLX[4] + COLW[4] - 4, y + 4, 8)
+      textCenter(doc, remise, COLX[5] + COLW[5] / 2, y + 4, 8)
+      textRight(doc, punet, COLX[6] + COLW[6] - 4, y + 4, 8)
+      textRight(doc, total, COLX[7] + COLW[7] - 4, y + 4, 8)
+      y += rh
+    }
+
+    // ------------------------------------------------------------------
+    // PAGE 1 — en-tête société (logo + nom + activités), encadré
+    // ------------------------------------------------------------------
+    const headerTop = 34
+    const headerH = 74
+    cadre(ML, headerTop, W - MR, headerTop + headerH)
+
+    const logoPath = path.join(process.cwd(), 'public', 'logo-its-equipement.jpg')
+    try {
+      doc.image(logoPath, ML + 6, headerTop + 12, { fit: [64, 50], align: 'center', valign: 'center' })
+    } catch {
+      /* logo absent : en-tête textuel conservé */
+    }
+
+    doc.font('Helvetica-BoldOblique').fontSize(16).fillColor(INK)
+    doc.text('ITS & DGE', ML + 78, headerTop + 8, { lineBreak: false })
+    doc.font('Helvetica-BoldOblique').fontSize(9)
+    doc.text('International Training', ML + 78, headerTop + 30, { lineBreak: false })
+    doc.font('Helvetica-BoldOblique').fontSize(8)
+    doc.text('School & dynamic Group SARL', ML + 78, headerTop + 43, { lineBreak: false })
+
+    const boxW = 215
+    const boxX = W - MR - boxW
+    doc.font('Helvetica-Oblique').fontSize(6.8).fillColor(INK)
+    doc.text(
+      "*Génie Civil, Vente d'Equipement de Protection Individuel, Formation d'Entreprise, Immigration et colloque à l'étranger, Divers prestation de services",
+      boxX + 8,
+      headerTop + 8,
+      { width: boxW - 16, align: 'right' },
+    )
+    ligneV(boxX, headerTop, headerTop + headerH)
+
+    // Bandes email / lieu
+    y = headerTop + headerH
+    richLine(doc, [
+      ['Email: ', true, false],
+      ['internationaltrainingschoolc@gmail.com', false, false],
+      ['      facebook: ', true, false],
+      ["ITSCHOOL & DGE cote d'ivoire", false, false],
+    ], ML, y + 4)
+    y += 14
+    richLine(doc, [
+      ['Lieu: ', true, false],
+      ['Cocody 2 plateau cité sanon', false, false],
+      ['      Tel : ', true, false],
+      ['(+225) 0708600242/0777314781', false, false],
+    ], ML, y + 4)
+    y += 14
+    ligneH(y, ML, W - MR)
+    y += 10
+
+    // ------------------------------------------------------------------
+    // Bloc client / références (2 lignes × 3 zones)
+    // ------------------------------------------------------------------
+    const clientTop = y
+    const rowH = 17
+    const clientH = rowH * 2
+    const sep1 = ML + 205
+    const sep2 = ML + 310
+
+    const fullName = devis.clientFirstName ? `${devis.clientFirstName} ${devis.clientName}` : devis.clientName
+    const facturerA = devis.clientType === 'ENTREPRISE' && devis.companyName ? devis.companyName : fullName
+    const adresse = [devis.address, devis.commune, devis.city].filter(Boolean).join(', ')
+    const dateStr = new Date(devis.createdAt).toLocaleDateString('fr-FR')
+
+    cadre(ML, clientTop, W - MR, clientTop + clientH, 0.75)
+    ligneH(clientTop + rowH, ML, W - MR, 0.5)
+    ligneV(sep1, clientTop, clientTop + clientH, 0.5)
+    ligneV(sep2, clientTop, clientTop + clientH, 0.5)
+
+    doc.font('Helvetica-Bold').fontSize(8).fillColor(INK)
+    doc.text('Facturer à :', ML + 4, clientTop + 4.5, { lineBreak: false })
+    doc.font('Helvetica').fontSize(8)
+    doc.text(tronquer(doc, facturerA, sep1 - ML - 66), ML + 62, clientTop + 4.5, { lineBreak: false })
+
+    doc.font('Helvetica-Bold').fontSize(8)
+    doc.text('Tél :', sep1 + 4, clientTop + 4.5, { lineBreak: false })
+    doc.font('Helvetica').fontSize(8)
+    doc.text(tronquer(doc, devis.clientPhone, sep2 - sep1 - 30), sep1 + 26, clientTop + 4.5, { lineBreak: false })
+
+    doc.font('Helvetica-Bold').fontSize(8)
+    doc.text(`DEVIS N° : ${refDevis}`, sep2 + 4, clientTop + 4.5, { lineBreak: false })
+
+    doc.font('Helvetica-Bold').fontSize(8)
+    doc.text('Adresse :', ML + 4, clientTop + rowH + 4.5, { lineBreak: false })
+    doc.font('Helvetica').fontSize(8)
+    doc.text(tronquer(doc, adresse, sep1 - ML - 66), ML + 62, clientTop + rowH + 4.5, { lineBreak: false })
+
+    doc.font('Helvetica-Bold').fontSize(8)
+    doc.text('REFERENCE BC :', sep1 + 4, clientTop + rowH + 4.5, { lineBreak: false })
+    doc.text(`Date : ${dateStr}`, sep2 + 4, clientTop + rowH + 4.5, { lineBreak: false })
+
+    y = clientTop + clientH + 14
+
+    // Objet
+    doc.font('Helvetica-BoldOblique').fontSize(9).fillColor(INK)
+    doc.text('OBJET : DEVIS', ML, y, { lineBreak: false })
+    y += 16
+
+    // ------------------------------------------------------------------
+    // Tableau produits
+    // ------------------------------------------------------------------
+    enteteTableau()
+
+    devis.items.forEach((item: {
+      productName: string
+      variantName: string | null
+      hasPersonalization: boolean
+      quantity: number
+      unitPrice: number
+      lineTotal: number
+    }, idx: number) => {
+      const designation = item.variantName
+        ? `${item.productName} (${item.variantName})`
+        : item.productName
+      const note = item.hasPersonalization ? 'Personnalisé — logo client fourni' : null
+      const prixNet = Number(item.unitPrice) // pas de remise en base : Prix U Net = Prix Unitaire
+      ligneProduit(
+        String(idx + 1),
+        designation,
+        note,
+        '',
+        String(item.quantity),
+        fmtCFA(Number(item.unitPrice)),
+        '',
+        fmtCFA(prixNet),
+        fmtCFA(Number(item.lineTotal)),
+      )
     })
 
-    y -= 10
-    const tw = 200, tx = W - MR - tw
-    doc.roundedRect(tx, y - 56, tw, 56, 3).lineWidth(0.5).strokeColor('#e0e0e0').fill(LIGHT_BG)
-    doc.rect(tx, y - 20, tw, 20).fill(DARK_COLOR)
-    doc.font('Helvetica').fontSize(8).fillColor('#555555')
-    doc.text('Sous-total', tx + 8, y - 14)
-    doc.font('Helvetica-Bold').fontSize(8).fillColor('#333333')
-    doc.text(formatCurrency(Number(devis.subtotal)), tx + tw - 8, y - 14, { align: 'right', width: tw - 16 })
-    doc.font('Helvetica').fontSize(8).fillColor('#555555')
-    doc.text('Livraison', tx + 8, y - 28)
-    doc.font('Helvetica-Bold').fontSize(8).fillColor('#333333')
-    doc.text(formatCurrency(Number(devis.deliveryFee)), tx + tw - 8, y - 28, { align: 'right', width: tw - 16 })
-    doc.font('Helvetica-Bold').fontSize(9).fillColor('#ffffff')
-    doc.text('TOTAL', tx + 8, y - 8)
-    doc.text(formatCurrency(Number(devis.total)), tx + tw - 8, y - 8, { align: 'right', width: tw - 16 })
+    // Lignes vides pour atteindre le minimum du modèle
+    for (let i = devis.items.length; i < MIN_LIGNES; i++) {
+      ligneProduit(String(i + 1), '', null, '', '', '', '', '', '')
+    }
 
-    const fy = 35
-    doc.moveTo(ML, fy + 15).lineTo(W - MR, fy + 15).lineWidth(0.3).strokeColor('#cccccc').stroke()
-    doc.font('Helvetica').fontSize(7).fillColor('#aaaaaa')
-    doc.text('ITS EQUIPEMENT — ITSchool & Dynamic Group', ML, fy + 6)
-    doc.text('contact@itschoolci.com | +225 07 79 07 45 47 | Cocody 2 Plateaux, Abidjan', ML, fy + 16)
-    doc.font('Helvetica-Oblique').fontSize(6.5).fillColor('#999999')
-    doc.text('Ce devis est valable 30 jours. Les prix sont en FCFA et peuvent etre ajustes apres confirmation.', ML, fy + 28, { align: 'center', width: CW })
+    // ------------------------------------------------------------------
+    // TOTAL (si pagination : montant réaffiché en bas du tableau)
+    // ------------------------------------------------------------------
+    if (y + 17 > H - 130) {
+      piedDePage()
+      doc.addPage()
+      pageNumber++
+      enTeteSuite()
+      // lignes vides de report
+      for (let i = 0; i < 4; i++) ligneProduit('', '', null, '', '', '', '', '', '')
+    }
+    cadre(ML, y, W - MR, y + 17)
+    ligneV(COLX[5], y, y + 17)
+    textRight(doc, 'TOTAL :', COLX[5] - 6, y + 4.5, 8, true)
+    textRight(doc, fmtCFA(Number(devis.total)), W - MR - 4, y + 4.5, 8, true)
+    y += 17
 
+    // ------------------------------------------------------------------
+    // Conditions de paiement + ACOMPTE / NET A PAYER
+    // ------------------------------------------------------------------
+    y += 12
+    const condTop = y
+    const condH = 34
+
+    richLine(doc, [
+      ['Mode de paiement: ', true, false],
+      ['Cash, Virement bancaire, Chèque', false, false],
+    ], ML, condTop + 2, 8)
+    doc.font('Helvetica-Bold').fontSize(8).fillColor(INK)
+    doc.text('DELAI LIVRAISON :', ML, condTop + 14, { lineBreak: false })
+    doc.font('Helvetica-BoldOblique').fontSize(8)
+    doc.text('PAIEMENT : 60 JOURS APRES LIVRAISON', ML, condTop + 25, { lineBreak: false })
+
+    const bxW = 130
+    const bxX = W - MR - bxW
+    cadre(bxX, condTop, W - MR, condTop + condH, 0.75)
+    ligneH(condTop + condH / 2, bxX, W - MR, 0.5)
+    textRight(doc, 'ACOMPTE :', W - MR - 42, condTop + 4, 8, true)
+    textRight(doc, 'NET A PAYER :', W - MR - 72, condTop + condH / 2 + 4, 8, true)
+    textRight(doc, fmtCFA(Number(devis.total)), W - MR - 4, condTop + condH / 2 + 4, 8, true)
+    y = condTop + condH
+
+    // ------------------------------------------------------------------
+    // Arrêté en toutes lettres + LA DIRECTION
+    // ------------------------------------------------------------------
+    y += 14
+    doc.font('Helvetica-Bold').fontSize(8).fillColor(INK)
+    doc.text('Arrêté la présente facture pro-forma à la somme de :', ML, y, { lineBreak: false })
+    doc.font('Helvetica-Oblique').fontSize(8)
+    doc.text(montantEnLettresCfa(Number(devis.total)) || '—', ML, y + 12, { width: CW - 110 })
+
+    const dirX = W - MR - 95
+    const dirY = y + 34
+    cadre(dirX, dirY, W - MR, dirY + 58, 0.75)
+    textCenter(doc, 'LA DIRECTION', dirX + (95 / 2), dirY + 6, 8, true)
+
+    piedDePage()
+
+    // ------------------------------------------------------------------
+    // Réponse HTTP
+    // ------------------------------------------------------------------
     doc.end()
-
-    // Wait for PDF to finish rendering
     const pdfBuffer = await pdfReady
     const pdfArray = new Uint8Array(pdfBuffer)
 
