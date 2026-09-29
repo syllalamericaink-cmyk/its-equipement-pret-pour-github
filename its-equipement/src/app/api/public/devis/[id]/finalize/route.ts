@@ -4,7 +4,7 @@ import { sendOrderTelegramNotification } from '@/lib/services/telegram.service'
 import { syncOrderToSheets } from '@/lib/services/google-sheets.service'
 import { checkApiRateLimit } from '@/lib/api-auth'
 import { db } from '@/lib/db'
-import type { NextRequest } from 'next/server'
+import { after, type NextRequest } from 'next/server'
 
 async function generateOrderNumber(): Promise<string> {
   const year = new Date().getFullYear()
@@ -71,10 +71,15 @@ export async function POST(
       },
     })
 
-    // Notifications non bloquantes (commande déjà enregistrée)
-    sendOrderNotification(id).catch(() => {})
-    sendOrderTelegramNotification(id).catch(() => {})
-    syncOrderToSheets(id).catch(() => {})
+    // Notifications non bloquantes (commande déjà enregistrée) — after() garantit
+    // l'exécution après la réponse.
+    after(async () => {
+      await Promise.allSettled([
+        sendOrderNotification(id),
+        sendOrderTelegramNotification(id),
+        syncOrderToSheets(id),
+      ])
+    })
 
     return success({ orderNumber })
   } catch {

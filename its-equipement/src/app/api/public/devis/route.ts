@@ -1,7 +1,7 @@
 import { success, error, serverError } from '@/lib/api-response'
 import { createPublicOrder, sendOrderNotification } from '@/lib/services/public-order.service'
 import { checkApiRateLimit } from '@/lib/api-auth'
-import type { NextRequest } from 'next/server'
+import { after, type NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,7 +63,9 @@ export async function POST(request: NextRequest) {
       })),
     })
 
-    sendOrderNotification(order.id).catch(() => {})
+    after(async () => {
+      await sendOrderNotification(order.id)
+    })
 
     return success({ devisNumber: order.devisNumber, id: order.id })
   } catch {

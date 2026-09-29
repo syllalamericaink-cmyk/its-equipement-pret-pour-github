@@ -4,7 +4,7 @@ import { orderStatusSchema } from '@/lib/validation'
 import { success, notFound, error, serverError } from '@/lib/api-response'
 import { logAction } from '@/lib/services/admin-log.service'
 import { sendOrderNotification } from '@/lib/services/notification.service'
-import type { NextRequest } from 'next/server'
+import { after, type NextRequest } from 'next/server'
 
 export async function GET(
   request: NextRequest,
@@ -43,7 +43,9 @@ export async function POST(
       userAgent: request.headers.get('user-agent') ?? undefined,
     })
 
-    sendOrderNotification(result.id).catch(() => {})
+    after(async () => {
+      await sendOrderNotification(result.id)
+    })
 
     return success(result)
   } catch (e) {

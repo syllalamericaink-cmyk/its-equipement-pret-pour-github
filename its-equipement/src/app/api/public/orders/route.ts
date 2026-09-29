@@ -3,7 +3,7 @@ import { createPublicOrder, sendOrderNotification } from '@/lib/services/public-
 import { sendOrderTelegramNotification } from '@/lib/services/telegram.service'
 import { syncOrderToSheets } from '@/lib/services/google-sheets.service'
 import { checkApiRateLimit } from '@/lib/api-auth'
-import type { NextRequest } from 'next/server'
+import { after, type NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,10 +87,15 @@ export async function POST(request: NextRequest) {
     })
 
     // Notifications non bloquantes : l'échec d'un canal ne doit jamais faire
-    // échouer la commande déjà enregistrée.
-    sendOrderNotification(order.id).catch(() => {})
-    sendOrderTelegramNotification(order.id).catch(() => {})
-    syncOrderToSheets(order.id).catch(() => {})
+    // échouer la commande déjà enregistrée. after() garantit l'exécution après
+    // la réponse (sur serverless, un simple fire-and-forget peut être tué).
+    after(async () => {
+      await Promise.allSettled([
+        sendOrderNotification(order.id),
+        sendOrderTelegramNotification(order.id),
+        syncOrderToSheets(order.id),
+      ])
+    })
 
     return success({ orderNumber: order.orderNumber, id: order.id, requestType })
   } catch {
