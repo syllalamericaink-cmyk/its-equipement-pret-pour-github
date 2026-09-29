@@ -46,6 +46,7 @@ export async function PUT(
       sku: parsed.data.sku,
       basePrice: parsed.data.basePrice,
       isPersonalizable: parsed.data.isPersonalizable,
+      showOnHome: parsed.data.showOnHome ?? false,
       minQuantity: parsed.data.minQuantity,
       isActive: parsed.data.isActive,
       category: { connect: { id: parsed.data.categoryId } },

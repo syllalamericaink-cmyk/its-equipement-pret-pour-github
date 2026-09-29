@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   ClipboardList,
   ShoppingCart,
-  Euro,
+  Banknote,
   Package,
   CalendarClock,
   Inbox,
@@ -185,7 +185,7 @@ function getKpiCards(data: DashboardData): KpiCard[] {
     {
       label: 'Chiffre d\'affaires encaissé',
       value: formatCurrency(revenue),
-      icon: <Euro className="h-5 w-5" />,
+      icon: <Banknote className="h-5 w-5" />,
       accent: 'text-teal-600',
       iconBg: 'bg-teal-100',
     },
@@ -534,10 +534,20 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Tableau de bord</h1>
-        <p className="mt-2 text-muted-foreground">
-          Vue d&apos;ensemble des commandes web et de l&apos;activité du site.
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Tableau de bord</h1>
+          <p className="mt-2 text-muted-foreground">
+            Vue d&apos;ensemble des commandes web et de l&apos;activité du site.
+          </p>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {new Intl.DateTimeFormat('fr-FR', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          }).format(new Date())}
         </p>
       </div>
 

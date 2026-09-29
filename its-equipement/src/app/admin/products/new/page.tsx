@@ -64,6 +64,7 @@ export default function NouveauProduitPage() {
   const [basePrice, setBasePrice] = useState('')
   const [minQuantity, setMinQuantity] = useState('1')
   const [isPersonalizable, setIsPersonalizable] = useState(false)
+  const [showOnHome, setShowOnHome] = useState(false)
   const [isActive, setIsActive] = useState(true)
   // Réductions par palier de quantité : « à partir de X unités → -Y % »
   const [discountTiers, setDiscountTiers] = useState<DiscountTier[]>([])
@@ -137,6 +138,7 @@ export default function NouveauProduitPage() {
         basePrice: parseFloat(basePrice),
         categoryId,
         isPersonalizable,
+        showOnHome,
         minQuantity: parseInt(minQuantity, 10) || 1,
         isActive,
         quantityDiscounts: discountTiers
@@ -391,6 +393,17 @@ export default function NouveauProduitPage() {
                 />
                 <Label htmlFor="isPersonalizable" className="cursor-pointer">
                   Produit personnalisable
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="showOnHome"
+                  checked={showOnHome}
+                  onCheckedChange={setShowOnHome}
+                />
+                <Label htmlFor="showOnHome" className="cursor-pointer">
+                  Afficher sur l&apos;accueil
                 </Label>
               </div>
 

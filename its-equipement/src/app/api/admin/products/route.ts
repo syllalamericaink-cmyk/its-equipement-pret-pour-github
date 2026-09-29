@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       sku: parsed.data.sku,
       basePrice: parsed.data.basePrice,
       isPersonalizable: parsed.data.isPersonalizable,
+      showOnHome: parsed.data.showOnHome ?? false,
       minQuantity: parsed.data.minQuantity ?? 1,
       isActive: parsed.data.isActive ?? true,
       category: { connect: { id: parsed.data.categoryId } },

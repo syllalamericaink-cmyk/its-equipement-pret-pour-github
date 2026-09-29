@@ -64,6 +64,7 @@ interface Product {
   basePrice: number
   categoryId: string
   isPersonalizable: boolean
+  showOnHome?: boolean
   minQuantity: number
   isActive: boolean
   createdAt: string
@@ -100,6 +101,7 @@ export default function ProduitDetailPage() {
   const [basePrice, setBasePrice] = useState(0)
   const [categoryId, setCategoryId] = useState('')
   const [isPersonalizable, setIsPersonalizable] = useState(false)
+  const [showOnHome, setShowOnHome] = useState(false)
   const [minQuantity, setMinQuantity] = useState(1)
   const [isActive, setIsActive] = useState(true)
   // Réductions par palier de quantité (chargées depuis le produit, éditables)
@@ -143,6 +145,7 @@ export default function ProduitDetailPage() {
         setBasePrice(res.data.basePrice)
         setCategoryId(res.data.categoryId)
         setIsPersonalizable(res.data.isPersonalizable)
+        setShowOnHome(Boolean(res.data.showOnHome))
         setMinQuantity(res.data.minQuantity)
         setIsActive(res.data.isActive)
         setDiscountTiers(
@@ -190,6 +193,7 @@ export default function ProduitDetailPage() {
         basePrice,
         categoryId,
         isPersonalizable,
+        showOnHome,
         minQuantity,
         isActive,
         quantityDiscounts: discountTiers
@@ -573,6 +577,14 @@ export default function ProduitDetailPage() {
                   <Label htmlFor="isPersonalizable">Personnalisable</Label>
                 </div>
                 <div className="flex items-center gap-3">
+                  <Switch
+                    id="showOnHome"
+                    checked={showOnHome}
+                    onCheckedChange={setShowOnHome}
+                  />
+                  <Label htmlFor="showOnHome">Afficher sur l&apos;accueil</Label>
+                </div>
+                <div className="flex items-center gap-3">
                   <Switch id="isActive" checked={isActive} onCheckedChange={setIsActive} />
                   <Label htmlFor="isActive">Actif</Label>
                 </div>
@@ -792,12 +804,14 @@ export default function ProduitDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Modificateur de prix (FCFA)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Négatif = variante moins chère que le prix de base, positif = plus chère.
+                </p>
                 <Input
                   type="number"
                   step="0.01"
-                  min="0"
                   value={variantForm.priceModifier}
-                  onChange={(e) => setVariantForm({ ...variantForm, priceModifier: Math.max(0, parseFloat(e.target.value) || 0) })}
+                  onChange={(e) => setVariantForm({ ...variantForm, priceModifier: parseFloat(e.target.value) || 0 })}
                 />
               </div>
               <div className="space-y-2">

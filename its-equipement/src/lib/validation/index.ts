@@ -106,6 +106,8 @@ export const productSchema = z.object({
   basePrice: z.number().nonnegative().max(99999999),
   categoryId: z.string().min(1, 'Categorie requise'),
   isPersonalizable: z.boolean(),
+  // Afficher le produit dans les rails « sélection terrain » de l'accueil
+  showOnHome: z.boolean().optional(),
   minQuantity: z.number().int().positive().optional(),
   isActive: z.boolean().optional(),
   // Réductions par palier de quantité : « à partir de minQuantity unités → -discountPercent % »

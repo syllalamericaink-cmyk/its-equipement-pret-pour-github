@@ -42,6 +42,7 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
+  BadgePercent,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -77,6 +78,7 @@ interface OrderItem {
   quantity: number
   unitPrice: number
   lineTotal: number
+  discountPercent: number
   personalization: PersonalizationDetail | null
 }
 
@@ -124,6 +126,7 @@ interface RawApiOrderItem {
   quantity: number
   unitPrice: number
   lineTotal: number
+  discountPercent?: number
   personalizationData?: Record<string, unknown> | null
 }
 
@@ -258,6 +261,7 @@ export default function CommandeDetailPage() {
               const pd = (it.personalizationData ?? null) as Record<string, unknown> | null
               return {
                 ...it,
+                discountPercent: Number(it.discountPercent ?? 0),
                 personalization: pd
                   ? {
                       impression: Boolean(pd.impression),
@@ -463,6 +467,7 @@ export default function CommandeDetailPage() {
                       <TableHead className="hidden sm:table-cell">Variante</TableHead>
                       <TableHead className="text-right">Qte</TableHead>
                       <TableHead className="text-right hidden md:table-cell">Prix unitaire</TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">Remise</TableHead>
                       <TableHead className="text-right">Total</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -478,13 +483,31 @@ export default function CommandeDetailPage() {
                           <TableCell className="text-right hidden md:table-cell">
                             {formatCurrency(item.unitPrice)}
                           </TableCell>
+                          <TableCell className="text-right hidden sm:table-cell">
+                            {Number(item.discountPercent ?? 0) > 0 ? (
+                              <span className="inline-flex items-center gap-1 text-emerald-700">
+                                <BadgePercent className="size-3.5" /> -{Number(item.discountPercent)}%
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right font-medium">
-                            {formatCurrency(item.lineTotal)}
+                            {Number(item.discountPercent ?? 0) > 0 ? (
+                              <span className="inline-flex flex-col items-end">
+                                <span className="text-xs text-muted-foreground line-through">
+                                  {formatCurrency(item.unitPrice * item.quantity)}
+                                </span>
+                                <span className="text-emerald-700">{formatCurrency(item.lineTotal)}</span>
+                              </span>
+                            ) : (
+                              formatCurrency(item.lineTotal)
+                            )}
                           </TableCell>
                         </TableRow>
                         {item.personalization && (
                           <TableRow key={`${item.id}-perso`}>
-                            <TableCell colSpan={5} className="p-2">
+                            <TableCell colSpan={6} className="p-2">
                               <div className="px-2 py-1">
                                 <PersonalizationSection p={item.personalization} />
                               </div>
@@ -496,7 +519,7 @@ export default function CommandeDetailPage() {
                   </TableBody>
                   <TableFooter>
                     <TableRow>
-                      <TableCell colSpan={3} className="text-right">
+                      <TableCell colSpan={4} className="text-right">
                         Sous-total
                       </TableCell>
                       <TableCell className="text-right hidden md:table-cell" />
@@ -505,7 +528,7 @@ export default function CommandeDetailPage() {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell colSpan={3} className="text-right">
+                      <TableCell colSpan={4} className="text-right">
                         Livraison
                       </TableCell>
                       <TableCell className="text-right hidden md:table-cell" />
@@ -514,7 +537,7 @@ export default function CommandeDetailPage() {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell colSpan={3} className="text-right font-bold">
+                      <TableCell colSpan={4} className="text-right font-bold">
                         Total
                       </TableCell>
                       <TableCell className="text-right hidden md:table-cell" />

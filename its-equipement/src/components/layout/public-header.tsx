@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowRight, Menu, Search, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -58,7 +58,44 @@ function LogoMark({ size = 'md' }: { size?: 'md' | 'sm' }) {
 
 export function PublicHeader() {
   const router = useRouter()
+  const pathname = usePathname()
   const [query, setQuery] = useState('')
+
+  /* ---------- Indicateur actif (carré lime) de la nav desktop ---------- */
+  const navRefs = useRef<(HTMLAnchorElement | null)[]>([])
+  const [indicator, setIndicator] = useState({ left: 0, ready: false })
+
+  const activeIndex = (() => {
+    if (typeof window === 'undefined') return -1
+    const search = window.location.search
+    if (pathname === '/') return 0
+    if (pathname.startsWith('/produits')) return search.includes('personalizable=1') ? 2 : 1
+    if (pathname.startsWith('/a-propos')) return 3
+    if (pathname.startsWith('/contact')) return 4
+    return -1
+  })()
+
+  const updateIndicator = useCallback(() => {
+    const el = activeIndex >= 0 ? navRefs.current[activeIndex] : undefined
+    if (el) {
+      setIndicator({ left: el.offsetLeft + el.offsetWidth / 2, ready: true })
+    } else {
+      setIndicator((prev) => ({ ...prev, ready: false }))
+    }
+  }, [activeIndex])
+
+  useEffect(() => {
+    // Mesure hors cycle de rendu (évite le setState synchrone dans l'effet)
+    const raf = requestAnimationFrame(updateIndicator)
+    // Re-mesure après le chargement des polices (largeurs des liens)
+    const t = setTimeout(updateIndicator, 300)
+    window.addEventListener('resize', updateIndicator)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(t)
+      window.removeEventListener('resize', updateIndicator)
+    }
+  }, [updateIndicator])
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -115,16 +152,33 @@ export function PublicHeader() {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 lg:flex" role="navigation" aria-label="Navigation principale">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="flex min-h-[44px] items-center px-3 text-sm font-medium text-its-dark transition-colors hover:text-its-gray"
-              >
-                {link.label}
-              </Link>
-            ))}
+          <nav className="relative hidden items-center gap-1 lg:flex" role="navigation" aria-label="Navigation principale">
+            {/* Carré lime : GLISSE vers le lien actif (même langage que la barre d'onglets mobile) */}
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none absolute bottom-[-9px] size-2 bg-its-lime transition-all duration-300 ease-out ${
+                indicator.ready ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{ left: indicator.left, transform: 'translateX(-50%)' }}
+            />
+            {navLinks.map((link, i) => {
+              const isActive = i === activeIndex
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  ref={(el) => {
+                    navRefs.current[i] = el
+                  }}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex min-h-[44px] items-center px-3 text-sm transition-colors hover:text-its-gray ${
+                    isActive ? 'font-bold text-its-dark' : 'font-medium text-its-dark'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              )
+            })}
           </nav>
 
           <div className="hidden items-center gap-2 lg:flex">
@@ -162,16 +216,28 @@ export function PublicHeader() {
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col px-4" role="navigation" aria-label="Navigation mobile">
-                  {navLinks.map((link) => (
-                    <SheetClose asChild key={link.href}>
-                      <Link
-                        href={link.href}
-                        className="flex min-h-[44px] items-center px-3 text-sm font-medium text-its-dark transition-colors hover:bg-its-light"
-                      >
-                        {link.label}
-                      </Link>
-                    </SheetClose>
-                  ))}
+                  {navLinks.map((link, i) => {
+                    const isActive = i === activeIndex
+                    return (
+                      <SheetClose asChild key={link.href}>
+                        <Link
+                          href={link.href}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`relative flex min-h-[44px] items-center px-3 pl-6 text-sm transition-colors hover:bg-its-light ${
+                            isActive ? 'font-bold text-its-dark' : 'font-medium text-its-dark'
+                          }`}
+                        >
+                          {isActive && (
+                            <span
+                              aria-hidden="true"
+                              className="absolute left-1 top-1/2 size-2 -translate-y-1/2 bg-its-lime"
+                            />
+                          )}
+                          {link.label}
+                        </Link>
+                      </SheetClose>
+                    )
+                  })}
                   <SheetClose asChild>
                     <Link
                       href="/panier"

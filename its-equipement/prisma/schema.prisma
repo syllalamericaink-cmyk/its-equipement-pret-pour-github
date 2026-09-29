@@ -55,6 +55,7 @@ model Product {
   categoryId       String
   category         Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   isPersonalizable Boolean                 @default(false)
+  showOnHome       Boolean                 @default(false)
   minQuantity      Int                     @default(1)
   isActive         Boolean                 @default(true)
   createdAt        DateTime                @default(now())

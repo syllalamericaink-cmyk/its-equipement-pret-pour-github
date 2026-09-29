@@ -52,7 +52,8 @@ interface PublicOrder {
   city: string
   subtotal: number
   deliveryFee: number
-  totalAmount: number
+  /** Champ Prisma brut : `total` (l'API renvoie les modèles tels quels). */
+  total: number
   itemsCount: number
   createdAt: string
 }
@@ -83,7 +84,17 @@ export default function CommandesPage() {
       const res = await adminFetch<PublicOrder[]>(`/api/admin/public-orders?${params}`)
       if (!cancelled) {
         if (res.success && res.data) {
-          setData(res.data)
+          // L'API renvoie les modèles Prisma bruts : on normalise
+          // - `itemsCount` n'existe pas en base → dérivé de `items[]`
+          setData(
+            res.data.map((raw) => {
+              const r = raw as PublicOrder & { items?: unknown[] }
+              return {
+                ...raw,
+                itemsCount: Array.isArray(r.items) ? r.items.length : (r.itemsCount ?? 0),
+              }
+            })
+          )
           setTotal(res.meta?.total ?? 0)
           setTotalPages(res.meta?.totalPages ?? 1)
         }
@@ -213,7 +224,7 @@ export default function CommandesPage() {
                       {order.itemsCount}
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap font-medium">
-                      {formatCurrency(order.totalAmount)}
+                      {formatCurrency(order.total ?? 0)}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={order.status} />

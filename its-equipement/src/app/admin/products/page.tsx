@@ -6,7 +6,7 @@ import { DataTable } from '@/components/admin/data-table'
 import { PageHeader } from '@/components/admin/page-header'
 import { StatusBadge } from '@/components/admin/status-badge'
 import { ConfirmDialog } from '@/components/admin/confirm-dialog'
-import { adminFetch, adminDelete, formatCurrency, formatDate } from '@/lib/admin-api'
+import { adminFetch, adminDelete, adminPut, formatCurrency, formatDate } from '@/lib/admin-api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -38,6 +38,7 @@ interface Product {
   sku: string
   basePrice: number
   isPersonalizable: boolean
+  showOnHome: boolean
   minQuantity: number
   isActive: boolean
   createdAt: string
@@ -135,6 +136,35 @@ export default function ProduitsPage() {
     router.push(`/admin/products/${product.id}`)
   }, [router])
 
+  /** Bascule rapide « Afficher sur l'accueil » sans ouvrir la fiche produit. */
+  const handleToggleHome = useCallback(async (product: Product, value: boolean) => {
+    // Mise à jour optimiste : l'UI réagit immédiatement
+    setProducts((prev) =>
+      prev.map((p) => (p.id === product.id ? { ...p, showOnHome: value } : p))
+    )
+    const res = await adminPut(`/api/admin/products/${product.id}`, {
+      name: product.name,
+      slug: product.slug,
+      description: product.description,
+      sku: product.sku,
+      basePrice: product.basePrice,
+      categoryId: product.category?.id,
+      isPersonalizable: product.isPersonalizable,
+      showOnHome: value,
+      minQuantity: product.minQuantity,
+      isActive: product.isActive,
+    })
+    if (res.success) {
+      toast.success(value ? `« ${product.name} » affiché sur l'accueil.` : `« ${product.name} » retiré de l'accueil.`)
+    } else {
+      // Annulation en cas d'échec
+      setProducts((prev) =>
+        prev.map((p) => (p.id === product.id ? { ...p, showOnHome: !value } : p))
+      )
+      toast.error(res.error ?? 'Erreur lors de la mise à jour.')
+    }
+  }, [])
+
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return
     setDeleteLoading(true)
@@ -195,6 +225,22 @@ export default function ProduitsPage() {
         const totalStock = p.variants.reduce((sum, v) => sum + (v.stock ?? 0), 0)
         return <span className={totalStock === 0 ? 'text-destructive font-medium' : ''}>{totalStock}</span>
       },
+    },
+    {
+      key: 'showOnHome',
+      header: 'Accueil',
+      render: (p: Product) => (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center justify-center"
+        >
+          <Switch
+            checked={p.showOnHome}
+            onCheckedChange={(v) => handleToggleHome(p, v)}
+            aria-label={`Afficher ${p.name} sur l'accueil`}
+          />
+        </div>
+      ),
     },
     {
       key: 'isActive',
