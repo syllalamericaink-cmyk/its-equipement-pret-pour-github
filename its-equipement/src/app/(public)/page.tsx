@@ -15,7 +15,10 @@ interface Category {
   id: string
   name: string
   slug: string
+  description: string | null
   imageUrl: string | null
+  showOnHome: boolean
+  isFeatured: boolean
   _count: { products: number }
 }
 
@@ -269,17 +272,29 @@ export default function HomePage() {
     }
   }, [products])
 
-  const raccourcis = useMemo(
-    () =>
-      categories.slice(0, 5).map((c) => ({
-        href: `/categories/${c.slug}`,
-        short: shortTag(c.name),
-        label: c.name,
-      })),
-    [categories],
-  )
+  /** Raccourcis ronds : catégories marquées « showOnHome » dans l'admin,
+   * triées par sortOrder. Repli : les 5 premières catégories actives. */
+  const raccourcis = useMemo(() => {
+    const flagged = categories.filter((c) => c.showOnHome)
+    const source = flagged.length > 0 ? flagged : categories.slice(0, 5)
+    return source.slice(0, 8).map((c) => ({
+      href: `/categories/${c.slug}`,
+      short: shortTag(c.name),
+      label: c.name,
+    }))
+  }, [categories])
 
+  /** Tuiles « Nos univers » : catégories marquées « isFeatured » dans l'admin.
+   * Repli : les 4 univers classiques trouvés par type de catégorie. */
   const universTiles = useMemo(() => {
+    const featured = categories.filter((c) => c.isFeatured).slice(0, 8)
+    if (featured.length > 0) {
+      return featured.map((c) => ({
+        titre: c.name,
+        small: c.description?.trim() || 'Découvrir la gamme',
+        href: `/categories/${c.slug}`,
+      }))
+    }
     const find = (tag: string) => categories.find((c) => tagCategorie(c.name) === tag)
     return [
       { titre: 'EPI', small: 'Protection individuelle', href: find('EPI') ? `/categories/${find('EPI')!.slug}` : '/produits' },
@@ -448,8 +463,14 @@ export default function HomePage() {
           </div>
           <small className="mt-3 block text-its-slate">Logo vectoriel recommandé : PDF, SVG ou AI.</small>
           <Link
-            href="/demande-devis"
+            href="/produits?personalizable=1"
             className="mt-3.5 flex min-h-[50px] items-center justify-center bg-its-lime font-semibold text-its-dark transition-colors hover:bg-its-lime-dark"
+          >
+            Voir les produits personnalisables
+          </Link>
+          <Link
+            href="/demande-devis"
+            className="mt-2 flex min-h-[50px] items-center justify-center border border-white/25 font-semibold text-white transition-colors hover:bg-white/10"
           >
             Étudier mon projet textile
           </Link>

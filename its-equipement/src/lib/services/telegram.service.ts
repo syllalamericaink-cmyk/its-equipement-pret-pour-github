@@ -77,19 +77,26 @@ function buildOrderTelegramMessage(order: {
   clientEmail: string | null
   clientType: string
   companyName: string | null
+  companyInfo: string | null
   requestType: string
   personalizationSummary: string | null
   personalizationLogoUploadId: string | null
   city: string
   commune: string | null
   address: string | null
+  deliveryComment: string | null
   subtotal: number | string
+  deliveryFee: number | string
   total: number | string
   items: {
     productName: string
+    productSku: string | null
     variantName: string | null
     quantity: number
     lineTotal: number | string
+    discountPercent: number | string
+    hasPersonalization: boolean
+    personalizationData: unknown
   }[]
 }): string {
   const isDevis = !order.orderNumber && order.devisNumber
@@ -104,15 +111,19 @@ function buildOrderTelegramMessage(order: {
   lines.push('')
   lines.push('👤 <b>Client</b>')
   lines.push(`Nom : ${esc(order.clientName)}${order.clientFirstName ? ' ' + esc(order.clientFirstName) : ''}`)
-  lines.push(`Téléphone : ${esc(order.clientPhone)}`)
+  lines.push(`Téléphone WhatsApp : ${esc(order.clientPhone)}`)
   lines.push(`Type : ${order.clientType === 'ENTREPRISE' ? 'Entreprise' : 'Particulier'}`)
   if (order.clientEmail) lines.push(`Email : ${esc(order.clientEmail)}`)
-  if (order.companyName) lines.push(`Entreprise : ${esc(order.companyName)}`)
+  if (order.companyName) {
+    lines.push(`Entreprise : ${esc(order.companyName)}`)
+    if (order.companyInfo) lines.push(`Infos entreprise : ${esc(order.companyInfo)}`)
+  }
   lines.push('')
   lines.push('📍 <b>Livraison</b>')
   lines.push(`Ville : ${esc(order.city)}`)
   if (order.commune) lines.push(`Commune : ${esc(order.commune)}`)
   if (order.address) lines.push(`Adresse : ${esc(order.address)}`)
+  if (order.deliveryComment) lines.push(`Instructions : ${esc(order.deliveryComment)}`)
   lines.push('')
 
   if (order.personalizationSummary || order.personalizationLogoUploadId) {
@@ -130,13 +141,38 @@ function buildOrderTelegramMessage(order: {
   lines.push('📦 <b>Produits</b>')
   for (const item of order.items) {
     const variant = item.variantName ? ` (${esc(item.variantName)})` : ''
-    lines.push(`• ${esc(item.productName)}${variant} × ${item.quantity} — ${esc(formatCurrency(Number(item.lineTotal)))}`)
+    lines.push(`• <b>${esc(item.productName)}</b>${variant}`)
+    if (item.productSku) lines.push(`  Réf : ${esc(item.productSku)}`)
+    lines.push(`  Quantité : ${item.quantity}`)
+    const discountPct = Number(item.discountPercent ?? 0)
+    if (discountPct > 0) {
+      lines.push(`  Remise quantité : -${discountPct}%`)
+      lines.push(`  Total ligne (après remise) : ${esc(formatCurrency(Number(item.lineTotal)))}`)
+    } else {
+      lines.push(`  Total ligne : ${esc(formatCurrency(Number(item.lineTotal)))}`)
+    }
+    // Personnalisation détaillée de l'article (texte, emplacement, logo…)
+    if (item.hasPersonalization && item.personalizationData) {
+      const pd = (item.personalizationData ?? {}) as Record<string, unknown>
+      const details: string[] = []
+      if (pd.impression) details.push('impression')
+      if (pd.logo) details.push('logo')
+      if (typeof pd.texte === 'string' && pd.texte.trim()) details.push(`texte : « ${esc(pd.texte.trim())} »`)
+      if (typeof pd.emplacement === 'string' && pd.emplacement.trim()) details.push(`emplacement : ${esc(pd.emplacement.trim())}`)
+      if (typeof pd.taille === 'string' && pd.taille.trim()) details.push(`taille : ${esc(pd.taille.trim())}`)
+      if (typeof pd.couleur === 'string' && pd.couleur.trim()) details.push(`couleur : ${esc(pd.couleur.trim())}`)
+      if (typeof pd.instructions === 'string' && pd.instructions.trim()) details.push(`instructions : ${esc(pd.instructions.trim())}`)
+      if (pd.logoFileName) details.push(`fichier logo : ${esc(String(pd.logoFileName))}`)
+      if (details.length) lines.push(`  🎨 ${details.join(' | ')}`)
+    }
   }
   lines.push('')
-  lines.push(`💰 Sous-total : ${esc(formatCurrency(Number(order.subtotal)))}`)
-  lines.push(`💰 <b>Total : ${esc(formatCurrency(Number(order.total)))}</b>`)
+  lines.push('💰 <b>Montants</b>')
+  lines.push(`Sous-total : ${esc(formatCurrency(Number(order.subtotal)))}`)
+  lines.push(`Livraison : ${esc(formatCurrency(Number(order.deliveryFee)))}`)
+  lines.push(`<b>Total : ${esc(formatCurrency(Number(order.total)))}</b>`)
   lines.push('')
-  lines.push(`🔔 <b>Action :</b> recontacter le client au ${esc(order.clientPhone)} pour finaliser (paiement manuel — jamais en ligne).`)
+  lines.push(`🔔 <b>Action :</b> recontacter le client au ${esc(order.clientPhone)} sur WhatsApp pour confirmer disponibilité et modalités (paiement manuel — jamais en ligne).`)
 
   return lines.join('\n')
 }

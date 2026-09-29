@@ -1,4 +1,5 @@
 import { db } from '../db'
+import { formatCurrency } from '../format'
 import { sendWhatsAppMessage } from './whatsapp.service'
 import type { Prisma } from '@prisma/client'
 
@@ -106,9 +107,9 @@ export async function sendOrderNotification(orderId: string): Promise<void> {
   message += `Impression: ${impressions.join(', ')}\n`
   message += `Texte si impression: ${textesImpression.join(', ')}\n`
   message += `Emplacement: ${emplacements.join(', ')}\n`
-  message += `Total: ${totalTTC} EUR\n`
-  message += `Acompte: ${depositAmt > 0 ? depositAmt + ' EUR' : '0'}\n`
-  message += `Solde: ${balanceAmt > 0 ? balanceAmt + ' EUR' : totalTTC + ' EUR'}\n`
+  message += `Total : ${formatCurrency(totalTTC)}\n`
+  message += `Acompte : ${depositAmt > 0 ? formatCurrency(depositAmt) : formatCurrency(0)}\n`
+  message += `Solde : ${balanceAmt > 0 ? formatCurrency(balanceAmt) : formatCurrency(totalTTC)}\n`
   if (address) message += `Adresse: ${address}\n`
   message += `Lien commande: ${baseUrl}/admin/orders/${orderId}\n`
 

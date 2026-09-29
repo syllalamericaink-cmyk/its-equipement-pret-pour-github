@@ -107,12 +107,12 @@ function FooterColumns() {
       {/* Identité */}
       <div>
         <div className="flex items-center gap-3">
-          <span
-            className="flex h-11 w-11 items-center justify-center bg-its-lime font-display text-xl font-bold tracking-tight text-its-dark"
+          <img
+            src="/logo-its-equipement.jpg"
+            alt="Logo ITS Équipement"
+            className="h-11 w-11 shrink-0 rounded-md object-cover"
             aria-hidden="true"
-          >
-            ITS
-          </span>
+          />
           <span className="font-display text-xl font-bold tracking-tight">ITS ÉQUIPEMENT</span>
         </div>
         <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/60">
@@ -183,12 +183,12 @@ export function PublicFooter() {
       <div className="container mx-auto px-4 pb-8 pt-10 sm:pt-14">
         {/* Mobile : identité compacte + accordéons */}
         <div className="mb-6 flex items-center gap-3 md:hidden">
-          <span
-            className="flex h-9 w-9 items-center justify-center bg-its-lime font-display text-base font-bold tracking-tight text-its-dark"
+          <img
+            src="/logo-its-equipement.jpg"
+            alt="Logo ITS Équipement"
+            className="h-9 w-9 shrink-0 rounded-md object-cover"
             aria-hidden="true"
-          >
-            ITS
-          </span>
+          />
           <span className="font-display text-base font-bold tracking-tight">ITS ÉQUIPEMENT</span>
         </div>
         <FooterAccordions />

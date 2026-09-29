@@ -25,6 +25,8 @@ interface Category {
   parentId: string | null
   sortOrder: number
   isActive: boolean
+  showOnHome: boolean
+  isFeatured: boolean
   createdAt: string
   updatedAt: string
   _count: { products: number }
@@ -37,6 +39,8 @@ interface FormData {
   imageUrl: string
   sortOrder: number
   isActive: boolean
+  showOnHome: boolean
+  isFeatured: boolean
 }
 
 const emptyForm: FormData = {
@@ -46,6 +50,8 @@ const emptyForm: FormData = {
   imageUrl: '',
   sortOrder: 0,
   isActive: true,
+  showOnHome: false,
+  isFeatured: false,
 }
 
 function generateSlug(name: string): string {
@@ -112,6 +118,8 @@ export default function CategoriesPage() {
       imageUrl: category.imageUrl || '',
       sortOrder: category.sortOrder,
       isActive: category.isActive,
+      showOnHome: category.showOnHome,
+      isFeatured: category.isFeatured,
     })
     setSlugManuallyEdited(true)
     setDialogOpen(true)
@@ -146,6 +154,8 @@ export default function CategoriesPage() {
         imageUrl: form.imageUrl.trim() || undefined,
         sortOrder: form.sortOrder,
         isActive: form.isActive,
+        showOnHome: form.showOnHome,
+        isFeatured: form.isFeatured,
       }
 
       if (editing) {
@@ -260,6 +270,12 @@ export default function CategoriesPage() {
                     ) : (
                       <Badge variant="secondary">Inactive</Badge>
                     )}
+                    {category.showOnHome && (
+                      <Badge variant="outline" className="ml-1">Raccourci</Badge>
+                    )}
+                    {category.isFeatured && (
+                      <Badge variant="outline" className="ml-1">Univers</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-muted-foreground">{formatDateTime(category.createdAt)}</TableCell>
                   <TableCell>
@@ -360,6 +376,30 @@ export default function CategoriesPage() {
                 onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: checked }))}
               />
               <Label htmlFor="isActive" className="cursor-pointer">Categorie active</Label>
+            </div>
+
+            <div className="space-y-3 rounded-lg border p-3">
+              <p className="text-sm font-semibold">Affichage sur la page d&apos;accueil</p>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="showOnHome"
+                  checked={form.showOnHome}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, showOnHome: checked }))}
+                />
+                <Label htmlFor="showOnHome" className="cursor-pointer">
+                  Raccourci rond (rangée CA / GI / Dv)
+                </Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="isFeatured"
+                  checked={form.isFeatured}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isFeatured: checked }))}
+                />
+                <Label htmlFor="isFeatured" className="cursor-pointer">
+                  Tuile « Nos univers »
+                </Label>
+              </div>
             </div>
           </div>
 

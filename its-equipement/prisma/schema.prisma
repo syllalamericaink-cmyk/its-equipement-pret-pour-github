@@ -33,6 +33,10 @@ model Category {
   products    Product[]
   sortOrder   Int        @default(0)
   isActive    Boolean    @default(true)
+  // Affichée en raccourci rond sur la page d'accueil (rangée CA / GI / …)
+  showOnHome  Boolean    @default(false)
+  // Affichée comme tuile « Nos univers » sur la page d'accueil
+  isFeatured  Boolean    @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -59,10 +63,26 @@ model Product {
   variants               ProductVariant[]
   images                 ProductImage[]
   personalizationOptions PersonalizationOption[]
+  quantityDiscounts      QuantityDiscount[]
 
   @@index([categoryId])
   @@index([isActive])
   @@index([sku])
+}
+
+// Réductions par palier de quantité : « à partir de N unités, -X % ».
+// Définies par l'admin sur chaque produit, appliquées automatiquement côté
+// client (panier / commande) dès que la quantité atteint le palier.
+model QuantityDiscount {
+  id              String   @id @default(cuid())
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  minQuantity     Int
+  discountPercent Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([productId])
 }
 
 model ProductVariant {
@@ -573,6 +593,8 @@ model PublicOrderItem {
   quantity         Int
   unitPrice        Float
   lineTotal        Float
+  // Pourcentage de remise quantité appliqué sur cette ligne (0 = aucune)
+  discountPercent  Float        @default(0)
   hasPersonalization Boolean      @default(false)
   personalizationData Json?
   createdAt        DateTime    @default(now())

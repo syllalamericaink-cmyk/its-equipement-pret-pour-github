@@ -1,8 +1,11 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ShoppingBag, Minus, Plus, Trash2, FileText, MessageCircle, Clock } from 'lucide-react'
+import { ShoppingBag, Minus, Plus, Trash2, FileText, MessageCircle, Clock, BadgePercent } from 'lucide-react'
 import { useCartStore } from '@/stores/cart-store'
+import { publicFetch } from '@/lib/public-api'
+import { applicableDiscount, discountedLineTotal, type QuantityDiscountLite } from '@/lib/quantity-discount'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -26,6 +29,42 @@ export default function PanierPage() {
   const removeItem = useCartStore((s) => s.removeItem)
   const updateQuantity = useCartStore((s) => s.updateQuantity)
   const subtotal = useCartStore((s) => s.subtotal)
+
+  // Paliers de réduction par produit (définis dans l'admin) — prévisualisation
+  const [discountsByProduct, setDiscountsByProduct] = useState<Record<string, QuantityDiscountLite[]>>({})
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const res = await publicFetch<{ id: string; quantityDiscounts: QuantityDiscountLite[] }[]>(
+        '/api/public/products?limit=100'
+      )
+      if (!cancelled && res.success && res.data) {
+        const map: Record<string, QuantityDiscountLite[]> = {}
+        for (const p of res.data) {
+          if (p.quantityDiscounts?.length) map[p.id] = p.quantityDiscounts
+        }
+        setDiscountsByProduct(map)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  /** Remise et total remisé d'une ligne de panier. */
+  const lineInfo = (productId: string, unitPrice: number, quantity: number) => {
+    const pct = applicableDiscount(discountsByProduct[productId], quantity)
+    return { pct, total: discountedLineTotal(unitPrice, quantity, pct) }
+  }
+
+  const totals = useMemo(() => {
+    let base = 0
+    let discounted = 0
+    for (const item of items) {
+      base += item.unitPrice * item.quantity
+      discounted += lineInfo(item.productId, item.unitPrice, item.quantity).total
+    }
+    return { base, discounted, savings: Math.max(0, base - discounted) }
+  }, [items, discountsByProduct])
 
   if (items.length === 0) {
     return (
@@ -138,7 +177,20 @@ export default function PanierPage() {
                       {fmt(item.unitPrice)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {fmt(lineTotal)}
+                      {(() => {
+                        const { pct, total } = lineInfo(item.productId, item.unitPrice, item.quantity)
+                        if (pct <= 0) return <span>{fmt(lineTotal)}</span>
+                        return (
+                          <span className="inline-flex flex-col items-end gap-0.5">
+                            <span className="text-xs text-muted-foreground line-through">{fmt(lineTotal)}</span>
+                            <span className="flex items-center gap-1 text-emerald-700">
+                              <BadgePercent className="size-3.5" />
+                              {fmt(total)}
+                            </span>
+                            <span className="text-[11px] font-medium text-emerald-600">-{pct}% quantité</span>
+                          </span>
+                        )
+                      })()}
                     </TableCell>
                     <TableCell>
                       <Button
@@ -227,7 +279,20 @@ export default function PanierPage() {
                   <p className="text-xs text-muted-foreground">
                     {fmt(item.unitPrice)} / piece
                   </p>
-                  <p className="font-semibold">{fmt(lineTotal)}</p>
+                  {(() => {
+                    const { pct, total } = lineInfo(item.productId, item.unitPrice, item.quantity)
+                    if (pct <= 0) return <p className="font-semibold">{fmt(lineTotal)}</p>
+                    return (
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs text-muted-foreground line-through">{fmt(lineTotal)}</span>
+                        <span className="flex items-center gap-1 font-semibold text-emerald-700">
+                          <BadgePercent className="size-3.5" />
+                          {fmt(total)}
+                        </span>
+                        <span className="text-[11px] font-medium text-emerald-600">-{pct}% quantité</span>
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             </div>
@@ -236,10 +301,30 @@ export default function PanierPage() {
       </div>
 
       <div className="mt-6 rounded-lg border p-4 md:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-lg font-medium">Sous-total</span>
-          <span className="text-lg font-bold">{fmt(subtotal())}</span>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm text-muted-foreground">Sous-total catalogue</span>
+          <span className="text-sm">{fmt(totals.base)}</span>
         </div>
+        {totals.savings > 0 && (
+          <div className="flex items-center justify-between mb-2 text-emerald-700">
+            <span className="flex items-center gap-1.5 text-sm font-medium">
+              <BadgePercent className="size-4" />
+              Réductions quantité
+            </span>
+            <span className="text-sm font-semibold">-{fmt(totals.savings)}</span>
+          </div>
+        )}
+        <Separator className="mb-4" />
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-lg font-medium">Total</span>
+          <span className="text-lg font-bold">{fmt(totals.savings > 0 ? totals.discounted : totals.base)}</span>
+        </div>
+        {totals.savings > 0 && (
+          <p className="mb-4 flex items-start gap-2 rounded-lg bg-emerald-50 p-2.5 text-xs text-emerald-800">
+            <BadgePercent className="size-4 shrink-0" />
+            Vos réductions quantité sont appliquées automatiquement. Le total final est confirmé par le commercial.
+          </p>
+        )}
         <Separator className="mb-4" />
         <div className="flex flex-col gap-3">
           <Button asChild size="lg" className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700 text-white">

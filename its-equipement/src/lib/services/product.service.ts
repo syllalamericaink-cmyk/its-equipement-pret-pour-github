@@ -9,6 +9,7 @@ export async function getProducts(params: {
   categoryId?: string
   activeOnly?: boolean
   includeInactive?: boolean
+  personalizable?: boolean
 }) {
   const where: Prisma.ProductWhereInput = {}
   if (params.search) {
@@ -21,6 +22,10 @@ export async function getProducts(params: {
   }
   if (params.categoryId) {
     where.categoryId = params.categoryId
+  }
+  // Filtre « produits personnalisables » (page Personnalisation)
+  if (params.personalizable) {
+    where.isPersonalizable = true
   }
   if (!params.includeInactive) {
     where.isActive = true
@@ -44,6 +49,7 @@ export async function getProducts(params: {
           where: params.includeInactive ? undefined : { isActive: true },
           orderBy: { sortOrder: 'asc' },
         },
+        quantityDiscounts: { orderBy: { minQuantity: 'asc' } },
       },
     }),
   ])
@@ -77,6 +83,7 @@ export async function getProductBySlug(slug: string) {
       variants: { where: { isActive: true }, orderBy: { createdAt: 'asc' } },
       images: { orderBy: { sortOrder: 'asc' } },
       personalizationOptions: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+      quantityDiscounts: { orderBy: { minQuantity: 'asc' } },
     },
   })
 }

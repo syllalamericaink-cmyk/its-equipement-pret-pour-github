@@ -3,6 +3,7 @@ import { getProductById, updateProduct, deleteProduct } from '@/lib/services/pro
 import { productSchema } from '@/lib/validation'
 import { success, notFound, error, serverError } from '@/lib/api-response'
 import { logAction } from '@/lib/services/admin-log.service'
+import { db } from '@/lib/db'
 import type { NextRequest } from 'next/server'
 
 export async function GET(
@@ -49,6 +50,20 @@ export async function PUT(
       isActive: parsed.data.isActive,
       category: { connect: { id: parsed.data.categoryId } },
     })
+
+    // Réductions par palier de quantité : remplacement complet (simple et prévisible)
+    if (parsed.data.quantityDiscounts !== undefined) {
+      await db.quantityDiscount.deleteMany({ where: { productId: id } })
+      if (parsed.data.quantityDiscounts.length > 0) {
+        await db.quantityDiscount.createMany({
+          data: parsed.data.quantityDiscounts.map((d) => ({
+            productId: id,
+            minQuantity: d.minQuantity,
+            discountPercent: d.discountPercent,
+          })),
+        })
+      }
+    }
 
     await logAction({
       adminId: session!.user.id,

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCartStore } from '@/stores/cart-store'
+import { applicableDiscount, discountedLineTotal } from '@/lib/quantity-discount'
 import { toast } from 'sonner'
 import { buildWhatsAppDirectBuyLink } from '@/lib/whatsapp-order'
 
@@ -55,6 +56,7 @@ interface FullProduct {
   variants: ProductVariant[]
   images: ProductImage[]
   personalizationOptions: PersonalizationOption[]
+  quantityDiscounts?: { minQuantity: number; discountPercent: number }[]
 }
 
 function getStockInfo(stock: number) {
@@ -196,6 +198,12 @@ export default function ProductDetailPage() {
       ? minPrice
       : product.basePrice
 
+  // Réductions par quantité (définies dans l'admin) — prévisualisation live
+  const quantityDiscounts = product.quantityDiscounts ?? []
+  const currentDiscountPct = applicableDiscount(quantityDiscounts, quantity)
+  const currentDiscountedTotal = discountedLineTotal(displayPrice, quantity, currentDiscountPct)
+  const sortedTiers = [...quantityDiscounts].sort((a, b) => a.minQuantity - b.minQuantity)
+
   const handlePrevImage = () => {
     setSelectedImageIndex((prev) => (prev === 0 ? sortedImages.length - 1 : prev - 1))
   }
@@ -232,10 +240,13 @@ export default function ProductDetailPage() {
       variantName: variant?.name,
       quantity,
       unitPrice,
-      hasPersonalization: product.isPersonalizable,
+      // Personnalisable ≠ personnalisé : le client choisit s'il veut la
+      // personnalisation au moment de la commande (/commande). On ne la
+      // force pas ici (sinon le logo serait exigé sans avoir été choisi).
+      hasPersonalization: false,
       personalizationOptions: activePersonalizationOptions.map((o) => ({ label: o.label, type: o.type })),
       personalization: {
-        impression: product.isPersonalizable,
+        impression: false,
         logo: false,
         texte: '',
         emplacement: '',
@@ -361,6 +372,26 @@ export default function ProductDetailPage() {
               <p className="text-xs text-muted-foreground mt-0.5">
                 Prix unique pour toutes les variantes
               </p>
+            )}
+            {currentDiscountPct > 0 && (
+              <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+                Total pour {quantity} : {formatCurrency(currentDiscountedTotal)}
+                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                  -{currentDiscountPct}%
+                </span>
+              </p>
+            )}
+            {sortedTiers.length > 0 && (
+              <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50/60 p-2.5">
+                <p className="mb-1 text-xs font-semibold text-emerald-800">Réductions par quantité</p>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                  {sortedTiers.map((tier) => (
+                    <span key={`${tier.minQuantity}-${tier.discountPercent}`} className="text-xs text-emerald-700">
+                      {tier.minQuantity}+ unités : <b>-{tier.discountPercent}%</b>
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 

@@ -71,6 +71,12 @@ interface Product {
   variants: Variant[]
   images: ProductImage[]
   personalizationOptions: PersonalizationOption[]
+  quantityDiscounts?: { id: string; minQuantity: number; discountPercent: number }[]
+}
+
+interface DiscountTier {
+  minQuantity: string
+  discountPercent: string
 }
 
 const emptyVariant = { name: '', sku: '', priceModifier: 0, stock: 0, isActive: true }
@@ -96,6 +102,13 @@ export default function ProduitDetailPage() {
   const [isPersonalizable, setIsPersonalizable] = useState(false)
   const [minQuantity, setMinQuantity] = useState(1)
   const [isActive, setIsActive] = useState(true)
+  // Réductions par palier de quantité (chargées depuis le produit, éditables)
+  const [discountTiers, setDiscountTiers] = useState<DiscountTier[]>([])
+
+  const addTier = () => setDiscountTiers((t) => [...t, { minQuantity: '', discountPercent: '' }])
+  const removeTier = (idx: number) => setDiscountTiers((t) => t.filter((_, i) => i !== idx))
+  const updateTier = (idx: number, patch: Partial<DiscountTier>) =>
+    setDiscountTiers((t) => t.map((tier, i) => (i === idx ? { ...tier, ...patch } : tier)))
 
   const [variantDialogOpen, setVariantDialogOpen] = useState(false)
   const [variantForm, setVariantForm] = useState({ ...emptyVariant })
@@ -132,6 +145,12 @@ export default function ProduitDetailPage() {
         setIsPersonalizable(res.data.isPersonalizable)
         setMinQuantity(res.data.minQuantity)
         setIsActive(res.data.isActive)
+        setDiscountTiers(
+          (res.data.quantityDiscounts ?? []).map((d) => ({
+            minQuantity: String(d.minQuantity),
+            discountPercent: String(d.discountPercent),
+          }))
+        )
       } else {
         toast.error(res.error ?? 'Erreur lors du chargement du produit')
       }
@@ -173,6 +192,12 @@ export default function ProduitDetailPage() {
         isPersonalizable,
         minQuantity,
         isActive,
+        quantityDiscounts: discountTiers
+          .map((t) => ({
+            minQuantity: parseInt(t.minQuantity, 10),
+            discountPercent: parseFloat(t.discountPercent),
+          }))
+          .filter((t) => Number.isFinite(t.minQuantity) && t.minQuantity >= 2 && Number.isFinite(t.discountPercent) && t.discountPercent > 0),
       })
       if (res.success) {
         toast.success('Produit mis à jour avec succès')
@@ -442,7 +467,7 @@ export default function ProduitDetailPage() {
                   <Input id="sku" value={sku} onChange={(e) => setSku(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="basePrice">Prix de base (€)</Label>
+                  <Label htmlFor="basePrice">Prix de base (FCFA)</Label>
                   <Input
                     id="basePrice"
                     type="number"
@@ -480,6 +505,62 @@ export default function ProduitDetailPage() {
                     onChange={(e) => setMinQuantity(parseInt(e.target.value) || 1)}
                   />
                 </div>
+              </div>
+
+              {/* Réductions par palier de quantité */}
+              <div className="space-y-3 rounded-lg border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-semibold">Réductions par quantité</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Ex : à partir de 10 unités → 5 %. S&apos;applique automatiquement côté client.
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addTier}>
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Palier
+                  </Button>
+                </div>
+                {discountTiers.map((tier, idx) => (
+                  <div key={idx} className="flex items-end gap-2">
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs">À partir de (unités)</Label>
+                      <Input
+                        type="number"
+                        min="2"
+                        step="1"
+                        placeholder="10"
+                        value={tier.minQuantity}
+                        onChange={(e) => updateTier(idx, { minQuantity: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs">Réduction (%)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="90"
+                        step="0.5"
+                        placeholder="5"
+                        value={tier.discountPercent}
+                        onChange={(e) => updateTier(idx, { discountPercent: e.target.value })}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="mb-0.5 size-9 shrink-0 text-destructive hover:text-destructive"
+                      onClick={() => removeTier(idx)}
+                      aria-label="Supprimer ce palier"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {discountTiers.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Aucun palier — le prix catalogue s&apos;applique pour toutes les quantités.</p>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-6">

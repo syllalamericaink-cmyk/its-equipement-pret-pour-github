@@ -3,6 +3,7 @@ import { getProducts, createProduct } from '@/lib/services/product.service'
 import { productSchema } from '@/lib/validation'
 import { success, error, getPaginationParams, buildMeta, serverError } from '@/lib/api-response'
 import { logAction } from '@/lib/services/admin-log.service'
+import { db } from '@/lib/db'
 import type { NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {
@@ -54,6 +55,17 @@ export async function POST(request: NextRequest) {
       isActive: parsed.data.isActive ?? true,
       category: { connect: { id: parsed.data.categoryId } },
     })
+
+    // Réductions par palier de quantité
+    if (parsed.data.quantityDiscounts?.length) {
+      await db.quantityDiscount.createMany({
+        data: parsed.data.quantityDiscounts.map((d) => ({
+          productId: result.id,
+          minQuantity: d.minQuantity,
+          discountPercent: d.discountPercent,
+        })),
+      })
+    }
 
     await logAction({
       adminId: session!.user.id,

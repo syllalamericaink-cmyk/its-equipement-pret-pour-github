@@ -98,6 +98,7 @@ function ProduitsPage() {
 
   const searchParam = searchParams.get('search') || ''
   const categoryIdParam = searchParams.get('categoryId') || ''
+  const personalizableParam = searchParams.get('personalizable') === '1'
   const sortParam = (searchParams.get('sort') || 'relevance') as SortValue
   const pageParam = parseInt(searchParams.get('page') || '1', 10)
 
@@ -125,6 +126,7 @@ function ProduitsPage() {
       const params = new URLSearchParams({ limit: '100' })
       if (searchParam) params.set('search', searchParam)
       if (categoryIdParam) params.set('categoryId', categoryIdParam)
+      if (personalizableParam) params.set('personalizable', 'true')
       const res = await publicFetch<Product[]>(`/api/public/products?${params.toString()}`)
       if (!cancelled) {
         setProducts(res.success && res.data ? res.data : [])
@@ -132,7 +134,7 @@ function ProduitsPage() {
       }
     })()
     return () => { cancelled = true }
-  }, [searchParam, categoryIdParam])
+  }, [searchParam, categoryIdParam, personalizableParam])
 
   const updateParams = useCallback(
     (updates: Record<string, string>) => {
@@ -166,6 +168,13 @@ function ProduitsPage() {
       updateParams({ categoryId })
     },
     [updateParams]
+  )
+
+  const handlePersonalizableToggle = useCallback(
+    () => {
+      updateParams({ personalizable: personalizableParam ? '' : '1' })
+    },
+    [updateParams, personalizableParam]
   )
 
   const handleSortChange = useCallback(
@@ -222,11 +231,14 @@ function ProduitsPage() {
   return (
     <section className="container mx-auto px-4 py-6 sm:py-8">
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Catalogue</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          {personalizableParam ? 'Produits personnalisables' : 'Catalogue'}
+        </h1>
         {!loading && (
           <p className="mt-1 text-sm text-muted-foreground">
             {sortedProducts.length} produit{sortedProducts.length !== 1 ? 's' : ''}
             {activeCategoryName ? ` dans ${activeCategoryName}` : ''}
+            {personalizableParam ? ' — prêts à recevoir votre logo ou texte' : ''}
           </p>
         )}
       </div>
@@ -263,6 +275,14 @@ function ProduitsPage() {
               {cat.name}
             </Button>
           ))}
+          <Button
+            variant={personalizableParam ? 'default' : 'outline'}
+            size="sm"
+            onClick={handlePersonalizableToggle}
+            className={`shrink-0 min-h-[44px] ${personalizableParam ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+          >
+            ✨ Personnalisables
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">

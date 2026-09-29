@@ -73,7 +73,10 @@ export async function createPublicOrder(data: {
   const productIds = [...new Set(data.items.map(item => item.productId))]
   const products = await db.product.findMany({
     where: { id: { in: productIds }, isActive: true },
-    include: { variants: { where: { isActive: true } } },
+    include: {
+      variants: { where: { isActive: true } },
+      quantityDiscounts: { orderBy: { minQuantity: 'asc' } },
+    },
   })
   const productMap = new Map(products.map(product => [product.id, product]))
 
@@ -95,7 +98,14 @@ export async function createPublicOrder(data: {
     }
 
     const unitPrice = Number(product.basePrice) + Number(variant?.priceModifier ?? 0)
-    const lineTotal = Math.round(unitPrice * quantity * 100) / 100
+
+    // Réduction par palier de quantité (définie dans l'admin) : on retient
+    // le meilleur palier atteint pour cette quantité.
+    const applicableDiscount = product.quantityDiscounts
+      .filter((d) => quantity >= d.minQuantity)
+      .reduce((best, d) => Math.max(best, Number(d.discountPercent)), 0)
+
+    const lineTotal = Math.round(unitPrice * quantity * (1 - applicableDiscount / 100) * 100) / 100
 
     return {
       productId: product.id,
@@ -107,6 +117,7 @@ export async function createPublicOrder(data: {
       quantity,
       unitPrice,
       lineTotal,
+      discountPercent: applicableDiscount,
       hasPersonalization: Boolean(item.hasPersonalization),
       personalizationData: item.personalizationData,
     }
@@ -175,6 +186,7 @@ export async function createPublicOrder(data: {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         lineTotal: item.lineTotal,
+        discountPercent: item.discountPercent,
         hasPersonalization: item.hasPersonalization,
         personalizationData: item.personalizationData ?? undefined,
       })) as Prisma.PublicOrderItemCreateWithoutPublicOrderInput[],

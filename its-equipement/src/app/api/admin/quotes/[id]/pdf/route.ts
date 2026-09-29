@@ -3,9 +3,14 @@ import { success, error, serverError } from '@/lib/api-response'
 import { logAction } from '@/lib/services/admin-log.service'
 import { generateQuotePdf } from '@/lib/services/pdf.service'
 import { db } from '@/lib/db'
-import fs from 'fs'
 import type { NextRequest } from 'next/server'
 
+/**
+ * PDF du devis — généré EN MÉMOIRE (filesystem Vercel en lecture seule).
+ *   POST → valide la génération, marque le devis comme « PDF disponible »
+ *          (pdfPath = 'generated') et journalise l'action admin.
+ *   GET  → génère à la volée et renvoie le fichier PDF au navigateur.
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -19,11 +24,12 @@ export async function POST(
     const quote = await db.quote.findUnique({ where: { id } })
     if (!quote) return error('Devis introuvable', 404)
 
-    const filePath = await generateQuotePdf(id)
+    // Valide réellement la génération (lève une erreur si le PDF échoue)
+    await generateQuotePdf(id)
 
     await db.quote.update({
       where: { id },
-      data: { pdfPath: filePath, pdfUrl: '' },
+      data: { pdfPath: 'generated', pdfUrl: '' },
     })
 
     await logAction({
@@ -31,14 +37,15 @@ export async function POST(
       action: 'GENERATE_PDF',
       entityType: 'QUOTE',
       entityId: id,
-      details: { quoteNumber: quote.quoteNumber, filePath },
+      details: { quoteNumber: quote.quoteNumber },
       ipAddress: request.headers.get('x-forwarded-for') ?? undefined,
       userAgent: request.headers.get('user-agent') ?? undefined,
     })
 
-    return success({ pdfPath: filePath, quoteNumber: quote.quoteNumber })
-  } catch {
-    return serverError()
+    return success({ pdfPath: 'generated', quoteNumber: quote.quoteNumber })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Erreur lors de la génération du PDF'
+    return error(message, 500)
   }
 }
 
@@ -53,21 +60,22 @@ export async function GET(
     const { id } = await params
 
     const quote = await db.quote.findUnique({ where: { id } })
-    if (!quote || !quote.pdfPath) return error('PDF non disponible', 404)
+    if (!quote) return error('Devis introuvable', 404)
 
-    if (!fs.existsSync(quote.pdfPath)) {
-      return error('Fichier PDF introuvable', 404)
-    }
+    // Génération à la volée — toujours à jour avec les dernières
+    // modifications (quantités, remise, conditions…) du devis.
+    const pdfBuffer = await generateQuotePdf(id)
+    const bytes = new Uint8Array(pdfBuffer)
 
-    const fileBuffer = fs.readFileSync(quote.pdfPath)
-
-    return new Response(fileBuffer, {
+    return new Response(bytes, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${quote.quoteNumber}.pdf"`,
+        'Cache-Control': 'no-store',
       },
     })
-  } catch {
-    return serverError()
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Erreur lors de la génération du PDF'
+    return error(message, 500)
   }
 }

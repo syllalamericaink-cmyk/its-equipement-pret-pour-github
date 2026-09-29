@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Loader2, ArrowLeft, Info, MessageCircle, Clock, Upload, X } from 'lucide-react'
+import { Loader2, ArrowLeft, Info, MessageCircle, Clock, Upload, X, BadgePercent } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCartStore } from '@/stores/cart-store'
+import { publicFetch } from '@/lib/public-api'
+import { applicableDiscount, discountedLineTotal, type QuantityDiscountLite } from '@/lib/quantity-discount'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -80,6 +82,37 @@ export default function CommandePage() {
   const items = useCartStore((s) => s.items)
   const subtotal = useCartStore((s) => s.subtotal)
   const clearCart = useCartStore((s) => s.clearCart)
+
+  // Paliers de réduction par produit (définis dans l'admin) — prévisualisation
+  const [discountsByProduct, setDiscountsByProduct] = useState<Record<string, QuantityDiscountLite[]>>({})
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const res = await publicFetch<{ id: string; quantityDiscounts: QuantityDiscountLite[] }[]>(
+        '/api/public/products?limit=100'
+      )
+      if (!cancelled && res.success && res.data) {
+        const map: Record<string, QuantityDiscountLite[]> = {}
+        for (const p of res.data) {
+          if (p.quantityDiscounts?.length) map[p.id] = p.quantityDiscounts
+        }
+        setDiscountsByProduct(map)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  const totals = useMemo(() => {
+    let base = 0
+    let discounted = 0
+    for (const item of items) {
+      base += item.unitPrice * item.quantity
+      const pct = applicableDiscount(discountsByProduct[item.productId], item.quantity)
+      discounted += discountedLineTotal(item.unitPrice, item.quantity, pct)
+    }
+    return { base, discounted, savings: Math.max(0, base - discounted) }
+  }, [items, discountsByProduct])
 
   const {
     register,
@@ -155,7 +188,9 @@ export default function CommandePage() {
         setSubmitting(false)
         return
       }
-      // Logo OBLIGATOIRE dès qu'une personnalisation est demandée
+      // Logo OBLIGATOIRE uniquement si le client a choisi « Oui » à la
+      // personnalisation. S'il répond « Non », aucune pièce n'est exigée —
+      // c'était le bug signalé : on demandait le logo même en sélectionnant Non.
       if (data.hasPersonalization && !logoUpload) {
         toast.error('Veuillez téléverser votre logo : il est requis pour la personnalisation')
         setSubmitting(false)
@@ -285,6 +320,16 @@ export default function CommandePage() {
           <p className="text-sm text-amber-800 dark:text-amber-200">
             <span className="font-semibold">Produits personnalisés : délai 24h.</span>{' '}
             Les produits avec personnalisation seront préparés sous 24h après validation de votre commande sur WhatsApp.
+          </p>
+        </div>
+      )}
+
+      {items.some((i) => (i.personalizationOptions?.length ?? 0) > 0) && !hasPersonalization && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-its-border bg-its-light/60 p-3">
+          <Info className="size-5 text-its-dark shrink-0 mt-0.5" />
+          <p className="text-sm text-its-dark">
+            <span className="font-semibold">Certains produits peuvent être personnalisés</span>{' '}
+            (logo, texte, couleurs…). Si vous le souhaitez, activez «&nbsp;Oui&nbsp;» dans la section Personnalisation ci-dessous.
           </p>
         </div>
       )}
@@ -649,6 +694,8 @@ export default function CommandePage() {
             <div className="space-y-3">
               {items.map((item) => {
                 const lineTotal = item.unitPrice * item.quantity
+                const linePct = applicableDiscount(discountsByProduct[item.productId], item.quantity)
+                const lineDiscounted = discountedLineTotal(item.unitPrice, item.quantity, linePct)
                 return (
                   <div key={item.id} className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
@@ -665,11 +712,22 @@ export default function CommandePage() {
                           {fmt(item.unitPrice)} x {item.quantity}
                         </p>
                       </div>
-                      <span className="font-medium text-sm whitespace-nowrap">
-                        {fmt(lineTotal)}
-                      </span>
+                      {linePct > 0 ? (
+                        <span className="inline-flex flex-col items-end">
+                          <span className="text-xs text-muted-foreground line-through">{fmt(lineTotal)}</span>
+                          <span className="flex items-center gap-1 text-sm font-medium text-emerald-700">
+                            <BadgePercent className="size-3.5" />
+                            {fmt(lineDiscounted)}
+                          </span>
+                          <span className="text-[11px] font-medium text-emerald-600">-{linePct}% quantité</span>
+                        </span>
+                      ) : (
+                        <span className="font-medium text-sm whitespace-nowrap">
+                          {fmt(lineTotal)}
+                        </span>
+                      )}
                     </div>
-                    {item.hasPersonalization && (
+                    {item.hasPersonalization && hasPersonalization && (
                       <div className="ml-2 pl-3 border-l-2 border-muted-foreground/20 space-y-1">
                         <Badge variant="secondary" className="text-xs">
                           Personnalisé
@@ -702,9 +760,18 @@ export default function CommandePage() {
 
             <div className="space-y-2 pt-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Sous-total</span>
-                <span>{fmt(subtotal())}</span>
+                <span className="text-muted-foreground">Sous-total catalogue</span>
+                <span>{fmt(totals.base)}</span>
               </div>
+              {totals.savings > 0 && (
+                <div className="flex justify-between text-sm font-medium text-emerald-700">
+                  <span className="flex items-center gap-1.5">
+                    <BadgePercent className="size-4" />
+                    Réductions quantité
+                  </span>
+                  <span>-{fmt(totals.savings)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Livraison</span>
                 <span>0 FCFA</span>
@@ -712,8 +779,14 @@ export default function CommandePage() {
               <Separator />
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
-                <span>{fmt(subtotal())}</span>
+                <span>{fmt(totals.savings > 0 ? totals.discounted : totals.base)}</span>
               </div>
+              {totals.savings > 0 && (
+                <p className="flex items-start gap-2 rounded-lg bg-emerald-50 p-2.5 text-xs text-emerald-800">
+                  <BadgePercent className="size-4 shrink-0" />
+                  Vos réductions quantité sont appliquées automatiquement. Le total final est confirmé par le commercial.
+                </p>
+              )}
             </div>
 
             <div className="flex gap-2 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">

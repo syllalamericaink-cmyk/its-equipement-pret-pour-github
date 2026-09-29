@@ -17,7 +17,6 @@ import {
   Warehouse,
   Settings,
   LogOut,
-  HardHat,
   Inbox,
   Mail,
   Images
@@ -62,7 +61,13 @@ export function AdminSidebar() {
   return (
     <div className="flex h-full flex-col border-r bg-sidebar">
       <div className="flex h-14 items-center gap-2 border-b px-4">
-        <HardHat className="h-6 w-6 text-sidebar-primary" />
+        {/* Vrai logo ITS & DG */}
+        <img
+          src="/logo-its-equipement.jpg"
+          alt=""
+          aria-hidden="true"
+          className="h-8 w-8 shrink-0 rounded object-cover"
+        />
         <span className="font-bold text-sidebar-foreground">ITS Équipement</span>
         <span className="ml-auto text-xs text-sidebar-muted-foreground">Admin</span>
       </div>

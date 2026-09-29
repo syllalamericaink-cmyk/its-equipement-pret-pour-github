@@ -94,6 +94,8 @@ export const categorySchema = z.object({
   parentId: z.string().optional(),
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
+  showOnHome: z.boolean().optional(),
+  isFeatured: z.boolean().optional(),
 })
 
 export const productSchema = z.object({
@@ -106,6 +108,16 @@ export const productSchema = z.object({
   isPersonalizable: z.boolean(),
   minQuantity: z.number().int().positive().optional(),
   isActive: z.boolean().optional(),
+  // Réductions par palier de quantité : « à partir de minQuantity unités → -discountPercent % »
+  quantityDiscounts: z
+    .array(
+      z.object({
+        minQuantity: z.number().int().min(2, 'Le palier doit être au moins 2').max(1000000),
+        discountPercent: z.number().min(0, 'Remise invalide').max(90, 'Remise maximale : 90%'),
+      })
+    )
+    .max(10, 'Maximum 10 paliers')
+    .optional(),
 })
 
 export const quoteItemSchema = z.object({

@@ -1,11 +1,7 @@
 import PDFDocument from 'pdfkit'
-import crypto from 'crypto'
 import { db } from '../db'
 import { formatCurrency, formatDate } from '../format'
 import { getSetting, getSettingNumber } from './settings.service'
-import { AUTH_SECRET } from '../auth-secret'
-import fs from 'fs'
-import path from 'path'
 import type { Quote, QuoteItem, Personalization, ProductVariant, PersonalizationOption, QuoteRequest, Client } from '@prisma/client'
 
 type QuoteForPdf = Quote & {
@@ -18,7 +14,13 @@ type QuoteForPdf = Quote & {
 
 
 
-export async function generateQuotePdf(quoteId: string): Promise<string> {
+/**
+ * Génère le PDF du devis et le renvoie EN MÉMOIRE (Buffer).
+ * Aucune écriture disque : sur Vercel le filesystem est en lecture seule,
+ * c'est ce qui faisait échouer la génération. Le buffer est renvoyé
+ * directement dans la réponse HTTP par la route appelante.
+ */
+export async function generateQuotePdf(quoteId: string): Promise<Buffer> {
   const quote = await db.quote.findUnique({
     where: { id: quoteId },
     include: {
@@ -44,14 +46,10 @@ export async function generateQuotePdf(quoteId: string): Promise<string> {
     getSettingNumber('DEPOSIT_PERCENTAGE', 50),
   ])
 
-  const privateDir = path.join(process.cwd(), 'private', 'quotes')
-  if (!fs.existsSync(privateDir)) fs.mkdirSync(privateDir, { recursive: true })
-
-  const filePath = path.join(privateDir, `${quote.quoteNumber}.pdf`)
-
   const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true })
-  const stream = fs.createWriteStream(filePath)
-  doc.pipe(stream)
+  // Collecte mémoire du PDF (aucun accès disque — compatible Vercel)
+  const chunks: Buffer[] = []
+  doc.on('data', (chunk: Buffer) => chunks.push(chunk))
 
   const pageWidth = doc.page.width - 100
   const totalAmountHT = Number(quote.totalAmountHT)
@@ -223,10 +221,10 @@ export async function generateQuotePdf(quoteId: string): Promise<string> {
     doc.text(`Page ${i + 1} / ${pageCount}`, doc.page.width - 150, bottomY + 5, { width: 100, align: 'right' })
   }
 
-  return new Promise<string>((resolve, reject) => {
+  return new Promise<Buffer>((resolve, reject) => {
+    doc.on('end', () => resolve(Buffer.concat(chunks)))
+    doc.on('error', reject)
     doc.end()
-    stream.on('finish', () => resolve(filePath))
-    stream.on('error', reject)
   })
 }
 

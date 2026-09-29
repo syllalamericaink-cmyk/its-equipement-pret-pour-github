@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { adminFetch, adminPost } from '@/lib/admin-api'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,11 @@ interface Category {
   name: string
   slug: string
   isActive: boolean
+}
+
+interface DiscountTier {
+  minQuantity: string
+  discountPercent: string
 }
 
 function generateSlug(text: string): string {
@@ -60,6 +65,13 @@ export default function NouveauProduitPage() {
   const [minQuantity, setMinQuantity] = useState('1')
   const [isPersonalizable, setIsPersonalizable] = useState(false)
   const [isActive, setIsActive] = useState(true)
+  // Réductions par palier de quantité : « à partir de X unités → -Y % »
+  const [discountTiers, setDiscountTiers] = useState<DiscountTier[]>([])
+
+  const addTier = () => setDiscountTiers((t) => [...t, { minQuantity: '', discountPercent: '' }])
+  const removeTier = (idx: number) => setDiscountTiers((t) => t.filter((_, i) => i !== idx))
+  const updateTier = (idx: number, patch: Partial<DiscountTier>) =>
+    setDiscountTiers((t) => t.map((tier, i) => (i === idx ? { ...tier, ...patch } : tier)))
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -127,6 +139,12 @@ export default function NouveauProduitPage() {
         isPersonalizable,
         minQuantity: parseInt(minQuantity, 10) || 1,
         isActive,
+        quantityDiscounts: discountTiers
+          .map((t) => ({
+            minQuantity: parseInt(t.minQuantity, 10),
+            discountPercent: parseFloat(t.discountPercent),
+          }))
+          .filter((t) => Number.isFinite(t.minQuantity) && t.minQuantity >= 2 && Number.isFinite(t.discountPercent) && t.discountPercent > 0),
       }
 
       const res = await adminPost<{ id: string }>('/api/admin/products', body)
@@ -273,7 +291,7 @@ export default function NouveauProduitPage() {
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="basePrice">
-                  Prix de base (€) <span className="text-destructive">*</span>
+                  Prix de base (FCFA) <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="basePrice"
@@ -306,6 +324,62 @@ export default function NouveauProduitPage() {
                   <p className="text-sm text-destructive">{errors.minQuantity}</p>
                 )}
               </div>
+            </div>
+
+            {/* Réductions par palier de quantité */}
+            <div className="space-y-3 rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold">Réductions par quantité</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Ex : à partir de 10 unités → 5 %. S&apos;applique automatiquement côté client.
+                  </p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={addTier}>
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  Palier
+                </Button>
+              </div>
+              {discountTiers.map((tier, idx) => (
+                <div key={idx} className="flex items-end gap-2">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs">À partir de (unités)</Label>
+                    <Input
+                      type="number"
+                      min="2"
+                      step="1"
+                      placeholder="10"
+                      value={tier.minQuantity}
+                      onChange={(e) => updateTier(idx, { minQuantity: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs">Réduction (%)</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="90"
+                      step="0.5"
+                      placeholder="5"
+                      value={tier.discountPercent}
+                      onChange={(e) => updateTier(idx, { discountPercent: e.target.value })}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="mb-0.5 size-9 shrink-0 text-destructive hover:text-destructive"
+                    onClick={() => removeTier(idx)}
+                    aria-label="Supprimer ce palier"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {discountTiers.length === 0 && (
+                <p className="text-xs text-muted-foreground">Aucun palier — le prix catalogue s&apos;applique pour toutes les quantités.</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-6 sm:flex-row">

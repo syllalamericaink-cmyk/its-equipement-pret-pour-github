@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const { page, limit, skip } = getPaginationParams(request)
     const search = searchParams.get('search') ?? undefined
     const categoryId = searchParams.get('categoryId') ?? undefined
+    const personalizable = searchParams.get('personalizable') === 'true'
 
     const { items, total } = await getProducts({
       page,
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest) {
       skip,
       search,
       categoryId,
+      personalizable,
     })
 
     return success(items, buildMeta(page, limit, total))

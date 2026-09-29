@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { StatusBadge } from '@/components/admin/status-badge'
 import { ConfirmDialog } from '@/components/admin/confirm-dialog'
@@ -9,6 +9,10 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,10 +55,73 @@ import {
   MoreVertical,
   CheckCircle2,
   Loader2,
+  Pencil,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 import Link from 'next/link'
 
 const STATUSES = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CANCELLED'] as const
+
+/* ================== Édition du devis (réductions entreprises) ================== */
+
+interface AdminProductVariantLite {
+  id: string
+  name: string
+  sku: string
+  priceModifier: number
+  isActive: boolean
+}
+
+interface AdminProductLite {
+  id: string
+  name: string
+  sku: string
+  basePrice: number
+  isActive: boolean
+  variants: AdminProductVariantLite[]
+}
+
+interface EditRow {
+  key: string
+  productId: string
+  productVariantId?: string | null
+  productName: string
+  variantName?: string | null
+  unitPrice: number
+  quantity: number
+  hasPersonalization: boolean
+  personalizations: { optionId: string; value: unknown }[]
+}
+
+/** Convertit une valeur de personnalisation stockée (Json) au format accepté par l'API. */
+function normalizePersoValue(value: unknown): Record<string, string> | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'string' || typeof value === 'number') {
+    const text = String(value).trim()
+    return text ? { text } : null
+  }
+  if (typeof value === 'object') {
+    const v = value as Record<string, unknown>
+    const out: Record<string, string> = {}
+    const pick = (keys: string[], target: string) => {
+      for (const k of keys) {
+        const val = v[k]
+        if (typeof val === 'string' && val.trim()) {
+          out[target] = val.trim()
+          return
+        }
+      }
+    }
+    pick(['text', 'texte', 'value'], 'text')
+    pick(['location', 'emplacement'], 'location')
+    pick(['logoFileId'], 'logoFileId')
+    pick(['logoFileName'], 'logoFileName')
+    pick(['additionalNotes', 'instructions', 'note'], 'additionalNotes')
+    return Object.keys(out).length > 0 ? out : null
+  }
+  return null
+}
 
 interface PersonalizationOption {
   id: string
@@ -246,6 +313,127 @@ export default function DevisDetailPage() {
     }
   }, [id, router])
 
+  /* ================== Édition du devis ================== */
+
+  const [editOpen, setEditOpen] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
+  const [editRows, setEditRows] = useState<EditRow[]>([])
+  const [editDiscount, setEditDiscount] = useState('0')
+  const [editTva, setEditTva] = useState('20')
+  const [editValidUntil, setEditValidUntil] = useState('')
+  const [editConditions, setEditConditions] = useState('')
+  const [products, setProducts] = useState<AdminProductLite[]>([])
+  const [addProductId, setAddProductId] = useState('')
+
+  const canEditQuote = data ? !['ACCEPTED', 'CANCELLED', 'REJECTED'].includes(data.status) : false
+
+  const openEdit = useCallback(() => {
+    if (!data) return
+    setEditRows(
+      data.items.map((item) => ({
+        key: item.id,
+        productId: item.productId,
+        productVariantId: item.productVariant?.id ?? null,
+        productName: item.productName,
+        variantName: item.productVariant?.name ?? null,
+        unitPrice: Number(item.unitPrice),
+        quantity: item.quantity,
+        hasPersonalization: item.hasPersonalization,
+        personalizations: item.personalizations.map((p) => ({
+          optionId: p.personalizationOption.id,
+          value: p.value,
+        })),
+      }))
+    )
+    setEditDiscount(String(Number(data.discountAmount) || 0))
+    setEditTva(String(Math.round(Number(data.tvaRate) * 100)))
+    setEditValidUntil(data.validUntil ? data.validUntil.slice(0, 10) : '')
+    setEditConditions(data.conditions ?? '')
+    setEditOpen(true)
+    // Charge la liste des produits pour l'ajout de lignes
+    void (async () => {
+      const res = await adminFetch<AdminProductLite[]>('/api/admin/products?limit=100&includeInactive=false')
+      if (res.success && res.data) setProducts(res.data)
+    })()
+  }, [data])
+
+  const updateRow = useCallback((key: string, patch: Partial<EditRow>) => {
+    setEditRows((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)))
+  }, [])
+
+  const removeRow = useCallback((key: string) => {
+    setEditRows((rows) => rows.filter((r) => r.key !== key))
+  }, [])
+
+  const addProductRow = useCallback(() => {
+    const product = products.find((p) => p.id === addProductId)
+    if (!product) return
+    const variants = product.variants.filter((v) => v.isActive)
+    const variant = variants.length === 1 ? variants[0] : undefined
+    setEditRows((rows) => [
+      ...rows,
+      {
+        key: `new-${Date.now()}`,
+        productId: product.id,
+        productVariantId: variant?.id ?? null,
+        productName: product.name,
+        variantName: variant?.name ?? null,
+        unitPrice: Number(product.basePrice) + Number(variant?.priceModifier ?? 0),
+        quantity: 1,
+        hasPersonalization: false,
+        personalizations: [],
+      },
+    ])
+    setAddProductId('')
+  }, [products, addProductId])
+
+  const editTotals = useMemo(() => {
+    const subtotal = editRows.reduce((sum, r) => sum + Number(r.unitPrice) * Number(r.quantity), 0)
+    const discount = Math.min(Number(editDiscount) || 0, subtotal)
+    const totalHT = subtotal - discount
+    const tva = (totalHT * (Number(editTva) || 0)) / 100
+    return { subtotal, discount, totalHT, tva, totalTTC: totalHT + tva }
+  }, [editRows, editDiscount, editTva])
+
+  const handleSelectProductForNewRow = useCallback((variantId: string) => {
+    // Le Select "Ajouter un produit" liste les produits ; si un produit a des
+    // variantes, on liste "Produit — Variante".
+    setAddProductId(variantId)
+  }, [])
+
+  const saveEdit = useCallback(async () => {
+    if (editRows.length === 0) {
+      toast.error('Le devis doit contenir au moins un article')
+      return
+    }
+    setEditLoading(true)
+    const res = await adminPut(`/api/admin/quotes/${id}`, {
+      items: editRows.map((r) => ({
+        productId: r.productId,
+        productVariantId: r.productVariantId ?? undefined,
+        productName: r.variantName ? `${r.productName} (${r.variantName})` : r.productName,
+        unitPrice: Number(r.unitPrice),
+        quantity: Number(r.quantity),
+        hasPersonalization: r.hasPersonalization,
+        personalizations: r.personalizations
+          .map((p) => ({ optionId: p.optionId, value: normalizePersoValue(p.value) }))
+          .filter((p): p is { optionId: string; value: Record<string, string> } => p.value !== null),
+      })),
+      discountAmount: Number(editDiscount) || 0,
+      tvaRate: (Number(editTva) || 0) / 100,
+      conditions: editConditions || undefined,
+      validUntil: editValidUntil ? new Date(editValidUntil + 'T12:00:00').toISOString() : undefined,
+    })
+    setEditLoading(false)
+    if (res.success) {
+      toast.success('Devis modifié avec succès')
+      setEditOpen(false)
+      setRefreshKey((k) => k + 1)
+    } else {
+      toast.error(res.error || 'Erreur lors de la modification du devis')
+    }
+  }, [editRows, editDiscount, editTva, editConditions, editValidUntil, id])
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -295,6 +483,12 @@ export default function DevisDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {canEditQuote && (
+            <Button variant="outline" size="sm" onClick={openEdit} disabled={pdfLoading}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Modifier
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={pdfLoading || isCancelled}>
@@ -609,6 +803,186 @@ export default function DevisDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* ================== Dialog modification du devis ================== */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Modifier le devis {data.quoteNumber}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            {/* Lignes du devis */}
+            <div className="space-y-2">
+              <Label>Articles</Label>
+              {editRows.map((row) => (
+                <div key={row.key} className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{row.productName}</p>
+                      {row.variantName && (
+                        <p className="text-xs text-muted-foreground">Variante : {row.variantName}</p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 shrink-0 text-destructive hover:text-destructive"
+                      onClick={() => removeRow(row.key)}
+                      aria-label="Retirer cette ligne"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Quantité</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={row.quantity}
+                        onChange={(e) => updateRow(row.key, { quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Prix unitaire (FCFA)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={row.unitPrice}
+                        onChange={(e) => updateRow(row.key, { unitPrice: Math.max(0, parseFloat(e.target.value) || 0) })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Total ligne</Label>
+                      <p className="flex h-10 items-center text-sm font-semibold">
+                        {formatCurrency(Number(row.unitPrice) * Number(row.quantity))}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {editRows.length === 0 && (
+                <p className="text-sm text-muted-foreground">Aucun article — ajoutez-en un ci-dessous.</p>
+              )}
+
+              {/* Ajouter un produit */}
+              <div className="flex gap-2 pt-1">
+                <Select value={addProductId} onValueChange={handleSelectProductForNewRow}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Ajouter un produit…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.map((p) =>
+                      p.variants.filter((v) => v.isActive).length > 1 ? (
+                        p.variants
+                          .filter((v) => v.isActive)
+                          .map((v) => (
+                            <SelectItem key={v.id} value={p.id}>
+                              {p.name} — {v.name}
+                            </SelectItem>
+                          ))
+                      ) : (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name} ({formatCurrency(p.basePrice)})
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+                <Button type="button" variant="outline" onClick={addProductRow} disabled={!addProductId}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Ajouter
+                </Button>
+              </div>
+            </div>
+
+            {/* Remise + TVA + validité */}
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1">
+                <Label htmlFor="edit-discount">Remise (FCFA)</Label>
+                <Input
+                  id="edit-discount"
+                  type="number"
+                  min={0}
+                  value={editDiscount}
+                  onChange={(e) => setEditDiscount(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Réduction demandée par l&apos;entreprise.</p>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-tva">TVA (%)</Label>
+                <Input
+                  id="edit-tva"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={editTva}
+                  onChange={(e) => setEditTva(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-valid">Valable jusqu&apos;au</Label>
+                <Input
+                  id="edit-valid"
+                  type="date"
+                  value={editValidUntil}
+                  onChange={(e) => setEditValidUntil(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Conditions */}
+            <div className="space-y-1">
+              <Label htmlFor="edit-conditions">Conditions</Label>
+              <Textarea
+                id="edit-conditions"
+                rows={3}
+                value={editConditions}
+                onChange={(e) => setEditConditions(e.target.value)}
+                placeholder="Conditions particulières du devis…"
+              />
+            </div>
+
+            {/* Totaux recalculés */}
+            <div className="rounded-lg border bg-muted/40 p-3 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Sous-total</span>
+                <span>{formatCurrency(editTotals.subtotal)}</span>
+              </div>
+              {editTotals.discount > 0 && (
+                <div className="flex justify-between text-destructive">
+                  <span>Remise</span>
+                  <span>-{formatCurrency(editTotals.discount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total HT</span>
+                <span>{formatCurrency(editTotals.totalHT)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">TVA ({Number(editTva) || 0}%)</span>
+                <span>{formatCurrency(editTotals.tva)}</span>
+              </div>
+              <div className="flex justify-between text-base font-bold">
+                <span>Total TTC</span>
+                <span>{formatCurrency(editTotals.totalTTC)}</span>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editLoading}>
+              Annuler
+            </Button>
+            <Button onClick={saveEdit} disabled={editLoading}>
+              {editLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Enregistrer les modifications
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={confirmOpen}

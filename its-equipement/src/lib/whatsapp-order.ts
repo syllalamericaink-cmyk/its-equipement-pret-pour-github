@@ -1,14 +1,26 @@
-// Helper client-side pour générer un lien WhatsApp pré-rempli avec le récap
-// complet de la demande du client. Le message est volontairement structuré
-// pour qu'un commercial puisse relire la demande en un coup d'œil.
+// Helper client-side pour générer un lien WhatsApp pré-rempli avec la
+// demande du client. Le message est VOLONTAIREMENT COURT : le commercial
+// doit pouvoir le relire en un coup d'œil (le détail complet part de notre
+// côté sur Telegram + Google Sheets + le tableau admin).
 //
-// Note : wa.me ne supporte que du texte. Les images des articles sont donc
-// transmises sous forme d'URL cliquables dans le message — le commercial peut
-// les ouvrir pour identifier visuellement chaque produit.
+// Format demandé par l'exploitant :
 //
-// Pour envoyer VRAIMENT les images via WhatsApp (avec médias), il faudrait
-// activer WhatsApp Business Cloud API côté serveur (déjà scaffoldé dans
-// src/lib/services/whatsapp.service.ts).
+//   Bonjour, je souhaite passer cette commande :
+//
+//   📦 Produit : Casquette de sécurité noir
+//   Quantité : 15
+//   Personnalisation : Assa sylla
+//
+//   📍 Livraison : Cocody, Abidjan
+//   Adresse : Ggfff
+//
+//   👤 Nom : Ggfcgh Hhjshxb
+//   📞 WhatsApp : 80088676540
+//
+//   Merci de me confirmer la disponibilité et les modalités.
+//
+// Le message s'adapte au type de demande (commande simple / devis / bon de
+// commande / FNE) et aux informations réellement remplies par le client.
 
 import type { CartItem } from '@/stores/cart-store'
 
@@ -17,17 +29,10 @@ import type { CartItem } from '@/stores/cart-store'
 // dans l'environnement de build (elle peut la remplacer à tout moment).
 export const ADMIN_WHATSAPP_NUMBER =
   process.env.NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER ?? '+2250700249278'
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL ?? ''
 
 function normalizePhone(phone: string): string {
   return phone.replace(/[^0-9]/g, '')
 }
-
-const fmtPrice = (n: number) =>
-  new Intl.NumberFormat('fr-FR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n) + ' FCFA'
 
 export type RequestType = 'COMMANDE_SIMPLE' | 'DEVIS' | 'BON_COMMANDE' | 'FNE'
 
@@ -36,6 +41,34 @@ export const REQUEST_TYPE_LABELS: Record<RequestType, string> = {
   DEVIS: 'Demande de devis',
   BON_COMMANDE: 'Bon de commande',
   FNE: 'Demande de FNE',
+}
+
+/** Verbe d'introduction adapté au type de demande. */
+function introForType(requestType: RequestType): string {
+  switch (requestType) {
+    case 'DEVIS':
+      return 'Bonjour, je souhaite demander un devis :'
+    case 'BON_COMMANDE':
+      return 'Bonjour, je souhaite établir un bon de commande :'
+    case 'FNE':
+      return 'Bonjour, je souhaite demander une facture normalisée (FNE) :'
+    default:
+      return 'Bonjour, je souhaite passer cette commande :'
+  }
+}
+
+/** Formule de politesse finale adaptée au type de demande. */
+function closingForType(requestType: RequestType): string {
+  switch (requestType) {
+    case 'DEVIS':
+      return 'Merci de me faire un retour avec les prix et les délais.'
+    case 'BON_COMMANDE':
+      return 'Merci de me confirmer la réception et les modalités.'
+    case 'FNE':
+      return 'Merci de me confirmer les informations nécessaires à la facture.'
+    default:
+      return 'Merci de me confirmer la disponibilité et les modalités.'
+  }
 }
 
 export interface OrderCustomerInfo {
@@ -66,23 +99,14 @@ export interface LogoInfo {
 }
 
 /**
- * Construit une URL wa.me avec le récap COMPLET de la commande pré-rempli.
- * Le client clique sur le bouton → WhatsApp s'ouvre avec le message déjà
- * rédigé vers le compte administrateur.
- *
- * Le message inclut :
- *   - Le type de demande (Commande simple / Devis / Bon de commande / FNE)
- *   - Les infos client (nom, téléphone WhatsApp, lieu de livraison)
- *   - Les infos entreprise (si devis, bon de commande ou FNE)
- *   - Le récap des personnalisations (si activées)
- *   - La liste des produits avec quantités, prix et URL des images
- *   - Le total
- *   - Un appel à l'action clair pour le commercial
+ * Construit une URL wa.me avec le message COURT pré-rempli.
+ * Les détails complets (prix, références, logo…) sont transmis de notre côté
+ * via Telegram / Google Sheets — ici on reste lisible pour le commercial.
  */
 export function buildWhatsAppOrderLink(
   customer: OrderCustomerInfo,
   items: CartItem[],
-  total: number,
+  _total: number,
   options: {
     requestType: RequestType
     company?: CompanyInfo
@@ -92,114 +116,52 @@ export function buildWhatsAppOrderLink(
   },
 ): string {
   const lines: string[] = []
-  const requestTypeLabel = REQUEST_TYPE_LABELS[options.requestType]
+  const requestType = options.requestType
 
-  // En-tête
-  lines.push('*🛒 NOUVELLE DEMANDE - ITS Équipement*')
-  if (options.orderRef) {
-    lines.push(`Référence : ${options.orderRef}`)
-  }
-  lines.push(`Type de demande : *${requestTypeLabel}*`)
+  lines.push(introForType(requestType))
   lines.push('')
 
-  // Client
-  lines.push('*👤 Client*')
-  lines.push(`Nom : ${customer.clientName}${customer.clientFirstName ? ' ' + customer.clientFirstName : ''}`)
-  lines.push(`Téléphone WhatsApp : ${customer.clientPhone}`)
-  if (customer.clientEmail) {
-    lines.push(`Email : ${customer.clientEmail}`)
+  // Produits — un seul produit → format « Produit / Quantité » comme dans le
+  // modèle ; plusieurs produits → liste compacte.
+  if (items.length === 1) {
+    const item = items[0]
+    lines.push(`📦 Produit : ${item.productName}${item.variantName ? ` (${item.variantName})` : ''}`)
+    lines.push(`Quantité : ${item.quantity}`)
+  } else {
+    lines.push('📦 Produits :')
+    for (const item of items) {
+      lines.push(`- ${item.productName}${item.variantName ? ` (${item.variantName})` : ''} × ${item.quantity}`)
+    }
   }
-  lines.push(`Type : ${customer.clientType === 'ENTREPRISE' ? 'Entreprise' : 'Particulier'}`)
-  lines.push('')
 
-  // Entreprise (si devis, bon de commande ou FNE)
-  if (options.requestType !== 'COMMANDE_SIMPLE') {
-    lines.push('*🏢 Entreprise*')
-    if (options.company?.companyName) {
-      lines.push(`Nom : ${options.company.companyName}`)
-    }
-    if (options.company?.companyInfo) {
-      lines.push(`Informations : ${options.company.companyInfo}`)
-    }
-    lines.push('')
+  // Personnalisation — seulement si le client l'a demandée
+  const persoSummary = options.personalization?.summary?.trim()
+  if (options.personalization?.hasPersonalization) {
+    lines.push(`Personnalisation : ${persoSummary || 'Oui (détails à convenir)'}`)
   }
+  lines.push('')
 
   // Livraison
-  lines.push('*📍 Livraison*')
-  lines.push(`Ville : ${customer.city}`)
-  if (customer.commune) {
-    lines.push(`Commune : ${customer.commune}`)
-  }
-  if (customer.address) {
-    lines.push(`Adresse : ${customer.address}`)
-  }
-  if (customer.deliveryComment) {
-    lines.push(`Instructions : ${customer.deliveryComment}`)
+  const lieuParts = [customer.commune, customer.city].filter((p) => p?.trim())
+  lines.push(`📍 Livraison : ${lieuParts.join(', ') || customer.city}`)
+  if (customer.address?.trim()) {
+    lines.push(`Adresse : ${customer.address.trim()}`)
   }
   lines.push('')
 
-  // Personnalisation (récap global)
-  if (options.personalization?.hasPersonalization) {
-    lines.push('*🎨 Personnalisation demandée*')
-    if (options.personalization.summary?.trim()) {
-      lines.push(options.personalization.summary.trim())
-    } else {
-      lines.push('Oui — voir le détail par article ci-dessous.')
-    }
-    if (options.logo?.id) {
-      const logoUrl = `${SITE_URL}/api/public/uploads/${options.logo.id}`
-      lines.push(`🖼 Logo du client (cliquer pour ouvrir) : ${logoUrl}`)
-    }
-    lines.push('⚠ Délai de préparation des personnalisations : 24h.')
+  // Entreprise (si renseignée) — les entreprises demandent souvent un devis
+  if (customer.clientType === 'ENTREPRISE' && options.company?.companyName?.trim()) {
+    lines.push(`🏢 Entreprise : ${options.company.companyName.trim()}`)
     lines.push('')
   }
 
-  // Produits
-  lines.push('*📦 Produits commandés*')
-  items.forEach((item, idx) => {
-    lines.push(`${idx + 1}. *${item.productName}*`)
-    if (item.productSku) {
-      lines.push(`   Réf : ${item.productSku}`)
-    }
-    if (item.variantName) {
-      lines.push(`   Variante : ${item.variantName}`)
-    }
-    lines.push(`   Quantité : ${item.quantity}`)
-    lines.push(`   Prix unitaire : ${fmtPrice(item.unitPrice)}`)
-    lines.push(`   Total ligne : ${fmtPrice(item.unitPrice * item.quantity)}`)
-    // URL de l'image — le commercial peut cliquer pour identifier le produit
-    if (item.productImage) {
-      const absoluteUrl = item.productImage.startsWith('http')
-        ? item.productImage
-        : `${SITE_URL}${item.productImage.startsWith('/') ? '' : '/'}${item.productImage}`
-      lines.push(`   🖼 Image : ${absoluteUrl}`)
-    }
-    // Détail perso par item
-    if (item.hasPersonalization) {
-      const p = item.personalization
-      const details: string[] = []
-      if (p.impression) details.push('impression')
-      if (p.logo) details.push('logo')
-      if (p.texte) details.push(`texte: "${p.texte}"`)
-      if (p.emplacement) details.push(`emplacement: ${p.emplacement}`)
-      if (p.taille) details.push(`taille: ${p.taille}`)
-      if (p.couleur) details.push(`couleur: ${p.couleur}`)
-      if (p.instructions) details.push(`instructions: ${p.instructions}`)
-      lines.push(`   🎨 Personnalisation : ${details.join(' | ') || 'cf. récap global'}`)
-    }
-    lines.push('')
-  })
-
-  // Totaux
-  lines.push('*💰 Montants*')
-  lines.push(`Sous-total : ${fmtPrice(items.reduce((s, i) => s + i.unitPrice * i.quantity, 0))}`)
-  lines.push(`*TOTAL À PAYER : ${fmtPrice(total)}*`)
+  // Client
+  const fullName = [customer.clientName, customer.clientFirstName].filter((p) => p?.trim()).join(' ')
+  lines.push(`👤 Nom : ${fullName}`)
+  lines.push(`📞 WhatsApp : ${customer.clientPhone}`)
   lines.push('')
 
-  // Action commercial
-  lines.push('*🔔 ACTION COMMERCIAL*')
-  lines.push(`Recontacter le client sur WhatsApp : ${customer.clientPhone}`)
-  lines.push('⚠ Ne pas présenter cette étape comme un paiement. Il s\'agit d\'une demande à valider manuellement.')
+  lines.push(closingForType(requestType))
 
   const message = lines.join('\n')
   const phone = normalizePhone(ADMIN_WHATSAPP_NUMBER)
@@ -212,39 +174,23 @@ export function buildWhatsAppOrderLink(
  */
 export function buildWhatsAppDirectBuyLink(
   productName: string,
-  productSku?: string,
+  _productSku?: string,
   variantName?: string,
   quantity: number = 1,
-  unitPrice: number = 0,
+  _unitPrice: number = 0,
   hasPersonalization: boolean = false,
-  productImageUrl?: string,
+  _productImageUrl?: string,
 ): string {
   const lines: string[] = []
-  lines.push('*🛒 ACHAT DIRECT - ITS Équipement*')
+  lines.push('Bonjour, je souhaite passer cette commande :')
   lines.push('')
-  lines.push('*Produit*')
-  lines.push(`Nom : ${productName}`)
-  if (productSku) {
-    lines.push(`Réf : ${productSku}`)
-  }
-  if (variantName) {
-    lines.push(`Variante : ${variantName}`)
-  }
+  lines.push(`📦 Produit : ${productName}${variantName ? ` (${variantName})` : ''}`)
   lines.push(`Quantité : ${quantity}`)
-  lines.push(`Prix unitaire : ${fmtPrice(unitPrice)}`)
-  lines.push(`Total : ${fmtPrice(unitPrice * quantity)}`)
-  if (productImageUrl) {
-    const absoluteUrl = productImageUrl.startsWith('http')
-      ? productImageUrl
-      : `${SITE_URL}${productImageUrl.startsWith('/') ? '' : '/'}${productImageUrl}`
-    lines.push(`🖼 Image : ${absoluteUrl}`)
-  }
   if (hasPersonalization) {
-    lines.push('')
-    lines.push('⚠ Produit personnalisable : délai 24h.')
+    lines.push('Personnalisation : Oui (détails à convenir)')
   }
   lines.push('')
-  lines.push('_Bonjour, je souhaite commander ce produit._')
+  lines.push('Merci de me confirmer la disponibilité et les modalités.')
 
   const message = lines.join('\n')
   const phone = normalizePhone(ADMIN_WHATSAPP_NUMBER)

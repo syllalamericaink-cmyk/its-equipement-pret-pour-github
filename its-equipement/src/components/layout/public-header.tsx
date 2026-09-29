@@ -19,7 +19,7 @@ import { CONTACT_PHONE, CONTACT_EMAIL } from '@/constants'
 const navLinks = [
   { href: '/#categories', label: 'Catégories' },
   { href: '/produits', label: 'Produits' },
-  { href: '/#personnalisation', label: 'Personnalisation' },
+  { href: '/produits?personalizable=1', label: 'Personnalisation' },
   { href: '/a-propos', label: 'Notre méthode' },
   { href: '/contact', label: 'Contact' },
 ]
@@ -44,14 +44,15 @@ function CartIcon() {
 }
 
 function LogoMark({ size = 'md' }: { size?: 'md' | 'sm' }) {
-  const box = size === 'md' ? 'h-11 w-11 text-xl' : 'h-9 w-9 text-base'
+  const box = size === 'md' ? 'h-11 w-11' : 'h-9 w-9'
   return (
-    <span
-      className={`${box} flex shrink-0 items-center justify-center bg-its-lime font-display font-bold tracking-tight text-its-dark`}
+    // Vrai logo ITS & DG (blason officiel fourni par l'entreprise)
+    <img
+      src="/logo-its-equipement.jpg"
+      alt="Logo ITS Équipement"
+      className={`${box} shrink-0 rounded-md object-cover`}
       aria-hidden="true"
-    >
-      ITS
-    </span>
+    />
   )
 }
 
