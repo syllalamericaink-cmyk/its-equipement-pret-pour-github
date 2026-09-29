@@ -151,11 +151,11 @@ export default function CategoriesPage() {
       if (editing) {
         const res = await adminPut<Category>(`/api/admin/categories/${editing.id}`, body)
         if (res.success) {
-          toast.success('Categorie mise a jour avec succes')
+          toast.success('Catégorie mise à jour avec succès')
           setDialogOpen(false)
           fetchCategories()
         } else {
-          toast.error('Erreur lors de la mise a jour')
+          toast.error('Erreur lors de la mise à jour')
         }
       } else {
         const res = await adminPost<Category>('/api/admin/categories', body)

@@ -19,6 +19,7 @@ import {
   LogOut,
   HardHat,
   Inbox,
+  Mail
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -34,13 +35,14 @@ const sidebarLinks = [
   { href: '/admin/products', label: 'Produits', icon: Package },
   { href: '/admin/categories', label: 'Catégories', icon: FolderTree },
   { href: '/admin/quote-requests', label: 'Demandes de devis', icon: ClipboardList },
-  { href: '/admin/commandes', label: 'Commandes', icon: Inbox },
+  { href: '/admin/commandes', label: 'Commandes (Web)', icon: Inbox },
   { href: '/admin/quotes', label: 'Devis', icon: FileText },
-  { href: '/admin/orders', label: 'Commandes', icon: ShoppingCart },
+  { href: '/admin/orders', label: 'Commandes (Devis)', icon: ShoppingCart },
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/payments', label: 'Paiements', icon: CreditCard },
   { href: '/admin/deliveries', label: 'Livraisons', icon: Truck },
   { href: '/admin/notifications', label: 'Notifications', icon: Bell },
+  { href: '/admin/messages', label: 'Messages contact', icon: Mail },
   { href: '/admin/stocks', label: 'Stocks', icon: Warehouse },
   { href: '/admin/settings', label: 'Paramètres', icon: Settings },
 ]
@@ -52,7 +54,7 @@ export function AdminSidebar() {
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
-    router.push('/auth/login')
+    router.push('/admin/login')
   }
 
   return (

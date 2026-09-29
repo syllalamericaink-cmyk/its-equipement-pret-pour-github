@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next'
 import { db } from '@/lib/db'
 
-const baseUrl = process.env.NEXTAUTH_URL || 'https://equippro.fr'
+// Aligné sur le domaine du site (voir src/app/layout.tsx)
+const baseUrl = process.env.NEXTAUTH_URL || 'https://itschoolci.com'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [

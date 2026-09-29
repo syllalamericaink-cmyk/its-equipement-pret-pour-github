@@ -10,9 +10,8 @@ export async function publicFetch<T>(url: string): Promise<{ success: boolean; d
   }
 }
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
-}
+// Formatage centralisé (voir src/lib/format.ts)
+export { formatCurrency } from '@/lib/format'
 
 export function generateSlug(text: string): string {
   return text

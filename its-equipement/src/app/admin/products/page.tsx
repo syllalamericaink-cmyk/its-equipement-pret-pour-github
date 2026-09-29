@@ -67,6 +67,7 @@ export default function ProduitsPage() {
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
@@ -101,7 +102,7 @@ export default function ProduitsPage() {
       }
     })()
     return () => { cancelled = true }
-  }, [page, limit, search, categoryId, includeInactive])
+  }, [page, limit, search, categoryId, includeInactive, refreshKey])
 
   const handleSearchChange = useCallback((value: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -140,9 +141,9 @@ export default function ProduitsPage() {
     const res = await adminDelete(`/api/admin/products/${deleteTarget.id}`)
     setDeleteLoading(false)
     if (res.success) {
-      toast.success(`Produit \u00ab ${deleteTarget.name} \u00bb supprime.`)
+      toast.success(`Produit « ${deleteTarget.name} » supprimé.`)
       setDeleteTarget(null)
-      setPage((p) => p)
+      setRefreshKey((k) => k + 1)
     } else {
       toast.error(res.error ?? 'Erreur lors de la suppression.')
     }

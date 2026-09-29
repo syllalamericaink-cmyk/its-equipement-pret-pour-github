@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { StatusBadge } from '@/components/admin/status-badge'
 import { ConfirmDialog } from '@/components/admin/confirm-dialog'
-import { adminFetch, adminPatch, formatCurrency, formatDate, formatDateTime } from '@/lib/admin-api'
+import { adminFetch, adminPost, adminPut, formatCurrency, formatDate, formatDateTime } from '@/lib/admin-api'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,6 +35,8 @@ import {
   Save,
   ExternalLink,
   FileText,
+  FilePlus2,
+  Loader2,
 } from 'lucide-react'
 
 const STATUSES = ['PENDING', 'REVIEWED', 'QUOTED', 'ACCEPTED', 'REJECTED', 'EXPIRED'] as const
@@ -58,7 +60,9 @@ interface ProductVariant {
 
 interface QuoteRequestItem {
   id: string
+  productId: string
   productName: string
+  productVariantId?: string
   productBasePrice: number
   unitPrice: number
   quantity: number
@@ -111,6 +115,7 @@ export default function DemandeDevisDetailPage() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [createQuoteLoading, setCreateQuoteLoading] = useState(false)
   const [uploads, setUploads] = useState<Record<string, { id: string; filename: string; originalName: string; url: string; mimeType: string; size: number }>>({})
 
   useEffect(() => {
@@ -132,7 +137,7 @@ export default function DemandeDevisDetailPage() {
             })
           })
           if (fileIds.length > 0) {
-            const uploadsRes = await adminFetch(`/api/admin/uploads?${fileIds.map(fid => `entityId=${fid}`).join('&')}`)
+            const uploadsRes = await adminFetch(`/api/admin/uploads?ids=${fileIds.join(',')}`)
             if (uploadsRes.success && uploadsRes.data) {
               const map: Record<string, Record<string, unknown>> = {}
               const uItems = uploadsRes.data as unknown as Record<string, unknown>[]
@@ -149,12 +154,12 @@ export default function DemandeDevisDetailPage() {
 
   const handleSaveNotes = async () => {
     setSavingNotes(true)
-    const res = await adminPatch(`/api/admin/quote-requests/${id}`, { adminNotes })
+    const res = await adminPut(`/api/admin/quote-requests/${id}`, { adminNotes })
     setSavingNotes(false)
     if (res.success) {
-      toast.success('Notes enregistrees avec succes')
+      toast.success('Notes enregistrées avec succès')
     } else {
-      toast.error('Erreur lors de l\'enregistrement des notes')
+      toast.error(res.error || 'Erreur lors de l\'enregistrement des notes')
     }
   }
 
@@ -170,15 +175,38 @@ export default function DemandeDevisDetailPage() {
 
   const handleConfirmStatus = async () => {
     setConfirmLoading(true)
-    const res = await adminPatch(`/api/admin/quote-requests/${id}`, { status: newStatus })
+    const res = await adminPut(`/api/admin/quote-requests/${id}`, { status: newStatus })
     setConfirmLoading(false)
     setConfirmOpen(false)
     if (res.success) {
-      toast.success('Statut mis a jour avec succes')
+      toast.success('Statut mis à jour avec succès')
       setRefreshKey((k) => k + 1)
     } else {
-      toast.error('Erreur lors de la mise a jour du statut')
+      toast.error(res.error || 'Erreur lors de la mise à jour du statut')
       setNewStatus(data?.status ?? '')
+    }
+  }
+
+  const handleCreateQuote = async () => {
+    if (!data) return
+    setCreateQuoteLoading(true)
+    const res = await adminPost<{ id: string }>(`/api/admin/quotes/${id}`, {
+      quoteRequestId: id,
+      items: data.items.map((item) => ({
+        productId: item.productId,
+        productVariantId: item.productVariantId || undefined,
+        productName: item.productName,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+        hasPersonalization: item.hasPersonalization,
+      })),
+    })
+    setCreateQuoteLoading(false)
+    if (res.success && res.data) {
+      toast.success('Devis créé avec succès')
+      router.push(`/admin/quotes/${res.data.id}`)
+    } else {
+      toast.error(res.error || 'Erreur lors de la création du devis')
     }
   }
 
@@ -331,7 +359,7 @@ export default function DemandeDevisDetailPage() {
                 <TableRow>
                   <TableHead>Produit</TableHead>
                   <TableHead>Variante</TableHead>
-                  <TableHead className="text-right">Quantite</TableHead>
+                  <TableHead className="text-right">Quantité</TableHead>
                   <TableHead className="text-right">Prix unitaire</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead>Personnalisation</TableHead>
@@ -363,7 +391,7 @@ export default function DemandeDevisDetailPage() {
                                 {locVal && <Badge variant="outline" className="ml-1">{locVal}</Badge>}
                                 {logoId && uploads[logoId] && (
                                   <a
-                                    href={String(uploads[logoId].url)}
+                                    href={`/api/admin/uploads/${String(uploads[logoId].id)}`}
                                     download={String(uploads[logoId].originalName)}
                                     className="inline-flex items-center gap-1 text-primary hover:underline ml-1"
                                   >
@@ -399,7 +427,7 @@ export default function DemandeDevisDetailPage() {
       {data.quotes.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Devis associes ({data.quotes.length})</CardTitle>
+            <CardTitle>Devis associés ({data.quotes.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -425,6 +453,23 @@ export default function DemandeDevisDetailPage() {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!['REJECTED', 'EXPIRED'].includes(data.status) && data.quotes.length === 0 && (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-medium">Aucun devis pour cette demande</p>
+              <p className="text-sm text-muted-foreground">
+                Créez un devis à partir des articles demandés par le client.
+              </p>
+            </div>
+            <Button onClick={handleCreateQuote} disabled={createQuoteLoading}>
+              {createQuoteLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FilePlus2 className="mr-2 h-4 w-4" />}
+              Créer un devis
+            </Button>
           </CardContent>
         </Card>
       )}

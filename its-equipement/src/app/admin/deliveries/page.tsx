@@ -5,8 +5,10 @@ import Link from 'next/link'
 import { DataTable } from '@/components/admin/data-table'
 import { PageHeader } from '@/components/admin/page-header'
 import { StatusBadge } from '@/components/admin/status-badge'
-import { adminFetch, formatDate } from '@/lib/admin-api'
+import { adminFetch, adminPut, formatDate } from '@/lib/admin-api'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -14,9 +16,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ClipboardList, Package, Truck, CheckCircle2 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ClipboardList, Package, Truck, CheckCircle2, MoreHorizontal } from 'lucide-react'
 
 const STATUSES = ['A_PREPARER', 'PRETE', 'EN_LIVRAISON', 'LIVREE'] as const
+
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  A_PREPARER: ['PRETE'],
+  PRETE: ['EN_LIVRAISON'],
+  EN_LIVRAISON: ['LIVREE'],
+  LIVREE: [],
+}
 
 interface Delivery {
   id: string
@@ -65,25 +80,9 @@ export default function LivraisonsPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<Summary>({ a_preparer: 0, prete: 0, en_livraison: 0, livree: 0 })
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [statusLoading, setStatusLoading] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      const res = await adminFetch<Delivery[]>(`/api/admin/deliveries?limit=9999`)
-      if (!cancelled && res.success && res.data) {
-        const s: Summary = { a_preparer: 0, prete: 0, en_livraison: 0, livree: 0 }
-        for (const d of res.data) {
-          if (d.status === 'A_PREPARER') s.a_preparer++
-          else if (d.status === 'PRETE') s.prete++
-          else if (d.status === 'EN_LIVRAISON') s.en_livraison++
-          else if (d.status === 'LIVREE') s.livree++
-        }
-        setSummary(s)
-      }
-    })()
-    return () => { cancelled = true }
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -100,12 +99,22 @@ export default function LivraisonsPage() {
         if (res.success && res.data) {
           setData(res.data)
           setTotal(res.meta?.total ?? 0)
+          // Compteurs globaux calculés côté serveur (fiables même > 100 livraisons)
+          const counts = (res.meta?.statusCounts ?? {}) as Record<string, number>
+          setSummary({
+            a_preparer: counts.A_PREPARER ?? 0,
+            prete: counts.PRETE ?? 0,
+            en_livraison: counts.EN_LIVRAISON ?? 0,
+            livree: counts.LIVREE ?? 0,
+          })
+        } else {
+          toast.error(res.error || 'Erreur lors du chargement des livraisons')
         }
         setLoading(false)
       }
     })()
     return () => { cancelled = true }
-  }, [page, limit, search, statusFilter])
+  }, [page, limit, search, statusFilter, refreshKey])
 
   const handleSearchChange = useCallback((value: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -117,6 +126,20 @@ export default function LivraisonsPage() {
 
   const handlePageChange = useCallback((p: number) => setPage(p), [])
   const handleLimitChange = useCallback((l: number) => { setLimit(l); setPage(1) }, [])
+
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), [])
+
+  const handleStatusChange = async (delivery: Delivery, newStatus: string) => {
+    setStatusLoading(delivery.id)
+    const res = await adminPut(`/api/admin/deliveries/${delivery.id}`, { status: newStatus })
+    setStatusLoading(null)
+    if (res.success) {
+      toast.success(`Livraison mise à jour : ${newStatus}`)
+      refresh()
+    } else {
+      toast.error(res.error || 'Erreur lors de la mise à jour du statut')
+    }
+  }
 
   const columns = [
     {
@@ -155,13 +178,37 @@ export default function LivraisonsPage() {
     },
     {
       key: 'estimatedDelivery',
-      header: 'Date estimee',
+      header: 'Date estimée',
       render: (item: Delivery) => <span>{item.estimatedDelivery ? formatDate(item.estimatedDelivery) : '—'}</span>,
     },
     {
       key: 'deliveredAt',
-      header: 'Livre le',
+      header: 'Livrée le',
       render: (item: Delivery) => <span>{item.deliveredAt ? formatDate(item.deliveredAt) : '—'}</span>,
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (item: Delivery) => {
+        const nextStatuses = VALID_TRANSITIONS[item.status] ?? []
+        if (nextStatuses.length === 0) return null
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" disabled={statusLoading === item.id}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {nextStatuses.map((s) => (
+                <DropdownMenuItem key={s} onClick={() => handleStatusChange(item, s)}>
+                  Passer à « {s} »
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
     },
   ]
 
@@ -172,7 +219,7 @@ export default function LivraisonsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">A preparer</CardTitle>
+            <CardTitle className="text-sm font-medium">À préparer</CardTitle>
             <ClipboardList className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
@@ -181,7 +228,7 @@ export default function LivraisonsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pretes</CardTitle>
+            <CardTitle className="text-sm font-medium">Prêtes</CardTitle>
             <Package className="h-4 w-4 text-cyan-600" />
           </CardHeader>
           <CardContent>
@@ -199,7 +246,7 @@ export default function LivraisonsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Livrees</CardTitle>
+            <CardTitle className="text-sm font-medium">Livrées</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -221,7 +268,7 @@ export default function LivraisonsPage() {
         loading={loading}
         getRowKey={(item) => item.id}
         emptyTitle="Aucune livraison"
-        emptyDescription="Aucune livraison a afficher."
+        emptyDescription="Aucune livraison à afficher."
         filters={
           <Select
             value={statusFilter || 'ALL'}

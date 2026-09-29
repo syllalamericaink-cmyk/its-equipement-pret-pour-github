@@ -34,11 +34,6 @@ export function checkApiRateLimit(request: NextRequest): boolean {
   return checkRateLimit(`api:${ip}`, RATE_LIMIT_MAX)
 }
 
-export function checkAuthRateLimit(request: NextRequest): boolean {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-  return checkRateLimit(`auth:${ip}`, AUTH_RATE_LIMIT_MAX)
-}
-
 export async function requireAdmin(request: NextRequest) {
   try {
     if (!checkApiRateLimit(request)) {
@@ -75,6 +70,3 @@ export async function requireAdmin(request: NextRequest) {
   }
 }
 
-export function parseBody<T>(request: Request): Promise<T> {
-  return request.json() as Promise<T>
-}

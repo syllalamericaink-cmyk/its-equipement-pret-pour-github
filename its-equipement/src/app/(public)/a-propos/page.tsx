@@ -14,12 +14,12 @@ import {
 } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'A propos | ITS Equipement',
-  description: "Decouvrez ITS Equipement, votre partenaire de confiance en Cote d'Ivoire pour les equipements de protection individuelle (EPI) et les vetements de travail personnalises.",
+  title: 'À propos | ITS Équipement',
+  description: "Découvrez ITS Équipement, votre partenaire de confiance en Côte d'Ivoire pour les équipements de protection individuelle (EPI) et les vêtements de travail personnalisés.",
   alternates: { canonical: '/a-propos' },
   openGraph: {
-    title: 'A propos | ITS Equipement',
-    description: "Decouvrez ITS Equipement, votre partenaire de confiance en Cote d'Ivoire pour les equipements de protection individuelle (EPI) et les vetements de travail personnalises.",
+    title: 'À propos | ITS Équipement',
+    description: "Découvrez ITS Équipement, votre partenaire de confiance en Côte d'Ivoire pour les équipements de protection individuelle (EPI) et les vêtements de travail personnalisés.",
     url: '/a-propos',
   },
 }
@@ -34,10 +34,10 @@ export default function AProposPage() {
         </div>
         <div className="container mx-auto px-4 py-16 md:py-24 text-center relative z-10">
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-            A propos d&apos;ITS Equipement
+            À propos d&apos;ITS Équipement
           </h1>
           <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
-            Votre partenaire en Cote d&apos;Ivoire pour les equipements de protection individuelle et vetements de travail personnalises
+            Votre partenaire en Côte d&apos;Ivoire pour les équipements de protection individuelle et vêtements de travail personnalisés
           </p>
         </div>
       </section>
@@ -45,32 +45,32 @@ export default function AProposPage() {
       <section className="container mx-auto px-4 py-16 md:py-20">
         <div className="mx-auto max-w-3xl space-y-6 text-muted-foreground leading-relaxed">
           <p>
-            ITS Equipement est une filiale du groupe ITSchool & Dynamic Group, basee a
-            Abidjan, Cote d&apos;Ivoire. Nous sommes specialises dans la fourniture
-            d&apos;equipements de protection individuelle (EPI), d&apos;equipements de
-            protection collective (EPC) et de vetements de travail professionnels,
-            destines aux entreprises ivoiriennes de tous secteurs d&apos;activite.
+            ITS Équipement est une filiale du groupe ITSchool &amp; Dynamic Group, basée à
+            Abidjan, Côte d&apos;Ivoire. Nous sommes spécialisés dans la fourniture
+            d&apos;équipements de protection individuelle (EPI), d&apos;équipements de
+            protection collective (EPC) et de vêtements de travail professionnels,
+            destinés aux entreprises ivoiriennes de tous secteurs d&apos;activité.
           </p>
           <p>
             Nous accompagnons les entreprises, les chantiers, les usines et les
-            collectivites dans leur equipement de securite. Notre catalogue comprend
-            des casques, gants, chaussures de securite, gilets haute visibilite,
-            vetements ignifuges, protections auditives et visuelles, ainsi que
-            l&apos;ensemble des EPC necessaires a la securite sur les lieux de travail.
+            collectivités dans leur équipement de sécurité. Notre catalogue comprend
+            des casques, gants, chaussures de sécurité, gilets haute visibilité,
+            vêtements ignifuges, protections auditives et visuelles, ainsi que
+            l&apos;ensemble des EPC nécessaires à la sécurité sur les lieux de travail.
           </p>
           <p>
-            La personnalisation est au coeur de notre offre. Nous proposons des
+            La personnalisation est au cœur de notre offre. Nous proposons des
             services d&apos;impression textile, de broderie et de marquage pour
-            integrer le logo, les couleurs et l&apos;identite visuelle de votre entreprise
-            sur chaque equipement. Que ce soit pour uniformiser vos equipes ou
-            respecter les obligations reglementaires, nous adaptons chaque commande
-            a vos besoins specifiques.
+            intégrer le logo, les couleurs et l&apos;identité visuelle de votre entreprise
+            sur chaque équipement. Que ce soit pour uniformiser vos équipes ou
+            respecter les obligations réglementaires, nous adaptons chaque commande
+            à vos besoins spécifiques.
           </p>
           <p>
-            La qualite et la conformite de nos produits sont nos priorites. Nous
-            selections nos fournisseurs avec rigueur et verifions chaque article
-            avant expedition afin de garantir des equipements durables, conformes
-            et confortables pour vos equipes, meme dans les conditions de travail
+            La qualité et la conformité de nos produits sont nos priorités. Nous
+            sélectionnons nos fournisseurs avec rigueur et vérifions chaque article
+            avant expédition afin de garantir des équipements durables, conformes
+            et confortables pour vos équipes, même dans les conditions de travail
             les plus exigeantes.
           </p>
         </div>
@@ -86,27 +86,27 @@ export default function AProposPage() {
           {[
             {
               icon: Award,
-              title: 'Qualite',
+              title: 'Qualité',
               description:
-                "Des produits selectionnes pour leur durabilite et leur conformite aux normes de securite applicables en Cote d'Ivoire.",
+                "Des produits sélectionnés pour leur durabilité et leur conformité aux normes de sécurité applicables en Côte d'Ivoire.",
             },
             {
               icon: HeadphonesIcon,
               title: 'Service',
               description:
-                "Une equipe basee a Abidjan, a votre ecoute pour vous conseiller et vous accompagner a chaque etape de votre commande.",
+                'Une équipe basée à Abidjan, à votre écoute pour vous conseiller et vous accompagner à chaque étape de votre commande.',
             },
             {
               icon: Palette,
               title: 'Personnalisation',
               description:
-                'Impression, broderie, marquage : chaque equipement peut etre personnalise avec le logo et les couleurs de votre entreprise.',
+                'Impression, broderie, marquage : chaque équipement peut être personnalisé avec le logo et les couleurs de votre entreprise.',
             },
             {
               icon: ShieldCheck,
-              title: 'Fiabilite',
+              title: 'Fiabilité',
               description:
-                'Des delais respectes, des produits conformes et un suivi rigoureux de chaque commande, de Abidjan a l&apos;interieur du pays.',
+                "Des délais respectés, des produits conformes et un suivi rigoureux de chaque commande, de Abidjan à l'intérieur du pays.",
             },
           ].map((value) => (
             <Card key={value.title} className="text-center h-full">
@@ -135,19 +135,19 @@ export default function AProposPage() {
                 icon: ShieldCheck,
                 title: 'EPI & EPC',
                 description:
-                  'Casques, gants, chaussures de securite, gilets haute visibilite, protections auditives et visuelles.',
+                  'Casques, gants, chaussures de sécurité, gilets haute visibilité, protections auditives et visuelles.',
               },
               {
                 icon: Palette,
                 title: 'Personnalisation',
                 description:
-                  'Impression textile, broderie, marquage logo sur vetements de travail, casques et accessoires.',
+                  'Impression textile, broderie, marquage logo sur vêtements de travail, casques et accessoires.',
               },
               {
                 icon: Truck,
                 title: 'Livraison',
                 description:
-                  "Livraison sur Abidjan et dans les principales villes de Cote d'Ivoire.",
+                  "Livraison sur Abidjan et dans les principales villes de Côte d'Ivoire.",
               },
             ].map((item) => (
               <Card key={item.title} className="text-center h-full">
@@ -169,7 +169,7 @@ export default function AProposPage() {
       <section className="container mx-auto px-4 py-16 md:py-20">
         <div className="mx-auto max-w-2xl space-y-4 text-muted-foreground leading-relaxed">
           <h2 className="text-2xl font-bold tracking-tight md:text-3xl text-center mb-8">
-            Ou nous trouver
+            Où nous trouver
           </h2>
           <div className="flex items-start gap-4 rounded-lg border p-5">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -178,7 +178,7 @@ export default function AProposPage() {
             <div>
               <p className="font-medium text-foreground">Adresse</p>
               <p className="text-sm mt-1">
-                Cocody 2 Plateaux, Cite Sanon — Abidjan, Cote d&apos;Ivoire
+                Cocody 2 Plateaux, Cité Sanon — Abidjan, Côte d&apos;Ivoire
               </p>
             </div>
           </div>
@@ -209,7 +209,7 @@ export default function AProposPage() {
               Envie de travailler avec nous ?
             </h2>
             <p className="text-muted-foreground mb-8 leading-relaxed">
-              Notre equipe commerciale est a votre disposition pour etudier vos
+              Notre équipe commerciale est à votre disposition pour étudier vos
               besoins et vous proposer une solution sur mesure.
             </p>
             <Button asChild size="lg" className="px-10">

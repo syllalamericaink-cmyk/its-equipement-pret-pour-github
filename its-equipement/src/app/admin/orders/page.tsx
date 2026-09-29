@@ -16,7 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 
-const STATUSES = ['CONFIRMED', 'IN_PRODUCTION', 'READY', 'SHIPPED', 'DELIVERED', 'CANCELLED'] as const
+const STATUSES = ['CONFIRMED', 'ACOMPTE_RECU', 'PAIEMENT_A_LIVRAISON', 'IN_PRODUCTION', 'READY', 'SHIPPED', 'DELIVERED', 'CANCELLED'] as const
 
 interface Order {
   id: string

@@ -35,7 +35,7 @@ async function calculateItemPrice(
   }
 
   if (quantity < product.minQuantity) {
-    throw new Error(`Quantite minimum pour ${product.name}: ${product.minQuantity}`)
+    throw new Error(`Quantité minimum pour ${product.name} : ${product.minQuantity}`)
   }
 
   return {
@@ -50,7 +50,7 @@ export async function createQuoteRequest(data: {
   client: {
     companyName: string
     contactName: string
-    email: string
+    email?: string | null
     phone?: string | null
     address?: string | null
     city?: string | null

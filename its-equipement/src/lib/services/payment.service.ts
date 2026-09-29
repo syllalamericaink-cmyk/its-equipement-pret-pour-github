@@ -299,10 +299,21 @@ export async function getPayments(params: {
   skip: number
   status?: string
   orderId?: string
+  search?: string
 }) {
   const where: Prisma.PaymentWhereInput = {}
   if (params.status) where.status = params.status
   if (params.orderId) where.orderId = params.orderId
+  if (params.search?.trim()) {
+    const q = params.search.trim()
+    where.OR = [
+      { transactionRef: { contains: q, mode: 'insensitive' } },
+      { providerRef: { contains: q, mode: 'insensitive' } },
+      { order: { orderNumber: { contains: q, mode: 'insensitive' } } },
+      { order: { quote: { quoteRequest: { client: { companyName: { contains: q, mode: 'insensitive' } } } } } },
+      { order: { quote: { quoteRequest: { client: { contactName: { contains: q, mode: 'insensitive' } } } } } },
+    ]
+  }
 
   const [total, items] = await Promise.all([
     db.payment.count({ where }),
@@ -323,6 +334,14 @@ export async function getPayments(params: {
   ])
 
   return { items, total }
+}
+
+/** Compteurs par statut pour les cartes de résumé (calculés côté serveur, fiables). */
+export async function getPaymentStatusCounts() {
+  const rows = await db.payment.groupBy({ by: ['status'], _count: true, _sum: { amount: true } })
+  return Object.fromEntries(
+    rows.map(r => [r.status, { count: r._count, amount: r._sum.amount ?? 0 }])
+  )
 }
 
 export async function getPaymentById(id: string) {

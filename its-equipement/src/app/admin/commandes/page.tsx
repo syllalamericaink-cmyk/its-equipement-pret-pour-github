@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/admin/page-header'
 import { StatusBadge } from '@/components/admin/status-badge'
 import { adminFetch, formatDateTime } from '@/lib/admin-api'
+import { formatCurrency } from '@/lib/format'
 import { useSession } from 'next-auth/react'
 import {
   Select,
@@ -40,8 +41,6 @@ const STATUSES = [
   'ANNULEE',
 ] as const
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount) + ' FCFA'
 
 interface PublicOrder {
   id: string
@@ -151,7 +150,7 @@ export default function CommandesPage() {
       ) : data.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-lg font-medium">Aucune commande</p>
-          <p className="text-sm text-muted-foreground">Aucune commande a afficher.</p>
+          <p className="text-sm text-muted-foreground">Aucune commande à afficher.</p>
         </div>
       ) : (
         <>
@@ -162,7 +161,7 @@ export default function CommandesPage() {
                   <TableHead>Numero</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Client</TableHead>
-                  <TableHead className="hidden md:table-cell">Telephone</TableHead>
+                  <TableHead className="hidden md:table-cell">Téléphone</TableHead>
                   <TableHead className="hidden lg:table-cell">Ville</TableHead>
                   <TableHead className="text-center hidden sm:table-cell">Produits</TableHead>
                   <TableHead className="text-right">Total</TableHead>
@@ -232,7 +231,7 @@ export default function CommandesPage() {
                 onClick={() => setPage((p) => p - 1)}
               >
                 <ChevronLeft className="h-4 w-4" />
-                Precedent
+                Précédent
               </Button>
               <Button
                 variant="outline"

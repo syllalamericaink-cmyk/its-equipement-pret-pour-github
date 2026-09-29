@@ -38,9 +38,20 @@ export async function getDeliveries(params: {
   limit: number
   skip: number
   status?: string
+  search?: string
 }) {
   const where: Record<string, unknown> = {}
   if (params.status) where.status = params.status
+  if (params.search?.trim()) {
+    const q = params.search.trim()
+    where.OR = [
+      { trackingNumber: { contains: q, mode: 'insensitive' } },
+      { carrier: { contains: q, mode: 'insensitive' } },
+      { order: { orderNumber: { contains: q, mode: 'insensitive' } } },
+      { order: { quote: { quoteRequest: { client: { companyName: { contains: q, mode: 'insensitive' } } } } } },
+      { order: { quote: { quoteRequest: { client: { contactName: { contains: q, mode: 'insensitive' } } } } } },
+    ]
+  }
 
   const [total, items] = await Promise.all([
     db.delivery.count({ where }),

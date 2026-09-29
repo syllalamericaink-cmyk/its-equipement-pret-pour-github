@@ -1,4 +1,5 @@
 import { db } from '../db'
+import { formatCurrency } from '../format'
 import { sendWhatsAppMessage } from './whatsapp.service'
 import type { Prisma } from '@prisma/client'
 
@@ -83,10 +84,10 @@ export async function createPublicOrder(data: {
     const product = productMap.get(item.productId)!
     const quantity = Number.isInteger(item.quantity) ? item.quantity : 0
     if (quantity < product.minQuantity || quantity <= 0) {
-      throw new Error(`Quantite invalide pour ${product.name}`)
+      throw new Error(`Quantité invalide pour ${product.name}`)
     }
 
-    let variant = undefined
+    let variant: (typeof product.variants)[number] | undefined = undefined
     if (item.variantId) {
       variant = product.variants.find(v => v.id === item.variantId)
       if (!variant) throw new Error(`Variante invalide pour ${product.name}`)
@@ -192,10 +193,6 @@ async function generateDevisNumber(): Promise<string> {
   return `DEV-ITS-${year}-${Date.now().toString().slice(-5)}`
 }
 
-function formatFCFA(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount) + ' FCFA'
-}
-
 function buildNotificationMessage(order: PublicOrderWithItems): string {
   const isDevis = !order.orderNumber && order.devisNumber
   const title = isDevis ? 'NOUVEAU DEVIS' : 'NOUVELLE COMMANDE'
@@ -215,7 +212,7 @@ function buildNotificationMessage(order: PublicOrderWithItems): string {
   message += `Type de demande : ${requestType}\n\n`
   message += `\u{1F464} Client\n`
   message += `Nom : ${order.clientName}${order.clientFirstName ? ' ' + order.clientFirstName : ''}\n`
-  message += `Telephone WhatsApp : ${order.clientPhone}\n`
+  message += `Téléphone WhatsApp : ${order.clientPhone}\n`
   message += `Type : ${order.clientType}\n`
   if (order.clientEmail) message += `Email : ${order.clientEmail}\n`
   message += '\n'
@@ -243,8 +240,8 @@ function buildNotificationMessage(order: PublicOrderWithItems): string {
     message += `* ${item.productName}\n`
     if (item.productSku) message += `  Ref : ${item.productSku}\n`
     if (item.variantName) message += `  Variante : ${item.variantName}\n`
-    message += `  Quantite : ${item.quantity}\n`
-    message += `  Prix : ${formatFCFA(Number(item.unitPrice))}\n`
+    message += `  Quantité : ${item.quantity}\n`
+    message += `  Prix : ${formatCurrency(Number(item.unitPrice))}\n`
     if (item.hasPersonalization && item.personalizationData) {
       const pd = item.personalizationData as Record<string, unknown>
       const details: string[] = []
@@ -256,9 +253,9 @@ function buildNotificationMessage(order: PublicOrderWithItems): string {
   }
 
   message += `\u{1F4B0} Montants\n`
-  message += `Sous-total : ${formatFCFA(Number(order.subtotal))}\n`
-  message += `Livraison : ${formatFCFA(Number(order.deliveryFee))}\n`
-  message += `Total : ${formatFCFA(Number(order.total))}\n\n`
+  message += `Sous-total : ${formatCurrency(Number(order.subtotal))}\n`
+  message += `Livraison : ${formatCurrency(Number(order.deliveryFee))}\n`
+  message += `Total : ${formatCurrency(Number(order.total))}\n\n`
 
   message += `\u{1F514} ACTION\n**Un commercial doit recontacter le client sur ${order.clientPhone} pour finaliser.**`
 

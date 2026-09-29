@@ -20,19 +20,23 @@ export async function POST(request: NextRequest) {
   try {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
     if (!checkQuoteRequestRateLimit(ip)) {
-      return error('Trop de demandes de devis. Reessayez plus tard.', 429)
+      return error('Trop de demandes de devis. Réessayez plus tard.', 429)
     }
 
     const body = await request.json()
     const parsed = quoteRequestSchema.safeParse(body)
     if (!parsed.success) {
       const firstError = parsed.error.issues[0]
-      return error(firstError?.message ?? 'Donnees invalides', 422)
+      return error(firstError?.message ?? 'Données invalides', 422)
     }
 
     const result = await createQuoteRequest(parsed.data)
     return success(result, undefined)
-  } catch {
+  } catch (e) {
+    // Erreurs métier (produit introuvable, quantité minimum non atteinte...) : message clair pour le client
+    if (e instanceof Error && e.message && !e.message.includes('Invalid')) {
+      return error(e.message, 400)
+    }
     return serverError()
   }
 }

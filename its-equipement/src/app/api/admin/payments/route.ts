@@ -1,5 +1,5 @@
 import { requireAdmin } from '@/lib/api-auth'
-import { getPayments, initiatePayment } from '@/lib/services/payment.service'
+import { getPayments, getPaymentStatusCounts, initiatePayment } from '@/lib/services/payment.service'
 import { success, error, getPaginationParams, buildMeta, serverError } from '@/lib/api-response'
 import { logAction } from '@/lib/services/admin-log.service'
 import type { NextRequest } from 'next/server'
@@ -13,10 +13,12 @@ export async function GET(request: NextRequest) {
     const { page, limit, skip } = getPaginationParams(request)
     const status = searchParams.get('status') ?? undefined
     const orderId = searchParams.get('orderId') ?? undefined
+    const search = searchParams.get('search') ?? undefined
 
-    const { items, total } = await getPayments({ page, limit, skip, status, orderId })
+    const { items, total } = await getPayments({ page, limit, skip, status, orderId, search })
+    const statusCounts = await getPaymentStatusCounts()
 
-    return success(items, buildMeta(page, limit, total))
+    return success(items, { ...buildMeta(page, limit, total), statusCounts })
   } catch {
     return serverError()
   }

@@ -46,7 +46,10 @@ export async function POST(
     sendOrderNotification(result.id).catch(() => {})
 
     return success(result)
-  } catch {
+  } catch (e) {
+    if (e instanceof Error && e.message && !e.message.includes('Invalid')) {
+      return error(e.message, 400)
+    }
     return serverError()
   }
 }

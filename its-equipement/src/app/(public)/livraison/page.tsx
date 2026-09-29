@@ -15,12 +15,12 @@ import {
 } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Livraison | ITS Equipement',
-  description: "Informations sur les conditions de livraison ITS Equipement en Cote d'Ivoire : delais, zones couvertes et suivi de commande.",
+  title: 'Livraison | ITS Équipement',
+  description: "Informations sur les conditions de livraison ITS Équipement en Côte d'Ivoire : délais, zones couvertes et suivi de commande.",
   alternates: { canonical: '/livraison' },
   openGraph: {
-    title: 'Livraison | ITS Equipement',
-    description: "Informations sur les conditions de livraison ITS Equipement en Cote d'Ivoire : delais, zones couvertes et suivi de commande.",
+    title: 'Livraison | ITS Équipement',
+    description: "Informations sur les conditions de livraison ITS Équipement en Côte d'Ivoire : délais, zones couvertes et suivi de commande.",
     url: '/livraison',
   },
 }
@@ -46,21 +46,21 @@ export default function LivraisonPage() {
       <section className="container mx-auto px-4 py-16 md:py-20">
         <div className="mx-auto max-w-3xl space-y-6 text-muted-foreground leading-relaxed">
           <p>
-            Chez ITS Equipement, nous mettons tout en oeuvre pour garantir une livraison rapide
-            et securisee de l&apos;ensemble de vos commandes. Notre logistique est adaptee aux
+            Chez ITS Équipement, nous mettons tout en œuvre pour garantir une livraison rapide
+            et sécurisée de l&apos;ensemble de vos commandes. Notre logistique est adaptée aux
             volumes B2B et nous travaillons avec des transporteurs professionnels
-            fiables pour assurer la qualite du service jusqu&apos;a votre adresse.
+            fiables pour assurer la qualité du service jusqu&apos;a votre adresse.
           </p>
           <p>
-            Chaque commande est preparee avec soin dans nos ateliers, puis emballee de maniere
-            protectrice pour supporter les contraintes du transport. Vous recevez un numero de
-            suivi des l&apos;expedition afin de suivre l&apos;avancee de votre livraison.
+            Chaque commande est préparée avec soin dans nos ateliers, puis emballée de manière
+            protectrice pour supporter les contraintes du transport. Vous recevez un numéro de
+            suivi dès l&apos;expédition afin de suivre l'avancée de votre livraison.
           </p>
           <p>
-            Nous livrons a Abidjan et dans les principales villes de Cote d&apos;Ivoire
-            (Bouake, Daloa, San Pedro, Yamoussoukro, Korhogo, Gagnoa, etc.).
+            Nous livrons à Abidjan et dans les principales villes de Cote d&apos;Ivoire
+            (Bouaké, Daloa, San Pedro, Yamoussoukro, Korhogo, Gagnoa, etc.).
             Pour toute demande de livraison dans une zone non couverte,
-            n&apos;hesitez pas a nous contacter afin que nous etudiions les possibilites et les tarifs associes.
+            n'hésitez pas à nous contacter afin que nous étudiions les possibilités et les tarifs associés.
           </p>
         </div>
       </section>
@@ -82,16 +82,16 @@ export default function LivraisonPage() {
                   {
                     icon: MapPin,
                     label: 'Zone de livraison',
-                    value: "Abidjan et principales villes de Cote d'Ivoire",
+                    value: "Abidjan et principales villes de Côte d'Ivoire",
                   },
                   {
                     icon: Clock,
-                    label: 'Delai moyen',
-                    value: '5 a 10 jours ouvrables apres validation du devis',
+                    label: 'Délai moyen',
+                    value: '5 à 10 jours ouvrables après validation du devis',
                   },
                   {
                     icon: CheckCircle,
-                    label: 'Livraison a Abidjan',
+                    label: 'Livraison à Abidjan',
                     value: 'Gratuite selon volume et destination',
                   },
                   {
@@ -102,7 +102,7 @@ export default function LivraisonPage() {
                   {
                     icon: CheckCircle,
                     label: 'Suivi de commande',
-                    value: "Disponible des l'expedition",
+                    value: "Disponible dès l'expédition",
                   },
                 ].map((item) => (
                   <div
@@ -140,35 +140,35 @@ export default function LivraisonPage() {
                   icon: FileText,
                   title: 'Validation du devis',
                   description:
-                    'Vous recevez et validez le devis detaille correspondant a votre commande.',
+                    'Vous recevez et validez le devis détaillé correspondant à votre commande.',
                 },
                 {
                   step: 2,
                   icon: ClipboardCheck,
                   title: 'Confirmation de commande',
                   description:
-                    'Apres validation, votre commande est officiellement enregistree dans notre systeme.',
+                    'Après validation, votre commande est officiellement enregistrée dans notre système.',
                 },
                 {
                   step: 3,
                   icon: Cog,
                   title: 'Mise en production',
                   description:
-                    'Vos articles sont prepares, personnalises si necessaire, et controles qualite.',
+                    'Vos articles sont préparés, personnalisés si nécessaire, et contrôlés qualité.',
                 },
                 {
                   step: 4,
                   icon: PackageCheck,
-                  title: 'Expedition',
+                  title: 'Expédition',
                   description:
-                    'Votre commande est emballee et confiee a notre transporteur partenaire.',
+                    'Votre commande est emballée et confiée à notre transporteur partenaire.',
                 },
                 {
                   step: 5,
                   icon: Truck,
                   title: 'Livraison',
                   description:
-                    "Reception de votre commande a l'adresse indiquee avec suivi en temps reel.",
+                    "Réception de votre commande à l'adresse indiquée avec suivi en temps réel.",
                 },
               ].map((item, index) => (
                 <div
@@ -210,10 +210,10 @@ export default function LivraisonPage() {
               <FileText className="h-7 w-7" aria-hidden="true" />
             </div>
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl mb-3">
-              Pret a commander ?
+              Prêt à commander ?
             </h2>
             <p className="text-muted-foreground mb-8 leading-relaxed">
-              Demandez votre devis personnalise et recevez une reponse sous 24 a 48
+              Demandez votre devis personnalisé et recevez une réponse sous 24 à 48
               heures ouvrables.
             </p>
             <Button asChild size="lg" className="px-10">

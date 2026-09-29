@@ -43,8 +43,27 @@ export async function POST(
       isRequired: parsed.data.isRequired ?? false,
       config: parsed.data.config ? JSON.parse(JSON.stringify(parsed.data.config)) as Prisma.InputJsonValue : undefined,
       sortOrder: parsed.data.sortOrder ?? 0,
+      isActive: parsed.data.isActive,
     })
 
+    return success(result)
+  } catch {
+    return serverError()
+  }
+}
+
+export async function DELETE(
+  request: NextRequest
+) {
+  try {
+    const { error: authError } = await requireAdmin(request)
+    if (authError) return authError
+
+    const { searchParams } = new URL(request.url)
+    const optionId = searchParams.get('optionId')
+    if (!optionId) return error('optionId requis', 422)
+
+    const result = await deletePersonalizationOption(optionId)
     return success(result)
   } catch {
     return serverError()

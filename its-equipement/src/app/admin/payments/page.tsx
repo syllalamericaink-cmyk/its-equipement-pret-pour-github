@@ -6,6 +6,7 @@ import { DataTable } from '@/components/admin/data-table'
 import { PageHeader } from '@/components/admin/page-header'
 import { StatusBadge } from '@/components/admin/status-badge'
 import { adminFetch, adminPost, formatCurrency, formatDate, formatDateTime } from '@/lib/admin-api'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -84,24 +85,8 @@ export default function PaiementsPage() {
   const [actionDialog, setActionDialog] = useState<{ type: 'fail' | 'cancel' | 'refund'; id: string } | null>(null)
   const [failReason, setFailReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
-
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      const res = await adminFetch<Payment[]>(`/api/admin/payments?limit=9999`)
-      if (!cancelled && res.success && res.data) {
-        const s: Summary = { enAttente: 0, paye: 0, echec: 0 }
-        for (const p of res.data) {
-          if (p.status === 'EN_ATTENTE') s.enAttente += p.amount
-          else if (p.status === 'PAYE') s.paye += p.amount
-          else if (p.status === 'ECHEC') s.echec += p.amount
-        }
-        setSummary(s)
-      }
-    })()
-    return () => { cancelled = true }
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -120,12 +105,21 @@ export default function PaiementsPage() {
         if (res.success && res.data) {
           setData(res.data)
           setTotal(res.meta?.total ?? 0)
+          // Compteurs globaux calculés côté serveur (fiables même > 100 paiements)
+          const counts = (res.meta?.statusCounts ?? {}) as Record<string, { count: number; amount: number }>
+          setSummary({
+            enAttente: counts.EN_ATTENTE?.amount ?? 0,
+            paye: counts.PAYE?.amount ?? 0,
+            echec: counts.ECHEC?.amount ?? 0,
+          })
+        } else {
+          toast.error(res.error || 'Erreur lors du chargement des paiements')
         }
         setLoading(false)
       }
     })()
     return () => { cancelled = true }
-  }, [page, limit, search, statusFilter])
+  }, [page, limit, search, statusFilter, refreshKey])
 
   const handleSearchChange = useCallback((value: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -145,31 +139,42 @@ export default function PaiementsPage() {
   }, [])
 
   const refresh = useCallback(() => {
-    setPage(p => p)
+    setRefreshKey((k) => k + 1)
   }, [])
 
   const handleConfirm = async () => {
     if (!confirmDialogId) return
     setActionLoading(true)
-    await adminPost(`/api/admin/payments/${confirmDialogId}?action=confirm`, {})
+    const res = await adminPost(`/api/admin/payments/${confirmDialogId}?action=confirm`, {})
     setActionLoading(false)
     setConfirmDialogId(null)
+    if (res.success) {
+      toast.success('Paiement confirmé avec succès')
+    } else {
+      toast.error(res.error || 'Erreur lors de la confirmation du paiement')
+    }
     refresh()
   }
 
   const handleAction = async () => {
     if (!actionDialog) return
     setActionLoading(true)
+    let res
     if (actionDialog.type === 'fail') {
-      await adminPost(`/api/admin/payments/${actionDialog.id}?action=fail`, { reason: failReason })
+      res = await adminPost(`/api/admin/payments/${actionDialog.id}?action=fail`, { reason: failReason })
     } else if (actionDialog.type === 'cancel') {
-      await adminPost(`/api/admin/payments/${actionDialog.id}?action=cancel`, {})
-    } else if (actionDialog.type === 'refund') {
-      await adminPost(`/api/admin/payments/${actionDialog.id}?action=refund`, {})
+      res = await adminPost(`/api/admin/payments/${actionDialog.id}?action=cancel`, {})
+    } else {
+      res = await adminPost(`/api/admin/payments/${actionDialog.id}?action=refund`, {})
     }
     setActionLoading(false)
     setActionDialog(null)
     setFailReason('')
+    if (res.success) {
+      toast.success('Action effectuée avec succès')
+    } else {
+      toast.error(res.error || 'Erreur lors de l\'action sur le paiement')
+    }
     refresh()
   }
 
@@ -205,7 +210,7 @@ export default function PaiementsPage() {
     },
     {
       key: 'method',
-      header: 'Methode',
+      header: 'Méthode',
       render: (item: Payment) => (
         <div className="flex flex-col gap-0.5">
           <span>{item.method || '—'}</span>
@@ -227,7 +232,7 @@ export default function PaiementsPage() {
     },
     {
       key: 'dueDate',
-      header: 'Date echeance',
+      header: 'Date échéance',
       render: (item: Payment) => <span>{item.dueDate ? formatDate(item.dueDate) : '—'}</span>,
     },
     {
@@ -257,7 +262,7 @@ export default function PaiementsPage() {
               {item.status === 'EN_ATTENTE' && (
                 <DropdownMenuItem onClick={() => setActionDialog({ type: 'fail', id: item.id })}>
                   <XCircle className="mr-2 h-4 w-4 text-red-600" />
-                  Marquer en echec
+                  Marquer en échec
                 </DropdownMenuItem>
               )}
               {item.status === 'EN_ATTENTE' && (
@@ -295,7 +300,7 @@ export default function PaiementsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total paye</CardTitle>
+            <CardTitle className="text-sm font-medium">Total payé</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -304,7 +309,7 @@ export default function PaiementsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total en echec</CardTitle>
+            <CardTitle className="text-sm font-medium">Total en échec</CardTitle>
             <XCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
@@ -326,7 +331,7 @@ export default function PaiementsPage() {
         loading={loading}
         getRowKey={(item) => item.id}
         emptyTitle="Aucun paiement"
-        emptyDescription="Aucun paiement a afficher."
+        emptyDescription="Aucun paiement à afficher."
         filters={
           <Select
             value={statusFilter || 'ALL'}
@@ -355,7 +360,7 @@ export default function PaiementsPage() {
           <DialogHeader>
             <DialogTitle>Confirmer le paiement</DialogTitle>
             <DialogDescription>
-              Voulez-vous vraiment confirmer ce paiement comme paye ?
+              Voulez-vous vraiment confirmer ce paiement comme payé ?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -371,14 +376,14 @@ export default function PaiementsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {actionDialog?.type === 'fail' && 'Marquer en echec'}
+              {actionDialog?.type === 'fail' && 'Marquer en échec'}
               {actionDialog?.type === 'cancel' && 'Annuler le paiement'}
               {actionDialog?.type === 'refund' && 'Rembourser le paiement'}
             </DialogTitle>
             <DialogDescription>
-              {actionDialog?.type === 'fail' && 'Indiquez la raison de l\'echec.'}
+              {actionDialog?.type === 'fail' && 'Indiquez la raison de l\'échec.'}
               {actionDialog?.type === 'cancel' && 'Voulez-vous vraiment annuler ce paiement ?'}
-              {actionDialog?.type === 'refund' && 'Voulez-vous vraiment rembourser ce paiement ? Le montant sera annule.'}
+              {actionDialog?.type === 'refund' && 'Voulez-vous vraiment rembourser ce paiement ? Le montant sera annulé.'}
             </DialogDescription>
           </DialogHeader>
           {actionDialog?.type === 'fail' && (
@@ -388,7 +393,7 @@ export default function PaiementsPage() {
                 id="fail-reason"
                 value={failReason}
                 onChange={(e) => setFailReason(e.target.value)}
-                placeholder="Raison de l'echec..."
+                placeholder="Raison de l'échec..."
                 rows={3}
               />
             </div>

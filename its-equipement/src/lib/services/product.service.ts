@@ -12,10 +12,11 @@ export async function getProducts(params: {
 }) {
   const where: Prisma.ProductWhereInput = {}
   if (params.search) {
+    const q = params.search
     where.OR = [
-      { name: { contains: params.search } },
-      { description: { contains: params.search } },
-      { sku: { contains: params.search } },
+      { name: { contains: q, mode: 'insensitive' } },
+      { description: { contains: q, mode: 'insensitive' } },
+      { sku: { contains: q, mode: 'insensitive' } },
     ]
   }
   if (params.categoryId) {

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { StatusBadge } from '@/components/admin/status-badge'
 import { ConfirmDialog } from '@/components/admin/confirm-dialog'
-import { adminFetch, adminPost, adminPatch, formatCurrency, formatDate, formatDateTime } from '@/lib/admin-api'
+import { adminFetch, adminPost, adminPut, formatCurrency, formatDate, formatDateTime } from '@/lib/admin-api'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -47,6 +47,7 @@ import {
   RefreshCw,
   Send,
   Ban,
+  ShoppingCart,
   MoreVertical,
   CheckCircle2,
   Loader2,
@@ -147,6 +148,7 @@ export default function DevisDetailPage() {
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [createOrderLoading, setCreateOrderLoading] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -176,14 +178,14 @@ export default function DevisDetailPage() {
 
   const handleConfirmStatus = useCallback(async () => {
     setConfirmLoading(true)
-    const res = await adminPatch(`/api/admin/quotes/${id}`, { status: newStatus })
+    const res = await adminPut(`/api/admin/quotes/${id}`, { status: newStatus })
     setConfirmLoading(false)
     setConfirmOpen(false)
     if (res.success) {
-      toast.success('Statut mis a jour avec succes')
+      toast.success('Statut mis à jour avec succès')
       setRefreshKey((k) => k + 1)
     } else {
-      toast.error('Erreur lors de la mise a jour du statut')
+      toast.error(res.error || 'Erreur lors de la mise à jour du statut')
       setNewStatus(data?.status ?? '')
     }
   }, [newStatus, id, data?.status])
@@ -193,7 +195,7 @@ export default function DevisDetailPage() {
     const res = await adminPost(`/api/admin/quotes/${id}/pdf`, {})
     setPdfLoading(false)
     if (res.success) {
-      toast.success('PDF genere avec succes')
+      toast.success('PDF généré avec succès')
       setRefreshKey((k) => k + 1)
     } else {
       toast.error(res.error ?? 'Erreur lors de la generation du PDF')
@@ -209,28 +211,40 @@ export default function DevisDetailPage() {
     const genRes = await adminPost(`/api/admin/quotes/${id}/pdf`, {})
     if (!genRes.success) {
       setPdfLoading(false)
-      toast.error(genRes.error ?? 'Erreur lors de la generation du PDF')
+      toast.error(genRes.error ?? 'Erreur lors de la génération du PDF')
       return
     }
-    const statusRes = await adminPatch(`/api/admin/quotes/${id}`, { status: 'SENT' })
+    const statusRes = await adminPut(`/api/admin/quotes/${id}`, { status: 'SENT' })
     setPdfLoading(false)
     if (statusRes.success) {
-      toast.success('Devis genere et envoye')
+      toast.success('Devis généré et envoyé')
       setRefreshKey((k) => k + 1)
     } else {
-      toast.error('Erreur lors de l\'envoi')
+      toast.error(statusRes.error || 'Erreur lors de l\'envoi')
     }
   }, [id])
 
   const handleCancelQuote = useCallback(async () => {
-    const res = await adminPatch(`/api/admin/quotes/${id}`, { status: 'CANCELLED' })
+    const res = await adminPut(`/api/admin/quotes/${id}`, { status: 'CANCELLED' })
     if (res.success) {
-      toast.success('Devis annule')
+      toast.success('Devis annulé')
       setRefreshKey((k) => k + 1)
     } else {
       toast.error(res.error ?? 'Erreur lors de l\'annulation')
     }
   }, [id])
+
+  const handleCreateOrder = useCallback(async () => {
+    setCreateOrderLoading(true)
+    const res = await adminPost<{ id: string }>(`/api/admin/orders/${id}`, {})
+    setCreateOrderLoading(false)
+    if (res.success && res.data) {
+      toast.success('Commande créée avec succès')
+      router.push(`/admin/orders/${res.data.id}`)
+    } else {
+      toast.error(res.error || 'Erreur lors de la création de la commande')
+    }
+  }, [id, router])
 
   if (loading) {
     return (
@@ -277,7 +291,7 @@ export default function DevisDetailPage() {
               <StatusBadge status={data.status} />
               {hasPdf && <CheckCircle2 className="h-5 w-5 text-green-600" />}
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">Cree le {formatDateTime(data.createdAt)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Créé le {formatDateTime(data.createdAt)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -291,16 +305,16 @@ export default function DevisDetailPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleGeneratePdf}>
                 <RefreshCw className="mr-2 h-4 w-4" />
-                {hasPdf ? 'Regenerer le PDF' : 'Generer le PDF'}
+                {hasPdf ? 'Régénérer le PDF' : 'Générer le PDF'}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleDownloadPdf} disabled={!hasPdf}>
                 <FileDown className="mr-2 h-4 w-4" />
-                Telecharger le PDF
+                Télécharger le PDF
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSendQuote} disabled={isCancelled}>
                 <Send className="mr-2 h-4 w-4" />
-                Generer et envoyer
+                Générer et envoyer
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleCancelQuote} disabled={isCancelled} className="text-destructive">
@@ -376,7 +390,7 @@ export default function DevisDetailPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <CalendarClock className="h-5 w-5" />
-                  Validite
+                  Validité
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -423,7 +437,7 @@ export default function DevisDetailPage() {
                 <TableRow>
                   <TableHead>Produit</TableHead>
                   <TableHead>Variante</TableHead>
-                  <TableHead className="text-right">Quantite</TableHead>
+                  <TableHead className="text-right">Quantité</TableHead>
                   <TableHead className="text-right">Prix unitaire</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead>Personn.</TableHead>
@@ -549,7 +563,7 @@ export default function DevisDetailPage() {
       {data.orders.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Commandes associees ({data.orders.length})</CardTitle>
+            <CardTitle>Commandes associées ({data.orders.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -575,6 +589,23 @@ export default function DevisDetailPage() {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {data.status === 'ACCEPTED' && data.orders.length === 0 && !isCancelled && (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-medium">Devis accepté par le client</p>
+              <p className="text-sm text-muted-foreground">
+                Vous pouvez maintenant créer la commande correspondante.
+              </p>
+            </div>
+            <Button onClick={handleCreateOrder} disabled={createOrderLoading}>
+              {createOrderLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
+              Créer la commande
+            </Button>
           </CardContent>
         </Card>
       )}

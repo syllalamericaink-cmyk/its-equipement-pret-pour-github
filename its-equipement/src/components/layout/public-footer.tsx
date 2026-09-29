@@ -61,7 +61,21 @@ export function PublicFooter() {
                   Livraison
                 </Link>
               </li>
-
+              <li>
+                <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center">
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <Link href="/conditions" className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center">
+                  Conditions générales de vente
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal" className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center">
+                  Mentions légales
+                </Link>
+              </li>
             </ul>
           </div>
 

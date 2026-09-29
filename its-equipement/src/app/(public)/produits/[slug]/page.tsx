@@ -59,7 +59,7 @@ interface FullProduct {
 
 function getStockInfo(stock: number) {
   if (stock >= 10) return { label: 'En stock', color: 'text-emerald-700', bg: 'bg-emerald-50', icon: CheckCircle }
-  if (stock >= 1) return { label: 'Stock limite', color: 'text-amber-700', bg: 'bg-amber-50', icon: AlertTriangle }
+  if (stock >= 1) return { label: 'Stock limité', color: 'text-amber-700', bg: 'bg-amber-50', icon: AlertTriangle }
   return { label: 'Rupture de stock', color: 'text-red-700', bg: 'bg-red-50', icon: XCircle }
 }
 
@@ -101,7 +101,7 @@ function NotFoundState() {
         <Package className="size-12 text-muted-foreground/40 mb-4" />
         <h1 className="text-xl font-bold mb-2">Produit introuvable</h1>
         <p className="text-sm text-muted-foreground max-w-md">
-          Le produit que vous recherchez n'existe pas ou a ete supprime.
+          Le produit que vous recherchez n'existe pas ou a été supprimé.
         </p>
         <Button variant="outline" className="mt-6 min-h-[44px]" asChild>
           <Link href="/produits">Voir le catalogue</Link>
@@ -120,6 +120,7 @@ export default function ProductDetailPage() {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
   const [quantity, setQuantity] = useState(1)
   const addItem = useCartStore((s) => s.addItem)
+  const minQty = Math.max(1, product?.minQuantity ?? 1)
 
   useEffect(() => {
     let cancelled = false
@@ -145,6 +146,7 @@ export default function ProductDetailPage() {
         if (json.success && json.data) {
           const p = json.data as FullProduct
           setProduct(p)
+          setQuantity(Math.max(1, p.minQuantity || 1))
           setSelectedImageIndex(0)
           // Auto-select the only variant when there's exactly one active variant
           const activeVariants = (p.variants ?? []).filter((v) => v.isActive)
@@ -204,7 +206,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (activeVariants.length > 0 && !selectedVariantId) {
-      toast.error('Veuillez selectionner une variante')
+      toast.error('Veuillez sélectionner une variante')
       return
     }
 
@@ -240,7 +242,7 @@ export default function ProductDetailPage() {
       },
     })
 
-    toast.success(`${product.name} ajoute au panier`)
+    toast.success(`${product.name} ajouté au panier`)
   }
 
   return (
@@ -270,7 +272,7 @@ export default function ProductDetailPage() {
                     <button
                       onClick={handlePrevImage}
                       className="absolute left-2 top-1/2 -translate-y-1/2 size-10 rounded-full bg-background/90 hover:bg-background flex items-center justify-center shadow-md transition-colors min-h-[44px] min-w-[44px]"
-                      aria-label="Image precedente"
+                      aria-label="Image précédente"
                     >
                       <ChevronLeft className="size-5" />
                     </button>
@@ -291,7 +293,7 @@ export default function ProductDetailPage() {
                               ? 'bg-primary'
                               : 'bg-background/60 hover:bg-background/80'
                           }`}
-                          aria-label={`Aller a l'image ${idx + 1}`}
+                          aria-label={`Aller à l'image ${idx + 1}`}
                         />
                       ))}
                     </div>
@@ -341,14 +343,14 @@ export default function ProductDetailPage() {
 
           <h1 className="text-xl sm:text-2xl font-bold leading-tight">{product.name}</h1>
 
-          <p className="text-xs text-muted-foreground">Ref : {product.sku}</p>
+          <p className="text-xs text-muted-foreground">Réf : {product.sku}</p>
 
           <Separator />
 
           <div>
             {activeVariants.length > 1 && !selectedVariant && hasPriceRange ? (
               <p className="text-xl sm:text-2xl font-bold">
-                A partir de {formatCurrency(minPrice)}
+                À partir de {formatCurrency(minPrice)}
               </p>
             ) : (
               <p className="text-xl sm:text-2xl font-bold">
@@ -411,7 +413,7 @@ export default function ProductDetailPage() {
                       >
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-sm truncate">{variant.name}</p>
-                          <p className="text-xs text-muted-foreground">Ref : {variant.sku}</p>
+                          <p className="text-xs text-muted-foreground">Réf : {variant.sku}</p>
                         </div>
                         <div className="text-right shrink-0">
                           <p className="font-semibold text-sm">{formatCurrency(variantPrice)}</p>
@@ -466,26 +468,28 @@ export default function ProductDetailPage() {
           <Separator />
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Quantite</label>
+            <label className="text-sm font-medium mb-2 block">
+              Quantité{product.minQuantity > 1 ? ` (minimum ${product.minQuantity})` : ''}
+            </label>
             <div className="flex items-center gap-3">
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
                 className="h-10 w-10"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                disabled={quantity <= 1}
-                aria-label="Diminuer la quantite"
+                onClick={() => setQuantity((q) => Math.max(minQty, q - 1))}
+                disabled={quantity <= minQty}
+                aria-label="Diminuer la quantité"
               >
                 <Minus className="size-4" />
               </Button>
               <input
                 type="number"
-                min={1}
+                min={minQty}
                 value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => setQuantity(Math.max(minQty, parseInt(e.target.value) || minQty))}
                 className="h-10 w-16 text-center rounded-md border bg-background text-sm font-medium"
-                aria-label="Quantite"
+                aria-label="Quantité"
               />
               <Button
                 type="button"
@@ -493,7 +497,7 @@ export default function ProductDetailPage() {
                 size="icon"
                 className="h-10 w-10"
                 onClick={() => setQuantity((q) => q + 1)}
-                aria-label="Augmenter la quantite"
+                aria-label="Augmenter la quantité"
               >
                 <Plus className="size-4" />
               </Button>

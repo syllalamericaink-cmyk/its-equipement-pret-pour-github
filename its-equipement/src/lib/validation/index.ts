@@ -1,15 +1,11 @@
 import { z } from 'zod'
 
-export const loginSchema = z.object({
-  email: z.string().email('Email invalide'),
-  password: z.string().min(1, 'Mot de passe requis').max(128),
-})
-
 export const clientSchema = z.object({
   companyName: z.string().min(1, 'Raison sociale requise').max(200),
   contactName: z.string().min(1, 'Nom du contact requis').max(200),
-  email: z.string().email('Email invalide').max(200),
-  phone: z.string().max(20).optional(),
+  // Email facultatif : beaucoup de clients ivoiriens commandent uniquement par téléphone/WhatsApp
+  email: z.union([z.string().email('Email invalide').max(200), z.literal('')]).optional(),
+  phone: z.string().max(30).optional(),
   address: z.string().max(500).optional(),
   city: z.string().max(200).optional(),
   zipCode: z.string().max(20).optional(),
@@ -37,6 +33,7 @@ export const personalizationOptionSchema = z.object({
   type: z.enum(['logo', 'text']),
   label: z.string().min(1).max(200),
   isRequired: z.boolean().optional(),
+  isActive: z.boolean().optional(),
   config: personalizationOptionConfigSchema.optional(),
   sortOrder: z.number().int().min(0).max(9999).optional(),
 })
@@ -140,15 +137,6 @@ export const quoteUpdateSchema = z.object({
   validUntil: z.string().optional(),
 })
 
-export const statusChangeSchema = z.object({
-  status: z.enum(['ACTIVE', 'INACTIVE']),
-})
-
-export const quoteRequestStatusSchema = z.object({
-  status: z.enum(['PENDING', 'REVIEWED', 'QUOTED', 'ACCEPTED', 'REJECTED', 'EXPIRED']),
-  adminNotes: z.string().max(5000).optional(),
-})
-
 export const quoteStatusSchema = z.object({
   status: z.enum(['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CANCELLED']),
 })
@@ -218,8 +206,9 @@ export const stockMovementSchema = z.object({
 export const clientUpdateSchema = z.object({
   companyName: z.string().min(1).max(200).optional(),
   contactName: z.string().min(1).max(200).optional(),
-  email: z.string().email().max(200).optional(),
-  phone: z.string().max(20).optional(),
+  // Email facultatif : autorise aussi la chaîne vide (effacement du champ dans le formulaire)
+  email: z.union([z.string().email('Email invalide').max(200), z.literal('')]).optional(),
+  phone: z.string().max(30).optional(),
   address: z.string().max(500).optional(),
   city: z.string().max(200).optional(),
   zipCode: z.string().max(20).optional(),

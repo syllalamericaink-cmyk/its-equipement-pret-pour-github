@@ -153,12 +153,14 @@ function DemandeDevisPage() {
   const [productsLoaded, setProductsLoaded] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogProducts, setDialogProducts] = useState<Product[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, boolean>>({})
+  const [successRef, setSuccessRef] = useState<string | null>(null)
 
   useEffect(() => {
     if (!productsLoaded) {
-      publicFetch<Product[]>('/api/public/products?limit=999').then((res) => {
+      publicFetch<Product[]>('/api/public/products?limit=100').then((res) => {
         if (res.success && res.data) {
           setProducts(res.data)
         }
@@ -166,6 +168,24 @@ function DemandeDevisPage() {
       })
     }
   }, [productsLoaded])
+
+  // Recherche serveur dans la boîte de dialogue : permet de trouver un produit
+  // même quand le catalogue dépasse les 100 premiers résultats.
+  useEffect(() => {
+    if (!dialogOpen) return
+    const q = searchQuery.trim()
+    const url = q.length >= 2
+      ? `/api/public/products?limit=100&search=${encodeURIComponent(q)}`
+      : '/api/public/products?limit=100'
+    const timer = setTimeout(() => {
+      publicFetch<Product[]>(url).then((res) => {
+        if (res.success && res.data) {
+          setDialogProducts(res.data)
+        }
+      })
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [searchQuery, dialogOpen])
 
   useEffect(() => {
     const slug = searchParams.get('product')
@@ -177,16 +197,7 @@ function DemandeDevisPage() {
     }
   }, [searchParams, productsLoaded, products])
 
-  const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) return products
-    const q = searchQuery.toLowerCase()
-    return products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.category.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q)
-    )
-  }, [products, searchQuery])
+  const filteredProducts = useMemo(() => dialogProducts, [dialogProducts])
 
   const activeVariants = useCallback(
     (product: Product) => product.variants.filter((v) => v.isActive),
@@ -204,7 +215,7 @@ function DemandeDevisPage() {
         productSlug: product.slug,
         variantId: variant.id,
         variantName: variant.name,
-        quantity: 1,
+        quantity: Math.max(1, product.minQuantity),
         unitPrice,
         hasPersonalization: false,
         personalizations: [],
@@ -268,10 +279,10 @@ function DemandeDevisPage() {
             })
           )
         } else {
-          toast.error(json.error || 'Erreur lors du telechargement du fichier')
+          toast.error(json.error || 'Erreur lors du téléversement du fichier')
         }
       } catch {
-        toast.error('Erreur lors du telechargement du fichier')
+        toast.error('Erreur lors du téléversement du fichier')
       } finally {
         setUploadingFiles((prev) => ({ ...prev, [key]: false }))
       }
@@ -391,7 +402,8 @@ function DemandeDevisPage() {
       })
       const json = await res.json()
       if (json.success && json.data) {
-        router.push(`/confirmation?ref=${json.data.reference}`)
+        setSuccessRef(json.data.reference)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
       } else {
         toast.error(json.error || 'Erreur lors de l\'envoi de la demande')
       }
@@ -410,15 +422,55 @@ function DemandeDevisPage() {
   const steps = [
     { number: 1, label: 'Informations client', icon: User },
     { number: 2, label: 'Choix des produits', icon: ShoppingCart },
-    { number: 3, label: 'Recapitulatif', icon: FileText },
+    { number: 3, label: 'Récapitulatif', icon: FileText },
   ]
+
+  if (successRef) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
+          <Card className="border-green-200 bg-green-50/50">
+            <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                <Check className="h-8 w-8 text-green-600" />
+              </div>
+              <h1 className="text-2xl font-bold">Demande de devis envoyée !</h1>
+              <p className="text-muted-foreground">
+                Votre demande <strong>{successRef}</strong> a été enregistrée avec succès.
+                Notre équipe vous répondra sous 48 heures avec un devis personnalisé.
+              </p>
+              <div className="mt-2 rounded-lg border bg-background px-4 py-2">
+                <p className="text-xs text-muted-foreground">Référence de votre demande</p>
+                <p className="text-lg font-mono font-bold">{successRef}</p>
+              </div>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(successRef).then(() => {
+                      toast.success('Référence copiée')
+                    })
+                  }}
+                >
+                  Copier la référence
+                </Button>
+                <Button onClick={() => router.push('/')}>
+                  Retour à l'accueil
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight">Demande de devis</h1>
-          <p className="mt-2 text-muted-foreground">Remplissez le formulaire pour recevoir votre devis personnalise</p>
+          <p className="mt-2 text-muted-foreground">Remplissez le formulaire pour recevoir votre devis personnalisé</p>
         </div>
 
         <div className="mb-10 flex items-center justify-center gap-2 sm:gap-4">
@@ -492,7 +544,7 @@ function DemandeDevisPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Telephone</Label>
+                  <Label htmlFor="phone">Téléphone</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -540,7 +592,7 @@ function DemandeDevisPage() {
                   id="notes"
                   value={client.notes}
                   onChange={(e) => setClient((prev) => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Informations complementaires..."
+                  placeholder="Informations complémentaires..."
                   rows={3}
                 />
               </div>
@@ -562,7 +614,7 @@ function DemandeDevisPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  {items.length} produit{items.length !== 1 ? 's' : ''} selectionne{items.length !== 1 ? 's' : ''}
+                  {items.length} produit{items.length !== 1 ? 's' : ''} sélectionné{items.length !== 1 ? 's' : ''}
                 </p>
                 <Button onClick={() => setDialogOpen(true)} className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -573,7 +625,7 @@ function DemandeDevisPage() {
               {items.length === 0 && (
                 <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
                   <Package className="mb-4 h-12 w-12 text-muted-foreground/50" />
-                  <p className="text-muted-foreground">Aucun produit ajoute</p>
+                  <p className="text-muted-foreground">Aucun produit ajouté</p>
                   <p className="text-sm text-muted-foreground/70">Cliquez sur &quot;Ajouter un produit&quot; pour commencer</p>
                 </div>
               )}
@@ -629,15 +681,18 @@ function DemandeDevisPage() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground" htmlFor={`qty-${index}`}>Quantite</Label>
+                          <Label className="text-xs text-muted-foreground" htmlFor={`qty-${index}`}>
+                            Quantité{(() => { const min = getProduct(item.productId)?.minQuantity ?? 1; return min > 1 ? ` (min. ${min})` : '' })()}
+                          </Label>
                           <Input
                             id={`qty-${index}`}
                             type="number"
-                            min={1}
+                            min={(() => { const min = getProduct(item.productId)?.minQuantity ?? 1; return min })()}
                             value={item.quantity}
                             onChange={(e) => {
+                              const min = getProduct(item.productId)?.minQuantity ?? 1
                               const val = parseInt(e.target.value) || 0
-                              updateItem(index, { quantity: val < 1 ? 1 : val })
+                              updateItem(index, { quantity: val < min ? min : val })
                             }}
                             className="w-full"
                           />
@@ -726,7 +781,7 @@ function DemandeDevisPage() {
                                               )}
                                               <span className="text-sm text-muted-foreground">
                                                 {isUploading
-                                                  ? 'Telechargement...'
+                                                  ? 'Téléchargement...'
                                                   : 'Cliquer pour televerser un fichier'}
                                               </span>
                                               <input
@@ -757,7 +812,7 @@ function DemandeDevisPage() {
                                             })
                                           }
                                           maxLength={po.config.maxTextLength || 100}
-                                          placeholder={`Saisir le texte (${po.config.maxTextLength || 100} caracteres max)`}
+                                          placeholder={`Saisir le texte (${po.config.maxTextLength || 100} caractères max)`}
                                           aria-label={`Texte de personnalisation : ${po.label}`}
                                         />
                                       </div>
@@ -789,7 +844,7 @@ function DemandeDevisPage() {
                                     )}
 
                                     <div className="space-y-1.5">
-                                      <Label className="text-xs text-muted-foreground" htmlFor={`notes-${index}-${po.id}`}>Notes supplementaires</Label>
+                                      <Label className="text-xs text-muted-foreground" htmlFor={`notes-${index}-${po.id}`}>Notes supplémentaires</Label>
                                       <Input
                                         id={`notes-${index}-${po.id}`}
                                         value={pers.value.additionalNotes || ''}
@@ -824,7 +879,7 @@ function DemandeDevisPage() {
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={handlePrev} className="gap-2">
                   <ArrowLeft className="h-4 w-4" />
-                  Precedent
+                  Précédent
                 </Button>
                 <Button onClick={handleNext} className="gap-2">
                   Suivant
@@ -838,7 +893,7 @@ function DemandeDevisPage() {
         {step === 3 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Recapitulatif</CardTitle>
+              <CardTitle className="text-xl">Récapitulatif</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
@@ -861,7 +916,7 @@ function DemandeDevisPage() {
                     </div>
                     {client.phone && (
                       <div>
-                        <span className="text-muted-foreground">Telephone : </span>
+                        <span className="text-muted-foreground">Téléphone : </span>
                         <span className="font-medium">{client.phone}</span>
                       </div>
                     )}
@@ -901,7 +956,7 @@ function DemandeDevisPage() {
                       <TableRow>
                         <TableHead>Produit</TableHead>
                         <TableHead>Variante</TableHead>
-                        <TableHead className="text-right">Quantite</TableHead>
+                        <TableHead className="text-right">Quantité</TableHead>
                         <TableHead className="text-right">Prix unitaire</TableHead>
                         <TableHead className="text-right">Total</TableHead>
                         <TableHead>Personnalisation</TableHead>
@@ -972,7 +1027,7 @@ function DemandeDevisPage() {
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={handlePrev} className="gap-2">
                   <ArrowLeft className="h-4 w-4" />
-                  Precedent
+                  Précédent
                 </Button>
                 <Button onClick={handleSubmit} disabled={submitting} className="gap-2">
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -987,22 +1042,22 @@ function DemandeDevisPage() {
           <DialogContent className="max-h-[80vh]">
             <DialogHeader>
               <DialogTitle>Ajouter un produit</DialogTitle>
-              <DialogDescription>Recherchez et selectionnez un produit a ajouter a votre demande</DialogDescription>
+              <DialogDescription>Recherchez et sélectionnez un produit à ajouter à votre demande</DialogDescription>
             </DialogHeader>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher par nom, categorie ou reference..."
+                placeholder="Rechercher par nom, catégorie ou référence..."
                 className="pl-9"
                 autoFocus
-                aria-label="Rechercher un produit a ajouter"
+                aria-label="Rechercher un produit à ajouter"
               />
             </div>
             <div className="max-h-96 overflow-y-auto">
               {filteredProducts.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">Aucun produit trouve</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">Aucun produit trouvé</p>
               ) : (
                 <div className="space-y-1">
                   {filteredProducts.map((product) => {

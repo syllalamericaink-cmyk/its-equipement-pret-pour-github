@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { StatusBadge } from '@/components/admin/status-badge'
 import { adminFetch, adminPost, adminPatch, formatDateTime } from '@/lib/admin-api'
+import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -43,8 +44,6 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount) + ' FCFA'
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   NOUVELLE_COMMANDE: ['CLIENT_CONTACTE', 'ANNULEE'],
@@ -297,7 +296,7 @@ export default function CommandeDetailPage() {
               <span className="font-medium">{data.clientName}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Telephone</span>
+              <span className="text-sm text-muted-foreground">Téléphone</span>
               <span className="font-medium">{data.clientPhone || '-'}</span>
             </div>
             <div className="flex items-center justify-between">

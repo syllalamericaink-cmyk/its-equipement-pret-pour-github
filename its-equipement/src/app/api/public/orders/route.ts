@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server'
 export async function POST(request: NextRequest) {
   try {
     if (!checkApiRateLimit(request)) {
-      return error('Trop de requetes. Reessayez dans une minute.', 429)
+      return error('Trop de requêtes. Réessayez dans une minute.', 429)
     }
 
     const body = await request.json()

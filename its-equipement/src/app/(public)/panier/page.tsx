@@ -74,7 +74,7 @@ export default function PanierPage() {
               <TableRow>
                 <TableHead className="w-[80px]">Image</TableHead>
                 <TableHead>Produit</TableHead>
-                <TableHead className="text-center">Quantite</TableHead>
+                <TableHead className="text-center">Quantité</TableHead>
                 <TableHead className="text-right">Prix unitaire</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
@@ -89,7 +89,7 @@ export default function PanierPage() {
                       <div
                         className="size-16 rounded-lg bg-muted shrink-0 bg-cover bg-center"
                         style={{
-                          backgroundImage: `url(${item.productImage || '/placeholder.png'})`,
+                          backgroundImage: `url(${item.productImage || '/placeholder.svg'})`,
                         }}
                       />
                     </TableCell>
@@ -103,7 +103,7 @@ export default function PanierPage() {
                         )}
                         {item.hasPersonalization && (
                           <Badge variant="secondary" className="w-fit text-xs">
-                            Personnalise
+                            Personnalisé
                           </Badge>
                         )}
                       </div>
@@ -168,7 +168,7 @@ export default function PanierPage() {
                 <div
                   className="size-16 rounded-lg bg-muted shrink-0 bg-cover bg-center"
                   style={{
-                    backgroundImage: `url(${item.productImage || '/placeholder.png'})`,
+                    backgroundImage: `url(${item.productImage || '/placeholder.svg'})`,
                   }}
                 />
                 <div className="flex-1 min-w-0">
@@ -182,7 +182,7 @@ export default function PanierPage() {
                       )}
                       {item.hasPersonalization && (
                         <Badge variant="secondary" className="mt-1 text-xs">
-                          Personnalise
+                          Personnalisé
                         </Badge>
                       )}
                     </div>

@@ -56,7 +56,7 @@ const ITEMS_PER_PAGE = 12
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Pertinence' },
   { value: 'price-asc', label: 'Prix croissant' },
-  { value: 'price-desc', label: 'Prix decroissant' },
+  { value: 'price-desc', label: 'Prix décroissant' },
   { value: 'name-asc', label: 'Nom A-Z' },
   { value: 'name-desc', label: 'Nom Z-A' },
 ] as const
@@ -220,7 +220,7 @@ function CategoriePage() {
           <Package className="size-12 text-muted-foreground/40 mb-4" />
           <h2 className="text-lg font-semibold mb-2">Categorie introuvable</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            La categorie que vous recherchez n'existe pas ou a ete supprimee.
+            La categorie que vous recherchez n'existe pas ou a été supprimée.
           </p>
           <Button variant="outline" onClick={() => router.push('/produits')} className="min-h-[44px]">
             <ArrowLeft className="size-4 mr-2" />
@@ -288,7 +288,7 @@ function CategoriePage() {
       ) : paginatedProducts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Package className="size-12 text-muted-foreground/40 mb-4" />
-          <h2 className="text-lg font-semibold mb-2">Aucun produit trouve</h2>
+          <h2 className="text-lg font-semibold mb-2">Aucun produit trouvé</h2>
           <p className="text-sm text-muted-foreground max-w-md">
             Aucun produit ne correspond a vos criteres de recherche dans cette categorie.
           </p>
@@ -353,12 +353,12 @@ function CategoriePage() {
               <PaginationContent>
                 <PaginationItem>
                   <PaginationLink
-                    aria-label="Page precedente"
+                    aria-label="Page précédente" href="#"
                     onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
                     className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer min-h-[44px]'}
                   >
                     <ArrowLeft className="size-4" />
-                    <span className="hidden sm:inline ml-1">Precedent</span>
+                    <span className="hidden sm:inline ml-1">Précédent</span>
                   </PaginationLink>
                 </PaginationItem>
 
@@ -371,6 +371,7 @@ function CategoriePage() {
                     <PaginationItem key={page}>
                       <PaginationLink
                         isActive={page === currentPage}
+                        href="#"
                         onClick={() => handlePageChange(page)}
                         className="cursor-pointer min-h-[44px] min-w-[44px]"
                       >

@@ -59,3 +59,21 @@ export async function POST(
     return serverError()
   }
 }
+
+export async function DELETE(
+  request: NextRequest
+) {
+  try {
+    const { error: authError } = await requireAdmin(request)
+    if (authError) return authError
+
+    const { searchParams } = new URL(request.url)
+    const variantId = searchParams.get('variantId')
+    if (!variantId) return error('variantId requis', 422)
+
+    const result = await deleteVariant(variantId)
+    return success(result)
+  } catch {
+    return serverError()
+  }
+}

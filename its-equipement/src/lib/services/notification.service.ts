@@ -100,7 +100,7 @@ export async function sendOrderNotification(orderId: string): Promise<void> {
   message += `Contact: ${sanitizeForText(client.contactName)}\n`
   if (client.phone) message += `Tel: ${sanitizeForText(client.phone)}\n`
   message += `Produit(s): ${products.join(', ')}\n`
-  message += `Quantite(s): ${quantities.join(', ')}\n`
+  message += `Quantité(s) : ${quantities.join(', ')}\n`
   message += `Tailles: ${tailles.join(', ')}\n`
   message += `Couleurs: ${couleurs.join(', ')}\n`
   message += `Impression: ${impressions.join(', ')}\n`
@@ -173,10 +173,18 @@ export async function getNotifications(params: {
   skip: number
   status?: string
   channel?: string
+  search?: string
 }) {
   const where: Prisma.NotificationWhereInput = {}
   if (params.status) where.status = params.status
   if (params.channel) where.channel = params.channel
+  if (params.search?.trim()) {
+    const q = params.search.trim()
+    where.OR = [
+      { to: { contains: q, mode: 'insensitive' } },
+      { order: { orderNumber: { contains: q, mode: 'insensitive' } } },
+    ]
+  }
 
   const [total, items] = await Promise.all([
     db.notification.count({ where }),

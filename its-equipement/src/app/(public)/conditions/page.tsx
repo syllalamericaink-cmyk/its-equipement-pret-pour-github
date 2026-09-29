@@ -2,12 +2,12 @@ import type { Metadata } from 'next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export const metadata: Metadata = {
-  title: 'Conditions generales de vente | ITS Equipement',
-  description: 'Consultez les conditions generales de vente (CGV) ITS Equipement : devis, prix, personnalisation, commande, paiement, livraison, retours et responsabilite.',
+  title: 'Conditions générales de vente | ITS Équipement',
+  description: 'Consultez les conditions générales de vente (CGV) ITS Équipement : devis, prix, personnalisation, commande, paiement, livraison, retours et responsabilité.',
   alternates: { canonical: '/conditions' },
   openGraph: {
-    title: 'Conditions generales de vente | ITS Equipement',
-    description: 'Consultez les conditions generales de vente (CGV) ITS Equipement : devis, prix, personnalisation, commande, paiement, livraison, retours et responsabilite.',
+    title: 'Conditions générales de vente | ITS Équipement',
+    description: 'Consultez les conditions générales de vente (CGV) ITS Équipement : devis, prix, personnalisation, commande, paiement, livraison, retours et responsabilité.',
     url: '/conditions',
   },
 }
@@ -15,85 +15,85 @@ export const metadata: Metadata = {
 const articles = [
   {
     title: 'Article 1 : Objet',
-    content: `Les presentes conditions generales de vente (CGV) regissent l'ensemble des relations commerciales entre ITS Equipement, ci-apres denomme "le Vendeur", et toute personne morale ou physique agissant dans le cadre d'une activite professionnelle ou a titre particulier, ci-apres denomme "le Client", pour toute commande d'equipements professionnels, de vetements de travail, d'equipements de protection individuelle (EPI) et de toute autre prestation proposee sur le site ou par tout autre canal de vente du Vendeur.
+    content: `Les présentes conditions générales de vente (CGV) régissent l'ensemble des relations commerciales entre ITS Équipement, ci-après dénommé "le Vendeur", et toute personne morale ou physique agissant dans le cadre d'une activité professionnelle ou à titre particulier, ci-après dénommé "le Client", pour toute commande d'équipements professionnels, de vêtements de travail, d'équipements de protection individuelle (EPI) et de toute autre prestation proposée sur le site ou par tout autre canal de vente du Vendeur.
 
-Toute commande emportant acceptation sans reserve des presentes CGV, qui prevalent sur toute autre condition, notamment celles figurant sur les documents d'achat du Client. Le Vendeur se reserve le droit de modifier ses CGV a tout moment. Les CGV applicables sont celles en vigueur a la date de la commande.
+Toute commande emportant acceptation sans réserve des présentes CGV, qui prévalent sur toute autre condition, notamment celles figurant sur les documents d'achat du Client. Le Vendeur se réserve le droit de modifier ses CGV à tout moment. Les CGV applicables sont celles en vigueur à la date de la commande.
 
-L'absence de contestation de la part du Client quant aux CGV vaut acceptation pleine et entiere de celles-ci.`,
+L'absence de contestation de la part du Client quant aux CGV vaut acceptation pleine et entière de celles-ci.`,
   },
   {
     title: 'Article 2 : Devis',
-    content: `Tout devis emis par ITS Equipement est valable pour une duree de 30 jours calendaires a compter de sa date d'emission, sauf mention contraire. Au-dela de ce delai, les prix et les conditions peuvent etre revises.
+    content: `Tout devis émis par ITS Équipement est valable pour une durée de 30 jours calendaires à compter de sa date d'émission, sauf mention contraire. Au-delà de ce délai, les prix et les conditions peuvent être révisés.
 
-Le devis est etabli sur la base des informations fournies par le Client. Toute modification de la commande (quantites, personnalisation, references) necessite l'emission d'un nouveau devis.
+Le devis est établi sur la base des informations fournies par le Client. Toute modification de la commande (quantités, personnalisation, références) nécessite l'émission d'un nouveau devis.
 
-La commande n'est consideree comme definitive qu'apres validation ecrite du devis par le Client, par retour signe ou par email de confirmation. Le Vendeur se reserve le droit de refuser toute commande en cas d'informations incompletes ou erronnees.`,
+La commande n'est considérée comme définitive qu'après validation écrite du devis par le Client, par retour signé ou par email de confirmation. Le Vendeur se réserve le droit de refuser toute commande en cas d'informations incomplètes ou erronées.`,
   },
   {
     title: 'Article 3 : Prix',
-    content: `Les prix indiques sur les devis et factures sont exprimes en FCFA (Francs CFA BCEAO). Les prix comprennent les frais de personnalisation le cas echeant, sauf mention contraire.
+    content: `Les prix indiques sur les devis et factures sont exprimés en FCFA (Francs CFA BCEAO). Les prix comprennent les frais de personnalisation le cas échéant, sauf mention contraire.
 
-ITS Equipement se reserve le droit de modifier ses tarifs a tout moment. Toutefois, les prix annonces dans un devis accepte par le Client restent fermes et non revisables.
+ITS Équipement se réserve le droit de modifier ses tarifs à tout moment. Toutefois, les prix annoncés dans un devis accepte par le Client restent fermes et non révisables.
 
-Les conditions de paiement sont les suivantes : pour les commandes sans personnalisation, le paiement integral est exigible a la livraison. Pour les commandes avec personnalisation (impression, broderie, gravure), un acompte de 50% est exigible a la commande, le solde etant du a la livraison. Ces modalites sont rappelees sur chaque devis et facture.
+Les conditions de paiement sont les suivantes : pour les commandes sans personnalisation, le paiement intégral est exigible à la livraison. Pour les commandes avec personnalisation (impression, broderie, gravure), un acompte de 50% est exigible à la commande, le solde étant du à la livraison. Ces modalites sont rappelées sur chaque devis et facture.
 
-Le paiement s'effectue par virement bancaire, par Mobile Money (Orange Money, MTN Mobile Money, Moov Money) ou par cheque.`,
+Le paiement s'effectue par virement bancaire, par Mobile Money (Orange Money, MTN Mobile Money, Moov Money) ou par chèque.`,
   },
   {
     title: 'Article 4 : Personnalisation',
-    content: `La personnalisation des produits (impression de logo, texte, broderie, gravure) est realisee conformement aux specifications fournies par le Client lors de la commande. Le Client est seul responsable de la qualite des fichiers graphiques transmis et de l'exactitude des informations a imprimer.
+    content: `La personnalisation des produits (impression de logo, texte, broderie, gravure) est réalisée conformément aux spécifications fournies par le Client lors de la commande. Le Client est seul responsable de la qualite des fichiers graphiques transmis et de l'exactitude des informations a imprimer.
 
-ITS Equipement se reserve le droit de refuser toute personnalisation contraire a l'ordre public, aux bonnes moeurs ou portant atteinte aux droits de tiers. Le Client garantit detenir les droits necessaires sur les logos, marques et elements graphiques fournis.
+ITS Équipement se réserve le droit de refuser toute personnalisation contraire à l'ordre public, aux bonnes moeurs ou portant atteinte aux droits de tiers. Le Client garantit détenir les droits nécessaires sur les logos, marques et éléments graphiques fournis.
 
-Les zones de personnalisation varient selon les produits et sont precisees dans le devis. Toute demande de modification des zones d'impression apres validation du devis pourra entrainer un supplement de prix et un delai supplementaire.`,
+Les zones de personnalisation varient selon les produits et sont précisées dans le devis. Toute demande de modification des zones d'impression après validation du devis pourra entraîner un supplement de prix et un délai supplémentaire.`,
   },
   {
     title: 'Article 5 : Commande',
-    content: `La commande est confirmee apres validation expresse du devis par le Client. A reception de cette validation, ITS Equipement transmet au Client une confirmation de commande par email, reprenant l'ensemble des elements convenus : references, quantites, prix, delais et conditions de personnalisation.
+    content: `La commande est confirmée après validation expresse du devis par le Client. A réception de cette validation, ITS Équipement transmet au Client une confirmation de commande par email, reprenant l'ensemble des éléments convenus : références, quantités, prix, délais et conditions de personnalisation.
 
-Toute annulation de la part du Client doit etre notifiee par ecrit. Si l'annulation intervient apres le demarrage de la production, le Client pourra etre tenu de rembourser les frais deja engages, notamment les couts de personnalisation et d'approvisionnement des matieres premieres.
+Toute annulation de la part du Client doit être notifiée par écrit. Si l'annulation intervient après le démarrage de la production, le Client pourra être tenu de rembourser les frais deja engages, notamment les coûts de personnalisation et d'approvisionnement des matières premieres.
 
-La production est lancee a compter de la reception du paiement de l'acompte le cas echeant. ITS Equipement s'engage a respecter les delais indiques dans le devis, sous reserve de la reception des elements necessaires a la commande dans les delais impartis.`,
+La production est lancée à compter de la réception du paiement de l'acompte le cas échéant. ITS Équipement s'engage a respecter les délais indiques dans le devis, sous réserve de la réception des éléments nécessaires à la commande dans les délais impartis.`,
   },
   {
     title: 'Article 6 : Paiement',
-    content: `Pour les commandes ne comprenant pas de personnalisation, le paiement integral est exigible a la livraison, par virement bancaire, Mobile Money (Orange Money, MTN Mobile Money, Moov Money) ou cheque.
+    content: `Pour les commandes ne comprenant pas de personnalisation, le paiement intégral est exigible à la livraison, par virement bancaire, Mobile Money (Orange Money, MTN Mobile Money, Moov Money) ou chèque.
 
-Pour les commandes incluant une personnalisation (impression, broderie, gravure), les conditions de paiement sont les suivantes : un acompte de 50% du montant total est exigible a la commande, avant tout demarrage de production. Le solde de 50% est exigible a la livraison, sur presentation de la facture finale.
+Pour les commandes incluant une personnalisation (impression, broderie, gravure), les conditions de paiement sont les suivantes : un acompte de 50% du montant total est exigible à la commande, avant tout démarrage de production. Le solde de 50% est exigible à la livraison, sur présentation de la facture finale.
 
-En cas de retard de paiement, ITS Equipement se reserve le droit de suspendre les livraisons en cours sans preavis. Des penalites de retard pourront etre appliquees conformement a la legislation ivoirienne en vigueur.`,
+En cas de retard de paiement, ITS Équipement se réserve le droit de suspendre les livraisons en cours sans préavis. Des pénalités de retard pourront être appliquées conformément a la législation ivoirienne en vigueur.`,
   },
   {
     title: 'Article 7 : Livraison',
-    content: `ITS Equipement effectue ses livraisons a Abidjan et dans les principales villes de Cote d'Ivoire via des transporteurs professionnels partenaires. Les delais de livraison indicatifs sont de 5 a 10 jours ouvrables apres validation du devis pour les commandes sans personnalisation, et de 10 a 20 jours ouvrables pour les commandes avec personnalisation. Ces delais sont donnes a titre indicatif et peuvent varier en fonction des volumes et de la complexite de la commande.
+    content: `ITS Équipement effectue ses livraisons à Abidjan et dans les principales villes de Côte d'Ivoire via des transporteurs professionnels partenaires. Les délais de livraison indicatifs sont de 5 a 10 jours ouvrables après validation du devis pour les commandes sans personnalisation, et de 10 a 20 jours ouvrables pour les commandes avec personnalisation. Ces délais sont donnes a titre indicatif et peuvent varier en fonction des volumes et de la complexite de la commande.
 
-Le transfert des risques s'opere au moment de la remise de la marchandise au transporteur. Il appartient au Client de verifier l'etat de la marchandise a la livraison et d'emettre toute reserve aupres du transporteur en cas de dommage constate lors de la reception.
+Le transfert des risques s'opere au moment de la remise de la marchandise au transporteur. Il appartient au Client de vérifier l'état de la marchandise à la livraison et d'émettre toute réserve auprès du transporteur en cas de dommage constaté lors de la réception.
 
-Les conditions de livraison gratuites sont precisees sur chaque devis en fonction du volume et de la destination. Pour les livraisons hors zone couverte, des frais supplementaires pourront etre appliques. ITS Equipement ne saurait etre tenu responsable des retards de livraison imputables au transporteur ou a des cas de force majeure.`,
+Les conditions de livraison gratuites sont précisées sur chaque devis en fonction du volume et de la destination. Pour les livraisons hors zone couverte, des frais supplémentaires pourront être appliqués. ITS Équipement ne saurait être tenu responsable des retards de livraison imputables au transporteur ou à des cas de force majeure.`,
   },
   {
-    title: 'Article 8 : Retours et echanges',
-    content: `Les retours et echanges ne sont possibles que dans les cas suivants : produit defectueux, erreur de livraison (mauvaise reference, mauvaise quantite), ou non-conformite par rapport au devis valide.
+    title: 'Article 8 : Retours et échanges',
+    content: `Les retours et échanges ne sont possibles que dans les cas suivants : produit défectueux, erreur de livraison (mauvaise référence, mauvaise quantite), ou non-conformité par rapport au devis valide.
 
-Toute demande de retour doit etre notifiee par ecrit a ITS Equipement dans un delai de 7 jours ouvrables a compter de la reception de la marchandise, accompagnee de photographies et d'une description detaillee du motif. ITS Equipement se reserve le droit d'examiner le produit retourne avant d'accepter ou de refuser la demande.
+Toute demande de retour doit être notifiée par écrit a ITS Équipement dans un délai de 7 jours ouvrables à compter de la réception de la marchandise, accompagnee de photographies et d'une description detaillee du motif. ITS Équipement se réserve le droit d'examiner le produit retourné avant d'accepter ou de refuser la demande.
 
-En cas de retour accepte, ITS Equipement procedera au remplacement du produit ou a l'emission d'un avoir. Les produits personnalises ne sont ni repris ni echanges, sauf en cas de vice de conformite imputable au Vendeur. Les frais de retour sont a la charge du Client sauf en cas d'erreur imputable a ITS Equipement.`,
+En cas de retour accepte, ITS Équipement procedera au remplacement du produit ou a l'émission d'un avoir. Les produits personnalises ne sont ni repris ni échanges, sauf en cas de vice de conformité imputable au Vendeur. Les frais de retour sont a la charge du Client sauf en cas d'erreur imputable a ITS Équipement.`,
   },
   {
     title: 'Article 9 : Responsabilite',
-    content: `ITS Equipement s'engage a fournir des produits conformes aux specifications du devis valide et aux normes en vigueur applicables aux equipements de travail et aux EPI. Toutefois, la responsabilite du Vendeur est limitee au montant de la commande concernee.
+    content: `ITS Équipement s'engage a fournir des produits conformes aux spécifications du devis valide et aux normes en vigueur applicables aux équipements de travail et aux EPI. Toutefois, la responsabilité du Vendeur est limitée au montant de la commande concernee.
 
-ITS Equipement ne saurait etre tenu responsable des dommages indirects, tels que perte d'exploitation, prejudice commercial ou perte de chiffre d'affaires, resultant de l'utilisation des produits fournis. Le Client reste seul responsable de l'utilisation qu'il fait des equipements et du respect des consignes de securite associees.
+ITS Équipement ne saurait être tenu responsable des dommages indirects, tels que perte d'exploitation, prejudice commercial ou perte de chiffre d'affaires, résultant de l'utilisation des produits fournis. Le Client reste seul responsable de l'utilisation qu'il fait des équipements et du respect des consignes de sécurité associees.
 
-Les informations, descriptions et photographs presentes sur les supports de communication d'ITS Equipement sont donnees a titre indicatif et ne sauraient engager la responsabilite du Vendeur. En cas de litige, une recherche de solution amiable sera privilegiee avant toute action en justice. Le tribunal competent sera celui d'Abidjan, Cote d'Ivoire.`,
+Les informations, descriptions et photographs présentes sur les supports de communication d'ITS Équipement sont données a titre indicatif et ne sauraient engager la responsabilité du Vendeur. En cas de litige, une recherche de solution amiable sera privilegiee avant toute action en justice. Le tribunal compétent sera celui d'Abidjan, Côte d'Ivoire.`,
   },
   {
     title: 'Article 10 : Donnees personnelles',
-    content: `ITS Equipement s'engage a traiter les donnees personnelles collectees dans le cadre de ses relations commerciales conformement a la loi n 2013-450 du 19 juin 2013 relative a la protection des donnees personnelles en Cote d'Ivoire.
+    content: `ITS Équipement s'engage a traiter les données personnelles collectees dans le cadre de ses relations commerciales conformément a la loi n° 2013-450 du 19 juin 2013 relative a la protection des données personnelles en Côte d'Ivoire.
 
-Les donnees collectees (nom, prenom, raison sociale, adresse, email, telephone) sont necessaires a la gestion des commandes, a l'emission des factures et au suivi de la relation commerciale. Elles sont conservees pendant la duree de la relation commerciale et pendant une duree de 5 ans a compter de la derniere commande, conformement aux obligations legales.
+Les données collectees (nom, prenom, raison sociale, adresse, email, téléphone) sont nécessaires a la gestion des commandes, a l'émission des factures et au suivi de la relation commerciale. Elles sont conservees pendant la durée de la relation commerciale et pendant une durée de 5 ans à compter de la derniere commande, conformément aux obligations légales.
 
-Le Client dispose d'un droit d'acces, de rectification, de suppression et d'opposition de ses donnees personnelles, qu'il peut exercer en adressant sa demande a : contact@itschoolci.com. ITS Equipement ne communique aucune donnee personnelle a des tiers sans l'accord prealable du Client, sauf obligation legale.`,
+Le Client dispose d'un droit d'accès, de rectification, de suppression et d'opposition de ses données personnelles, qu'il peut exercer en adressant sa demande a : contact@itschoolci.com. ITS Équipement ne communique aucune donnee personnelle a des tiers sans l'accord préalable du Client, sauf obligation legale.`,
   },
 ]
 
@@ -107,10 +107,10 @@ export default function ConditionsPage() {
         </div>
         <div className="container mx-auto px-4 py-16 md:py-24 text-center relative z-10">
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-            Conditions generales de vente
+            Conditions générales de vente
           </h1>
           <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
-            Derniere mise a jour : Aout 2025
+            Dernière mise à jour : Août 2025
           </p>
         </div>
       </section>

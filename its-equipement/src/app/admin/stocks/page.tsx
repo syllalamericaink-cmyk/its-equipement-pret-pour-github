@@ -140,7 +140,7 @@ export default function StocksPage() {
   const handleSubmitMovement = useCallback(async () => {
     if (!selectedVariant || !movementType || !movementQty) return
     const qty = parseInt(movementQty, 10)
-    if (isNaN(qty) || qty <= 0) { toast.error('Quantite invalide'); return }
+    if (isNaN(qty) || qty <= 0) { toast.error('Quantité invalide'); return }
     setSubmitting(true)
     const res = await adminPost(`/api/admin/stocks/${selectedVariant.id}`, {
       productVariantId: selectedVariant.id,
@@ -285,8 +285,8 @@ export default function StocksPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Quantite</Label>
-              <Input type="number" min={1} value={movementQty} onChange={(e) => setMovementQty(e.target.value)} placeholder="Quantite" />
+              <Label>Quantité</Label>
+              <Input type="number" min={1} value={movementQty} onChange={(e) => setMovementQty(e.target.value)} placeholder="Quantité" />
             </div>
             <div className="space-y-2">
               <Label>Motif (optionnel)</Label>

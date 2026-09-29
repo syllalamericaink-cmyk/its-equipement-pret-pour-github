@@ -12,8 +12,9 @@ export async function GET(request: NextRequest) {
     const { page, limit, skip } = getPaginationParams(request)
     const status = searchParams.get('status') ?? undefined
     const channel = searchParams.get('channel') ?? undefined
+    const search = searchParams.get('search') ?? undefined
 
-    const { items, total } = await getNotifications({ page, limit, skip, status, channel })
+    const { items, total } = await getNotifications({ page, limit, skip, status, channel, search })
 
     return success(items, buildMeta(page, limit, total))
   } catch {

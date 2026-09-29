@@ -16,7 +16,7 @@ export interface PaymentProvider {
 
 class ProviderNotConfiguredError extends Error {
   constructor(provider: string) {
-    super(`Le fournisseur de paiement "[object Object]" n'est pas configure.`)
+    super(`Le fournisseur de paiement "${provider}" n'est pas configuré.`)
     this.name = 'ProviderNotConfiguredError'
   }
 }

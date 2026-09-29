@@ -210,9 +210,23 @@ model Upload {
   size        Int
   entityType  String
   entityId    String?
+  data        String?
   createdAt   DateTime @default(now())
 
   @@index([entityType, entityId])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  subject   String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead, createdAt])
 }
 
 model Quote {

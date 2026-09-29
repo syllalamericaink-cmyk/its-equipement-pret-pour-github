@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!middlewareRateLimit(ip)) {
-    return NextResponse.json({ success: false, error: 'Trop de requetes' }, { status: 429 })
+    return NextResponse.json({ success: false, error: 'Trop de requêtes' }, { status: 429 })
   }
 
   // Rate-limit strict sur les tentatives de login (credentials callback)

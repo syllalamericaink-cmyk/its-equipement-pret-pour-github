@@ -6,8 +6,6 @@ import { AUTH_SECRET } from './auth-secret'
 
 const BCRYPT_SALT_ROUNDS = 12
 
-export { BCRYPT_SALT_ROUNDS }
-
 export const authOptions: NextAuthOptions = {
   providers: [
     Credentials({
@@ -65,7 +63,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/auth/login',
+    signIn: '/admin/login',
   },
   session: {
     strategy: 'jwt',

@@ -23,7 +23,7 @@ const checkoutSchema = z.object({
   clientType: z.enum(['PARTICULIER', 'ENTREPRISE']),
   clientName: z.string().min(1, 'Nom requis').max(200),
   clientFirstName: z.string().max(200).optional(),
-  clientPhone: z.string().min(1, 'Téléphone requis').max(20),
+  clientPhone: z.string().min(1, 'Téléphone requis').max(30),
   clientEmail: z.string().email('Email invalide').max(200).optional().or(z.literal('')),
   companyName: z.string().max(200).optional(),
   companyInfo: z.string().max(2000).optional(),
@@ -34,6 +34,29 @@ const checkoutSchema = z.object({
   commune: z.string().max(200).optional(),
   address: z.string().max(500).optional(),
   deliveryComment: z.string().max(2000).optional(),
+}).superRefine((data, ctx) => {
+  // Aligné avec l'API : raison sociale requise pour les entreprises
+  if (data.clientType === 'ENTREPRISE' && !data.companyName?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['companyName'],
+      message: "Le nom de l'entreprise est requis",
+    })
+  }
+  if (data.requestType !== 'COMMANDE_SIMPLE' && !data.companyName?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['companyName'],
+      message: "Le nom de l'entreprise est requis pour ce type de demande",
+    })
+  }
+  if (data.requestType !== 'COMMANDE_SIMPLE' && !data.companyInfo?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['companyInfo'],
+      message: 'Les informations de l\'entreprise sont requises pour ce type de demande',
+    })
+  }
 })
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>
@@ -42,7 +65,7 @@ const REQUEST_TYPE_OPTIONS: { value: CheckoutFormData['requestType']; label: str
   { value: 'COMMANDE_SIMPLE', label: 'Commande simple', description: 'Achat direct, expédition rapide après confirmation.' },
   { value: 'DEVIS', label: 'Demande de devis', description: 'Recevoir un devis avant de confirmer.' },
   { value: 'BON_COMMANDE', label: 'Bon de commande', description: 'Établir un bon de commande officiel.' },
-  { value: 'FNE', label: 'Demande de FNE', description: 'Formation Négociable par l\'Entreprise — pièces justificatives requises.' },
+  { value: 'FNE', label: 'Demande de FNE', description: 'Facture Normalisée d\'Échange — pièces justificatives requises.' },
 ]
 
 const fmt = (amount: number) =>
@@ -92,18 +115,12 @@ export default function CommandePage() {
   const onSubmit = async (data: CheckoutFormData) => {
     setSubmitting(true)
     try {
-      // Validation supplémentaire : pour devis / BC / FNE, infos entreprise obligatoires
-      if (data.requestType !== 'COMMANDE_SIMPLE') {
-        if (!data.companyName?.trim()) {
-          toast.error('Le nom de l\'entreprise est requis pour ce type de demande')
-          setSubmitting(false)
-          return
-        }
-        if (!data.companyInfo?.trim()) {
-          toast.error('Les informations de l\'entreprise sont requises')
-          setSubmitting(false)
-          return
-        }
+      // Vérifier la configuration WhatsApp AVANT d'enregistrer la commande
+      // (sinon la commande serait créée sans que le client puisse la transmettre)
+      if (!process.env.NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER) {
+        toast.error('Numéro WhatsApp non configuré. Contactez l\'administrateur.')
+        setSubmitting(false)
+        return
       }
       // Si personnalisation activée mais détail vide
       if (data.hasPersonalization && !data.personalizationSummary?.trim()) {
@@ -156,11 +173,6 @@ export default function CommandePage() {
       }
 
       // 2. Construire et ouvrir le lien WhatsApp avec TOUTES les infos
-      if (!process.env.NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER) {
-        toast.error('Numéro WhatsApp non configuré. Contactez l\'administrateur.')
-        setSubmitting(false)
-        return
-      }
       const whatsappUrl = buildWhatsAppOrderLink(
         {
           clientType: data.clientType,
@@ -189,7 +201,11 @@ export default function CommandePage() {
         },
       )
       clearCart()
-      window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
+      const whatsappWindow = window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
+      if (!whatsappWindow) {
+        // Popup bloquée par le navigateur : le lien reste disponible sur la page de confirmation
+        toast.info('Ouverture de WhatsApp bloquée par votre navigateur. Utilisez le bouton WhatsApp sur la page suivante.')
+      }
       const orderRef = apiJson.data?.orderNumber ?? 'DEMANDE-' + Date.now()
       router.push(`/confirmation?ref=${encodeURIComponent(orderRef)}&via=whatsapp`)
     } catch {
@@ -296,11 +312,11 @@ export default function CommandePage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="clientFirstName">Prenom</Label>
+                <Label htmlFor="clientFirstName">Prénom</Label>
                 <Input
                   id="clientFirstName"
                   {...register('clientFirstName')}
-                  placeholder="Votre prenom"
+                  placeholder="Votre prénom"
                   className="min-h-[44px]"
                 />
               </div>
@@ -522,7 +538,7 @@ export default function CommandePage() {
               <Textarea
                 id="deliveryComment"
                 {...register('deliveryComment')}
-                placeholder="Instructions specifiques pour la livraison..."
+                placeholder="Instructions spécifiques pour la livraison..."
                 rows={3}
               />
             </div>
@@ -531,7 +547,7 @@ export default function CommandePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recapitulatif</CardTitle>
+            <CardTitle>Récapitulatif</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
@@ -560,7 +576,7 @@ export default function CommandePage() {
                     {item.hasPersonalization && (
                       <div className="ml-2 pl-3 border-l-2 border-muted-foreground/20 space-y-1">
                         <Badge variant="secondary" className="text-xs">
-                          Personnalise
+                          Personnalisé
                         </Badge>
                         <div className="text-xs text-muted-foreground space-y-0.5">
                           {item.personalization.impression && (

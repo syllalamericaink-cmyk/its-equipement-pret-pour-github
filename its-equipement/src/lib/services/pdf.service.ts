@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit'
 import crypto from 'crypto'
 import { db } from '../db'
+import { formatCurrency, formatDate } from '../format'
 import { getSetting, getSettingNumber } from './settings.service'
 import { AUTH_SECRET } from '../auth-secret'
 import fs from 'fs'
@@ -15,13 +16,7 @@ type QuoteForPdf = Quote & {
   })[]
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
-}
 
-function formatDate(d: Date): string {
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
 
 export async function generateQuotePdf(quoteId: string): Promise<string> {
   const quote = await db.quote.findUnique({
@@ -235,7 +230,4 @@ export async function generateQuotePdf(quoteId: string): Promise<string> {
   })
 }
 
-export function getSecureDownloadToken(quoteId: string): string {
-  const secret = AUTH_SECRET
-  return crypto.createHmac('sha256', secret).update(quoteId).digest('hex')
-}
+

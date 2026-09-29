@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { DataTable } from '@/components/admin/data-table'
 import { PageHeader } from '@/components/admin/page-header'
 import { StatusBadge } from '@/components/admin/status-badge'
@@ -33,8 +33,8 @@ interface NotificationItem {
 
 const STATUS_OPTIONS = [
   { value: 'ALL', label: 'Tous' },
-  { value: 'SENT', label: 'Envoyee' },
-  { value: 'FAILED', label: 'Echouee' },
+  { value: 'SENT', label: 'Envoyée' },
+  { value: 'FAILED', label: 'Échouée' },
   { value: 'PENDING', label: 'En attente' },
 ]
 
@@ -52,6 +52,16 @@ export default function NotificationsPage() {
   const [channelFilter, setChannelFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [retryingId, setRetryingId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  const handleSearchChange = useCallback((value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setSearch(value)
+      setPage(1)
+    }, 300)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -63,25 +73,28 @@ export default function NotificationsPage() {
       })
       if (statusFilter) params.set('status', statusFilter)
       if (channelFilter) params.set('channel', channelFilter)
+      if (search) params.set('search', search)
 
       const res = await adminFetch<NotificationItem[]>(`/api/admin/notifications?${params}`)
       if (!cancelled) {
         if (res.success && res.data) {
           setData(res.data)
           setTotal(res.meta?.total ?? 0)
+        } else {
+          toast.error(res.error || 'Erreur lors du chargement des notifications')
         }
         setLoading(false)
       }
     })()
     return () => { cancelled = true }
-  }, [page, limit, statusFilter, channelFilter])
+  }, [page, limit, statusFilter, channelFilter, search])
 
   const handleRetry = useCallback(async (id: string) => {
     setRetryingId(id)
     try {
       const res = await adminPost(`/api/admin/notifications/${id}/retry`, {})
       if (res.success) {
-        toast.success('Notification renvoyee avec succes')
+        toast.success('Notification renvoyée avec succès')
         setData(prev => prev.map(n => n.id === id ? { ...n, status: 'SENT' } : n))
       } else {
         toast.error(res.error ?? 'Erreur lors du renvoi')
@@ -106,7 +119,7 @@ export default function NotificationsPage() {
     ORDER_CREATED: 'Commande creee',
     QUOTE_CREATED: 'Devis cree',
     PAYMENT_RECEIVED: 'Paiement recu',
-    DELIVERY_UPDATED: 'Livraison mise a jour',
+    DELIVERY_UPDATED: 'Livraison mise à jour',
   }
 
   const channelLabels: Record<string, string> = {
@@ -195,7 +208,7 @@ export default function NotificationsPage() {
         limit={limit}
         onPageChange={handlePageChange}
         onLimitChange={handleLimitChange}
-        onSearchChange={() => {}}
+        onSearchChange={handleSearchChange}
         loading={loading}
         getRowKey={(item) => item.id}
         emptyTitle="Aucune notification"

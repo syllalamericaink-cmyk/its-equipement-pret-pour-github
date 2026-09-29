@@ -1,6 +1,7 @@
-# Liste de vérification de déploiement — EquipPro
+# Liste de vérification de déploiement — ITS Équipement
 
 - [ ] Schema Prisma : provider=postgresql, @db.Decimal sur tous les champs Decimal
+- [ ] **APRÈS mise à jour du schéma (Upload.data + ContactMessage)** : lancer `npx prisma db push` sur la base Neon AVANT de déployer, sinon l'upload de logo et le formulaire de contact échoueront
 - [ ] Variables d'environnement : toutes les clés .env sont documentées
 - [ ] Build production : `next build` passe sans erreur
 - [ ] TypeScript : `tsc --noEmit` passe sans erreur
@@ -9,14 +10,13 @@
 - [ ] Rate limiting : api-auth.ts et middleware.ts actifs
 - [ ] Headers sécurité : CSP, HSTS, X-Frame-Options, X-Content-Type-Options
 - [ ] Erreurs API : aucune fuite de stack trace ou détails internes
-- [ ] Upload fichiers : validation mime type + taille, pas de traversal
+- [ ] Upload fichiers : validation mime type + taille, stocké en base (compatible Vercel)
 - [ ] Webhook paiement : vérification HMAC avec timingSafeEqual
 - [ ] Secrets : NEXTAUTH_SECRET fort, aucun secret dans le bundle client
 - [ ] Base de données : migrations prêtes, seed fonctionnel
-- [ ] Fichiers statiques : logo.svg présent, public/ organisé
+- [ ] Fichiers statiques : logo-its-equipement.jpg + placeholder.svg présents
 - [ ] Sitemap : /sitemap.xml généré dynamiquement
-- [ ] Robots.txt : /robots.txt avec Disallow /admin/, /api/, /private/
+- [ ] Robots.txt : généré par src/app/robots.ts (Disallow /admin/, /api/)
 - [ ] SEO : metadata sur toutes les pages publiques, Open Graph
 - [ ] Accessibilité : aria-labels, lang=fr, labels associés aux inputs
-- [ ] Pages 404 : page _not-found générée
-- [ ] Build standalone : output: 'standalone' dans next.config
+- [ ] Notifications WhatsApp : NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER configuré (sinon le checkout refuse de créer la commande)

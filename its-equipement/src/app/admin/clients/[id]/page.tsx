@@ -138,12 +138,12 @@ export default function FicheClientPage() {
     const res = await adminPut(`/api/admin/clients/${id}`, form)
     setSaving(false)
     if (res.success) {
-      toast.success('Client mis a jour avec succes')
+      toast.success('Client mis à jour avec succès')
       if (res.data) {
         setClient(res.data as Client)
       }
     } else {
-      toast.error('Erreur lors de la mise a jour du client')
+      toast.error(res.error || 'Erreur lors de la mise à jour du client')
     }
   }, [id, form])
 
@@ -294,7 +294,7 @@ export default function FicheClientPage() {
             <div className="space-y-2">
               <Label htmlFor="phone">
                 <Phone className="mr-1.5 inline h-3.5 w-3.5" />
-                Telephone
+                Téléphone
               </Label>
               <Input
                 id="phone"

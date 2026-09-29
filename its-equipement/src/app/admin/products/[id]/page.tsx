@@ -147,9 +147,11 @@ export default function ProduitDetailPage() {
       const res = await adminFetch<Category[]>('/api/admin/categories?includeInactive=true')
       if (res.success && res.data) {
         setCategories(res.data)
+      } else {
+        toast.error(res.error || 'Erreur lors du chargement des catégories')
       }
     } catch {
-      //
+      toast.error('Erreur lors du chargement des catégories')
     }
   }, [])
 
@@ -218,7 +220,7 @@ export default function ProduitDetailPage() {
     if (!deleteVariantId) return
     setDeleteVariantLoading(true)
     try {
-      const res = await adminDelete(`/api/admin/products/${productId}/variants/${deleteVariantId}`)
+      const res = await adminDelete(`/api/admin/products/${productId}/variants?variantId=${deleteVariantId}`)
       if (res.success) {
         toast.success('Variante supprimée avec succès')
         setDeleteVariantId(null)
@@ -227,7 +229,7 @@ export default function ProduitDetailPage() {
         toast.error(res.error ?? 'Erreur lors de la suppression')
       }
     } catch {
-      toast.error('La suppression des variantes individuelles n\'est pas supportée')
+      toast.error('Erreur lors de la suppression de la variante')
     } finally {
       setDeleteVariantLoading(false)
     }
@@ -260,7 +262,7 @@ export default function ProduitDetailPage() {
     if (!deleteImageId) return
     setDeleteImageLoading(true)
     try {
-      const res = await adminDelete(`/api/admin/products/${productId}/images/${deleteImageId}`)
+      const res = await adminDelete(`/api/admin/products/${productId}/images?imageId=${deleteImageId}`)
       if (res.success) {
         toast.success('Image supprimée avec succès')
         setDeleteImageId(null)
@@ -269,7 +271,7 @@ export default function ProduitDetailPage() {
         toast.error(res.error ?? 'Erreur lors de la suppression')
       }
     } catch {
-      toast.error('La suppression individuelle des images n\'est pas supportée')
+      toast.error('Erreur lors de la suppression de l\'image')
     } finally {
       setDeleteImageLoading(false)
     }
@@ -308,7 +310,7 @@ export default function ProduitDetailPage() {
     if (!deletePersoId) return
     setDeletePersoLoading(true)
     try {
-      const res = await adminDelete(`/api/admin/products/${productId}/personalization-options/${deletePersoId}`)
+      const res = await adminDelete(`/api/admin/products/${productId}/personalization-options?optionId=${deletePersoId}`)
       if (res.success) {
         toast.success('Option supprimée avec succès')
         setDeletePersoId(null)
@@ -317,7 +319,7 @@ export default function ProduitDetailPage() {
         toast.error(res.error ?? 'Erreur lors de la suppression')
       }
     } catch {
-      toast.error('La suppression individuelle des options n\'est pas supportée')
+      toast.error('Erreur lors de la suppression de l\'option')
     } finally {
       setDeletePersoLoading(false)
     }
@@ -578,7 +580,7 @@ export default function ProduitDetailPage() {
                 <p className="text-center text-muted-foreground py-8">Aucune image ajoutée</p>
               ) : (
                 <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 max-h-96 overflow-y-auto">
-                  {product.images
+                  {[...product.images]
                     .sort((a, b) => a.sortOrder - b.sortOrder)
                     .map((img) => (
                       <div key={img.id} className="group relative rounded-lg border overflow-hidden">
@@ -708,12 +710,13 @@ export default function ProduitDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Modificateur de prix (€)</Label>
+                <Label>Modificateur de prix (FCFA)</Label>
                 <Input
                   type="number"
                   step="0.01"
+                  min="0"
                   value={variantForm.priceModifier}
-                  onChange={(e) => setVariantForm({ ...variantForm, priceModifier: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => setVariantForm({ ...variantForm, priceModifier: Math.max(0, parseFloat(e.target.value) || 0) })}
                 />
               </div>
               <div className="space-y-2">
@@ -759,11 +762,11 @@ export default function ProduitDetailPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Ajouter une image</DialogTitle>
-            <DialogDescription>Entrez l\'URL de l\'image à ajouter.</DialogDescription>
+            <DialogDescription>Entrez l'URL de l'image à ajouter.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>URL de l\'image *</Label>
+              <Label>URL de l'image *</Label>
               <Input
                 value={imageForm.url}
                 onChange={(e) => setImageForm({ ...imageForm, url: e.target.value })}
@@ -775,11 +778,11 @@ export default function ProduitDetailPage() {
               <Input
                 value={imageForm.altText}
                 onChange={(e) => setImageForm({ ...imageForm, altText: e.target.value })}
-                placeholder="Description de l\'image"
+                placeholder="Description de l'image"
               />
             </div>
             <div className="space-y-2">
-              <Label>Ordre d\'affichage</Label>
+              <Label>Ordre d'affichage</Label>
               <Input
                 type="number"
                 min="0"
@@ -801,7 +804,7 @@ export default function ProduitDetailPage() {
       <ConfirmDialog
         open={deleteImageId !== null}
         onOpenChange={(open) => { if (!open) setDeleteImageId(null) }}
-        title="Supprimer l\'image"
+        title="Supprimer l'image"
         description="Êtes-vous sûr de vouloir supprimer cette image ?"
         confirmLabel="Supprimer"
         onConfirm={handleDeleteImage}
@@ -840,7 +843,7 @@ export default function ProduitDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Ordre d\'affichage</Label>
+              <Label>Ordre d'affichage</Label>
               <Input
                 type="number"
                 min="0"
@@ -878,7 +881,7 @@ export default function ProduitDetailPage() {
       <ConfirmDialog
         open={deletePersoId !== null}
         onOpenChange={(open) => { if (!open) setDeletePersoId(null) }}
-        title="Supprimer l\'option"
+        title="Supprimer l'option"
         description="Êtes-vous sûr de vouloir supprimer cette option de personnalisation ?"
         confirmLabel="Supprimer"
         onConfirm={handleDeletePerso}

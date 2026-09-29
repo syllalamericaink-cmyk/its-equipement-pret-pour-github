@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { formatCurrency } from '@/lib/format'
 import { error, serverError } from '@/lib/api-response'
 import type { NextRequest } from 'next/server'
 import PDFDocument from 'pdfkit'
@@ -7,10 +8,6 @@ import path from 'path'
 const PRIMARY_COLOR = '#0056A7'
 const DARK_COLOR = '#1a1a2e'
 const LIGHT_BG = '#f8f9fa'
-
-function formatFCFA(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount) + ' FCFA'
-}
 
 export async function GET(
   request: NextRequest,
@@ -75,7 +72,7 @@ export async function GET(
     if (devis.clientType === 'ENTREPRISE' && devis.companyName) { doc.text(devis.companyName, ML + 13, cy); cy -= 13 }
     const fullName = devis.clientFirstName ? `${devis.clientFirstName} ${devis.clientName}` : devis.clientName
     doc.text(fullName, ML + 13, cy); cy -= 13
-    doc.text(`Telephone : ${devis.clientPhone}`, ML + 13, cy); cy -= 13
+    doc.text(`Téléphone : ${devis.clientPhone}`, ML + 13, cy); cy -= 13
     if (devis.clientEmail) { doc.text(`Email : ${devis.clientEmail}`, ML + 13, cy); cy -= 13 }
     doc.text(`Type : ${devis.clientType === 'ENTREPRISE' ? 'Entreprise' : 'Particulier'}`, ML + 13, cy); cy -= 13
     doc.text(`Ville : ${devis.city}${devis.commune ? ` — ${devis.commune}` : ''}`, ML + 13, cy); cy -= 13
@@ -99,15 +96,15 @@ export async function GET(
       doc.text(item.productName || '', colX[0] + 4, y - 12, { width: colW[0] - 8, lineBreak: false })
       if (item.hasPersonalization) {
         doc.font('Helvetica').fontSize(6).fillColor('#7c3aed')
-        doc.text('Personnalise', colX[0] + 4, y - 20, { width: colW[0] - 8, lineBreak: false })
+        doc.text('Personnalisé', colX[0] + 4, y - 20, { width: colW[0] - 8, lineBreak: false })
       }
       doc.font('Helvetica').fontSize(7).fillColor('#555555')
       doc.text(item.productSku || '-', colX[1] + 4, y - 12, { lineBreak: false })
       doc.text(item.variantName || '-', colX[2] + 4, y - 12, { lineBreak: false })
       doc.text(String(item.quantity), colX[3] + 4, y - 12, { lineBreak: false })
-      doc.text(formatFCFA(Number(item.unitPrice)), colX[4] + 4, y - 12, { lineBreak: false })
+      doc.text(formatCurrency(Number(item.unitPrice)), colX[4] + 4, y - 12, { lineBreak: false })
       doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#333333')
-      doc.text(formatFCFA(Number(item.lineTotal)), colX[5] + 4, y - 12, { lineBreak: false })
+      doc.text(formatCurrency(Number(item.lineTotal)), colX[5] + 4, y - 12, { lineBreak: false })
       y -= rh
     })
 
@@ -118,14 +115,14 @@ export async function GET(
     doc.font('Helvetica').fontSize(8).fillColor('#555555')
     doc.text('Sous-total', tx + 8, y - 14)
     doc.font('Helvetica-Bold').fontSize(8).fillColor('#333333')
-    doc.text(formatFCFA(Number(devis.subtotal)), tx + tw - 8, y - 14, { align: 'right', width: tw - 16 })
+    doc.text(formatCurrency(Number(devis.subtotal)), tx + tw - 8, y - 14, { align: 'right', width: tw - 16 })
     doc.font('Helvetica').fontSize(8).fillColor('#555555')
     doc.text('Livraison', tx + 8, y - 28)
     doc.font('Helvetica-Bold').fontSize(8).fillColor('#333333')
-    doc.text(formatFCFA(Number(devis.deliveryFee)), tx + tw - 8, y - 28, { align: 'right', width: tw - 16 })
+    doc.text(formatCurrency(Number(devis.deliveryFee)), tx + tw - 8, y - 28, { align: 'right', width: tw - 16 })
     doc.font('Helvetica-Bold').fontSize(9).fillColor('#ffffff')
     doc.text('TOTAL', tx + 8, y - 8)
-    doc.text(formatFCFA(Number(devis.total)), tx + tw - 8, y - 8, { align: 'right', width: tw - 16 })
+    doc.text(formatCurrency(Number(devis.total)), tx + tw - 8, y - 8, { align: 'right', width: tw - 16 })
 
     const fy = 35
     doc.moveTo(ML, fy + 15).lineTo(W - MR, fy + 15).lineWidth(0.3).strokeColor('#cccccc').stroke()

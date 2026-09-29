@@ -22,13 +22,31 @@ const devisSchema = z.object({
   clientType: z.enum(['PARTICULIER', 'ENTREPRISE']),
   clientName: z.string().min(1, 'Nom requis').max(200),
   clientFirstName: z.string().max(200).optional(),
-  clientPhone: z.string().min(1, 'Telephone requis').max(20),
+  clientPhone: z.string().min(1, 'Téléphone requis').max(30),
   clientEmail: z.string().email('Email invalide').max(200).optional().or(z.literal('')),
   companyName: z.string().max(200).optional(),
   city: z.string().min(1, 'Ville requise').max(200),
   commune: z.string().max(200).optional(),
   address: z.string().max(500).optional(),
   deliveryComment: z.string().max(2000).optional(),
+}).superRefine((data, ctx) => {
+  // Aligné avec l'API : pour une entreprise, raison sociale + email requis
+  if (data.clientType === 'ENTREPRISE') {
+    if (!data.companyName?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['companyName'],
+        message: "Le nom de l'entreprise est requis",
+      })
+    }
+    if (!data.clientEmail?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['clientEmail'],
+        message: 'Email requis pour une entreprise',
+      })
+    }
+  }
 })
 
 type DevisFormData = z.infer<typeof devisSchema>
@@ -114,7 +132,7 @@ export default function DevisPage() {
       clearCart()
       router.push(`/devis-confirmation?ref=${json.data.devisNumber}&id=${json.data.id}`)
     } catch {
-      toast.error('Erreur de connexion. Reessayez.')
+      toast.error('Erreur de connexion. Réessayez.')
       setSubmitting(false)
     }
   }
@@ -198,11 +216,11 @@ export default function DevisPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="clientFirstName">Prenom</Label>
+                <Label htmlFor="clientFirstName">Prénom</Label>
                 <Input
                   id="clientFirstName"
                   {...register('clientFirstName')}
-                  placeholder="Votre prenom"
+                  placeholder="Votre prénom"
                   className="min-h-[44px]"
                 />
               </div>
@@ -227,7 +245,7 @@ export default function DevisPage() {
 
             <div className="space-y-2">
               <Label htmlFor="clientPhone">
-                Telephone <span className="text-destructive">*</span>
+                Téléphone <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="clientPhone"
@@ -304,7 +322,7 @@ export default function DevisPage() {
               <Textarea
                 id="deliveryComment"
                 {...register('deliveryComment')}
-                placeholder="Instructions specifiques pour la livraison..."
+                placeholder="Instructions spécifiques pour la livraison..."
                 rows={3}
               />
             </div>
@@ -313,7 +331,7 @@ export default function DevisPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recapitulatif</CardTitle>
+            <CardTitle>Récapitulatif</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
@@ -342,7 +360,7 @@ export default function DevisPage() {
                     {item.hasPersonalization && (
                       <div className="ml-2 pl-3 border-l-2 border-muted-foreground/20 space-y-1">
                         <Badge variant="secondary" className="text-xs">
-                          Personnalise
+                          Personnalisé
                         </Badge>
                         <div className="text-xs text-muted-foreground space-y-0.5">
                           {item.personalization.impression && (
@@ -389,7 +407,7 @@ export default function DevisPage() {
             <div className="flex gap-2 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
               <Info className="size-4 shrink-0 mt-0.5" />
               <p>
-                Les prix sont indicatifs. Le devis sera genere et envoye apres
+                Les prix sont indicatifs. Le devis sera généré et envoyé après
                 validation.
               </p>
             </div>
@@ -404,7 +422,7 @@ export default function DevisPage() {
             disabled={submitting}
           >
             {submitting && <Loader2 className="size-4 mr-2 animate-spin" />}
-            Generer le devis
+            Générer le devis
           </Button>
           <div className="text-center">
             <Link

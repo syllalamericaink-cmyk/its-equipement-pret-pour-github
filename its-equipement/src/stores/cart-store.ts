@@ -34,9 +34,7 @@ interface CartState {
   addItem: (item: CartItem) => void
   removeItem: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
-  updatePersonalization: (id: string, p: Partial<CartPersonalization>) => void
   clearCart: () => void
-  itemCount: () => number
   subtotal: () => number
 }
 
@@ -77,21 +75,7 @@ export const useCartStore = create<CartState>()(
         }))
       },
 
-      updatePersonalization: (id, p) => {
-        set((state) => ({
-          items: state.items.map((i) =>
-            i.id === id
-              ? { ...i, personalization: { ...i.personalization, ...p } }
-              : i
-          ),
-        }))
-      },
-
       clearCart: () => set({ items: [] }),
-
-      itemCount: () => {
-        return get().items.reduce((sum, i) => sum + i.quantity, 0)
-      },
 
       subtotal: () => {
         return get().items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0)

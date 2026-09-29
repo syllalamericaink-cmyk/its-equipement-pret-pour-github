@@ -25,13 +25,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title: `${category.name} | ITS Équipement`,
         description:
           category.description ||
-          `Decouvrez notre selection de ${category._count.products} produit${category._count.products > 1 ? 's' : ''} dans la categorie ${category.name} chez ITS Équipement.`,
+          `Découvrez notre sélection de ${category._count.products} produit${category._count.products > 1 ? 's' : ''} dans la catégorie ${category.name} chez ITS Équipement.`,
         alternates: { canonical: `/categories/${category.slug}` },
         openGraph: {
           title: `${category.name} | ITS Équipement`,
           description:
             category.description ||
-            `Decouvrez notre selection de ${category._count.products} produit${category._count.products > 1 ? 's' : ''} dans la categorie ${category.name} chez ITS Équipement.`,
+            `Découvrez notre sélection de ${category._count.products} produit${category._count.products > 1 ? 's' : ''} dans la catégorie ${category.name} chez ITS Équipement.`,
           url: `/categories/${category.slug}`,
           type: 'website',
         },
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: 'Categorie introuvable | ITS Équipement',
+    title: 'Catégorie introuvable | ITS Équipement',
   }
 }
 

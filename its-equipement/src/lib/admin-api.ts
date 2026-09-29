@@ -1,11 +1,25 @@
 import type { ApiResponse } from '@/types'
 
+/**
+ * fetch robuste pour l'admin : ne lève JAMAIS d'exception.
+ * En cas d'erreur réseau ou de réponse non-JSON, renvoie une ApiResponse d'erreur
+ * au lieu de faire planter le composant appelant (fin des pages bloquées en skeleton).
+ */
 export async function adminFetch<T>(url: string, options?: RequestInit): Promise<ApiResponse<T>> {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
-  return res.json()
+  try {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    })
+    const text = await res.text()
+    try {
+      return JSON.parse(text) as ApiResponse<T>
+    } catch {
+      return { success: false, error: `Erreur serveur (${res.status})` } as ApiResponse<T>
+    }
+  } catch {
+    return { success: false, error: 'Erreur de connexion. Vérifiez votre connexion internet.' } as ApiResponse<T>
+  }
 }
 
 export async function adminPost<T>(url: string, body: unknown): Promise<ApiResponse<T>> {
@@ -33,28 +47,5 @@ export async function adminDelete<T = void>(url: string): Promise<ApiResponse<T>
   return adminFetch<T>(url, { method: 'DELETE' })
 }
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount) + ' XOF'
-}
-
-export function formatDate(date: string | Date): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date(date))
-}
-
-export function formatDateTime(date: string | Date): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(date))
-}
+// Formatage centralisé (voir src/lib/format.ts)
+export { formatCurrency, formatDate, formatDateTime } from '@/lib/format'

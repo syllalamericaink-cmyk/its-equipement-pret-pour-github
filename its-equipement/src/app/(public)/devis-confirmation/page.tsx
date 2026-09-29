@@ -26,7 +26,7 @@ function DevisConfirmationContent() {
 
   const handleCopyRef = () => {
     navigator.clipboard.writeText(ref)
-    toast.success('Reference copiee')
+    toast.success('Référence copiée')
   }
 
   const handleDownloadPdf = async () => {
@@ -38,13 +38,13 @@ function DevisConfirmationContent() {
     try {
       const res = await fetch(`/api/public/devis/${devisId}/pdf`)
       if (!res.ok) {
-        toast.error('Erreur de generation du PDF')
+        toast.error('Erreur de génération du PDF')
         setGeneratingPdf(false)
         return
       }
       const blob = await res.blob()
       if (!blob || blob.size === 0) {
-        toast.error('Erreur de generation du PDF')
+        toast.error('Erreur de génération du PDF')
         setGeneratingPdf(false)
         return
       }
@@ -56,7 +56,7 @@ function DevisConfirmationContent() {
       a.click()
       a.remove()
       window.URL.revokeObjectURL(url)
-      toast.success('PDF telecharge')
+      toast.success('PDF téléchargé')
     } catch {
       toast.error('Erreur lors du telechargement du PDF')
     } finally {
@@ -80,7 +80,7 @@ function DevisConfirmationContent() {
       }
       router.push(`/confirmation?ref=${json.data.orderNumber}`)
     } catch {
-      toast.error('Erreur de connexion. Reessayez.')
+      toast.error('Erreur de connexion. Réessayez.')
       setFinalizing(false)
     }
   }
@@ -92,10 +92,10 @@ function DevisConfirmationContent() {
           <CheckCircle className="size-10 text-emerald-600" />
         </div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">
-          Devis cree avec succes
+          Devis créé avec succès
         </h1>
         <p className="text-muted-foreground">
-          Votre demande de devis a ete enregistree. Voici votre reference.
+          Votre demande de devis a été enregistrée. Voici votre reference.
         </p>
       </div>
 
@@ -129,7 +129,7 @@ function DevisConfirmationContent() {
           ) : (
             <Download className="size-4" />
           )}
-          {generatingPdf ? 'Generation du PDF...' : 'Telecharger le devis en PDF'}
+          {generatingPdf ? 'Génération du PDF...' : 'Télécharger le devis en PDF'}
         </Button>
 
         <Button

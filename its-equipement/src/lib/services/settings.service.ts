@@ -24,24 +24,10 @@ export async function getSettingNumber(key: string, defaultValue: number): Promi
   return isNaN(parsed) ? defaultValue : parsed
 }
 
-export async function getSettingBoolean(key: string, defaultValue: boolean): Promise<boolean> {
-  const value = await getSetting(key)
-  if (value === null) return defaultValue
-  return value === 'true'
-}
-
 export async function getAllSettings(category?: string) {
   return db.setting.findMany({
     where: category ? { category } : undefined,
     orderBy: { key: 'asc' },
-  })
-}
-
-export async function updateSetting(key: string, value: string) {
-  cache.delete(key)
-  return db.setting.update({
-    where: { key },
-    data: { value },
   })
 }
 
@@ -83,8 +69,3 @@ export async function getBalancePercentage(): Promise<number> {
   return getSettingNumber('BALANCE_PERCENTAGE', 50)
 }
 
-export async function getWhatsAppNumber(): Promise<string> {
-  return (await getSetting('WHATSAPP_NUMBER')) ?? ''
-}
-
-export type SettingWithCategory = Prisma.PromiseReturnType<typeof getAllSettings>[number]

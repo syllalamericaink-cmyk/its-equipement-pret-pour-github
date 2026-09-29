@@ -4,7 +4,7 @@ import type { Prisma } from '@prisma/client'
 export async function findOrCreateClient(data: {
   companyName: string
   contactName: string
-  email: string
+  email?: string | null
   phone?: string | null
   address?: string | null
   city?: string | null
@@ -12,9 +12,14 @@ export async function findOrCreateClient(data: {
   country?: string | null
   notes?: string | null
 }) {
-  const existing = await db.client.findFirst({
-    where: { email: data.email },
-  })
+  const email = data.email?.trim().toLowerCase() || ''
+
+  // Recherche du client existant : par email si fourni, sinon par téléphone
+  const existing = email
+    ? await db.client.findFirst({ where: { email } })
+    : data.phone
+      ? await db.client.findFirst({ where: { phone: data.phone } })
+      : null
 
   if (existing) {
     const needsUpdate =
@@ -42,16 +47,19 @@ export async function findOrCreateClient(data: {
     return existing
   }
 
+  // Email requis en base (clé de dédoublonnage) : si absent, on génère un identifiant technique
+  const emailForDb = email || `sans-email-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}@its-equipement.local`
+
   return db.client.create({
     data: {
       companyName: data.companyName,
       contactName: data.contactName,
-      email: data.email,
+      email: emailForDb,
       phone: data.phone,
       address: data.address,
       city: data.city,
       zipCode: data.zipCode,
-      country: data.country ?? 'France',
+      country: data.country ?? "Côte d'Ivoire",
       notes: data.notes,
     },
   })

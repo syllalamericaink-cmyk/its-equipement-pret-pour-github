@@ -1,88 +1,96 @@
 import { db } from '../db'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
-import { randomUUID } from 'crypto'
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
-  'application/pdf',
   'image/avif',
+  'application/pdf',
 ]
 
-const ALLOWED_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.pdf', '.webp', '.avif'])
+const MAX_FILE_SIZE = 4 * 1024 * 1024 // 4 Mo — stocké en base64 dans la base (compatible Vercel)
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024
-
+/**
+ * Enregistre un fichier dans la base de données (base64).
+ * Le système de fichiers n'est pas persistant sur Vercel (serverless),
+ * donc le stockage en base est la seule option fiable.
+ */
 export async function uploadFile(
   file: File,
   entityType: string,
   entityId?: string
 ) {
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-    throw new Error('Type de fichier non autorise')
-  }
-
-  if (file.size > MAX_FILE_SIZE) {
-    throw new Error('Fichier trop volumineux')
+    throw new Error('Type de fichier non autorisé (formats acceptés : JPG, PNG, WEBP, AVIF, PDF)')
   }
 
   if (file.size === 0) {
     throw new Error('Fichier vide')
   }
 
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error('Fichier trop volumineux (maximum 4 Mo)')
+  }
+
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
+  const base64 = buffer.toString('base64')
 
-  const rawExt = path.extname(file.name).toLowerCase()
-  const ext = ALLOWED_EXTENSIONS.has(rawExt) ? rawExt : '.bin'
-  const uniqueName = `${randomUUID()}${ext}`
-  const relativePath = `/uploads/${uniqueName}`
-  const absolutePath = path.join(process.cwd(), 'public', 'uploads', uniqueName)
-
-  await mkdir(path.join(process.cwd(), 'public', 'uploads'), { recursive: true })
-  await writeFile(absolutePath, buffer)
+  const safeName = file.name.replace(/[^\w.\-() ]+/g, '_').slice(0, 180) || 'fichier'
 
   const upload = await db.upload.create({
     data: {
-      filename: uniqueName,
-      originalName: file.name,
-      url: relativePath,
+      filename: `${Date.now()}-${safeName}`,
+      originalName: safeName,
+      url: '',
       mimeType: file.type,
       size: file.size,
       entityType: entityType.slice(0, 50),
-      entityId,
+      entityId: entityId ?? null,
+      data: base64,
+    },
+    select: {
+      id: true,
+      filename: true,
+      originalName: true,
+      mimeType: true,
+      size: true,
+      entityType: true,
+      entityId: true,
+      createdAt: true,
     },
   })
 
   return upload
 }
 
-export async function getUploads(entityType?: string, entityId?: string) {
-  const where: Record<string, unknown> = {}
-  if (entityType) where.entityType = entityType
-  if (entityId) where.entityId = entityId
-
+/** Liste les métadonnées d'uploads par identifiants (jamais le contenu binaire). */
+export async function getUploadsByIds(ids: string[]) {
+  const unique = [...new Set(ids.filter(Boolean))].slice(0, 100)
+  if (unique.length === 0) return []
   return db.upload.findMany({
-    where,
+    where: { id: { in: unique } },
+    select: {
+      id: true,
+      filename: true,
+      originalName: true,
+      mimeType: true,
+      size: true,
+      entityType: true,
+      entityId: true,
+      createdAt: true,
+    },
     orderBy: { createdAt: 'desc' },
-    take: 100,
   })
 }
 
-export async function deleteUpload(id: string) {
+/** Récupère le contenu binaire d'un upload (pour le téléchargement admin). */
+export async function getUploadContent(id: string) {
   const upload = await db.upload.findUnique({ where: { id } })
-  if (!upload) throw new Error('Fichier introuvable')
-
-  if (upload.url.startsWith('/uploads/')) {
-    const filePath = path.join(process.cwd(), 'public', upload.url)
-    try {
-      const { unlink } = await import('fs/promises')
-      await unlink(filePath)
-    } catch {
-    }
+  if (!upload || !upload.data) return null
+  return {
+    buffer: Buffer.from(upload.data, 'base64'),
+    mimeType: upload.mimeType,
+    filename: upload.originalName,
   }
-
-  return db.upload.delete({ where: { id } })
 }

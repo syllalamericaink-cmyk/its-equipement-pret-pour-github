@@ -18,6 +18,11 @@ export async function GET(request: NextRequest) {
       quotesByStatus,
       recentOrders,
       recentQuoteRequests,
+      paidPayments,
+      pendingPayments,
+      ordersWithPersonalization,
+      ordersWithoutPersonalization,
+      activeDeliveries,
     ] = await Promise.all([
       db.order.count(),
       db.quoteRequest.count(),
@@ -38,6 +43,12 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         include: { client: true },
       }),
+      // Chiffre d'affaires = somme des paiements réellement encaissés
+      db.payment.aggregate({ where: { status: 'PAYE' }, _sum: { amount: true } }),
+      db.payment.count({ where: { status: 'EN_ATTENTE' } }),
+      db.order.count({ where: { hasPersonalization: true } }),
+      db.order.count({ where: { hasPersonalization: false } }),
+      db.delivery.count({ where: { status: { in: ['A_PREPARER', 'PRETE', 'EN_LIVRAISON'] } } }),
     ])
 
     return success({
@@ -47,6 +58,11 @@ export async function GET(request: NextRequest) {
       quotesByStatus: Object.fromEntries(quotesByStatus.map(s => [s.status, s._count])),
       recentOrders,
       recentQuoteRequests,
+      revenue: paidPayments._sum.amount ?? 0,
+      pendingPayments,
+      ordersWithPersonalization,
+      ordersWithoutPersonalization,
+      activeDeliveries,
     })
   } catch {
     return serverError()

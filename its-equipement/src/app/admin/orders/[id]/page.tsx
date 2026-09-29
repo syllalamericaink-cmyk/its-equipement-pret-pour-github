@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { StatusBadge } from '@/components/admin/status-badge'
 import { ConfirmDialog } from '@/components/admin/confirm-dialog'
-import { adminFetch, adminPatch, adminDelete, formatCurrency, formatDate, formatDateTime } from '@/lib/admin-api'
+import { adminFetch, adminPut, formatCurrency, formatDate, formatDateTime } from '@/lib/admin-api'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -187,7 +187,7 @@ export default function CommandeDetailPage() {
             })
           })
           if (fileIds.length > 0) {
-            const uploadsRes = await adminFetch(`/api/admin/uploads?${fileIds.map(fid => `entityId=${fid}`).join('&')}`)
+            const uploadsRes = await adminFetch(`/api/admin/uploads?ids=${fileIds.join(',')}`)
             if (uploadsRes.success && uploadsRes.data) {
               const map: Record<string, Record<string, unknown>> = {}
               const items = uploadsRes.data as unknown as Record<string, unknown>[]
@@ -211,7 +211,7 @@ export default function CommandeDetailPage() {
   const handleOpenConfirm = useCallback(() => {
     if (newStatus && newStatus !== data?.status) {
       if (!allowedTransitions.includes(newStatus)) {
-        toast.error('Transition de statut non autorisee')
+        toast.error('Transition de statut non autorisée')
         setNewStatus(data?.status ?? '')
         return
       }
@@ -221,14 +221,14 @@ export default function CommandeDetailPage() {
 
   const handleConfirmStatus = useCallback(async () => {
     setConfirmLoading(true)
-    const res = await adminPatch(`/api/admin/orders/${id}`, { status: newStatus })
+    const res = await adminPut(`/api/admin/orders/${id}`, { status: newStatus })
     setConfirmLoading(false)
     setConfirmOpen(false)
     if (res.success) {
-      toast.success('Statut mis a jour avec succes')
+      toast.success('Statut mis à jour avec succès')
       setRefreshKey((k) => k + 1)
     } else {
-      toast.error('Erreur lors de la mise a jour du statut')
+      toast.error(res.error || 'Erreur lors de la mise à jour du statut')
       setNewStatus(data?.status ?? '')
     }
   }, [newStatus, id, data?.status])
@@ -277,7 +277,7 @@ export default function CommandeDetailPage() {
               <h1 className="text-2xl font-bold tracking-tight">{data.orderNumber}</h1>
               <StatusBadge status={data.status} />
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">Creee le {formatDateTime(data.createdAt)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Créée le {formatDateTime(data.createdAt)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -443,7 +443,7 @@ export default function CommandeDetailPage() {
                 <TableRow>
                   <TableHead>Produit</TableHead>
                   <TableHead>Variante</TableHead>
-                  <TableHead className="text-right">Quantite</TableHead>
+                  <TableHead className="text-right">Quantité</TableHead>
                   <TableHead className="text-right">Prix unitaire</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead>Personn.</TableHead>
@@ -526,7 +526,7 @@ export default function CommandeDetailPage() {
                 <div key={item.id} className="rounded-lg border p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-medium">{idx + 1}. {item.productName}</h4>
-                    <Badge variant="outline">Personnalise</Badge>
+                    <Badge variant="outline">Personnalisé</Badge>
                   </div>
                   {item.personalizations?.length ? (
                     <div className="space-y-3">
@@ -566,11 +566,11 @@ export default function CommandeDetailPage() {
                                   </p>
                                 </div>
                                 <a
-                                  href={String(uploads[logoId].url)}
+                                  href={`/api/admin/uploads/${String(uploads[logoId].id)}`}
                                   download={String(uploads[logoId].originalName)}
                                   className="flex-shrink-0 text-primary hover:underline text-sm"
                                 >
-                                  Telecharger
+                                  Télécharger
                                 </a>
                               </div>
                             )}
@@ -584,7 +584,7 @@ export default function CommandeDetailPage() {
                       })}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Aucun detail de personnalisation.</p>
+                    <p className="text-sm text-muted-foreground">Aucun détail de personnalisation.</p>
                   )}
                 </div>
               ))}
@@ -608,7 +608,7 @@ export default function CommandeDetailPage() {
                   <TableRow>
                     <TableHead>Type</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
-                    <TableHead>Methode</TableHead>
+                    <TableHead>Méthode</TableHead>
                     <TableHead>Ref</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead>Date</TableHead>
@@ -647,7 +647,7 @@ export default function CommandeDetailPage() {
               </Table>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Aucun paiement enregistre.</p>
+            <p className="text-sm text-muted-foreground">Aucun paiement enregistré.</p>
           )}
         </CardContent>
       </Card>
@@ -671,11 +671,11 @@ export default function CommandeDetailPage() {
                 <p className="mt-1">{data.delivery.carrier || '-'}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Numero de suivi</p>
+                <p className="text-sm font-medium text-muted-foreground">Numéro de suivi</p>
                 <p className="mt-1 font-mono">{data.delivery.trackingNumber || '-'}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Date estimee</p>
+                <p className="text-sm font-medium text-muted-foreground">Date estimée</p>
                 <p className="mt-1">{data.delivery.estimatedDelivery ? formatDate(data.delivery.estimatedDelivery) : '-'}</p>
               </div>
               <div>

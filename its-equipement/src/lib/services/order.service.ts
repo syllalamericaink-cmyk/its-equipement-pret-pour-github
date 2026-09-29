@@ -23,10 +23,10 @@ export async function createOrderFromQuote(quoteId: string, adminId: string) {
     },
   })
   if (!quote) throw new Error('Devis introuvable')
-  if (quote.status !== 'ACCEPTED') throw new Error('Le devis doit etre accepte pour creer une commande')
+  if (quote.status !== 'ACCEPTED') throw new Error('Le devis doit être accepté pour créer une commande')
 
   const existingOrder = await db.order.findUnique({ where: { quoteId } })
-  if (existingOrder) throw new Error('Une commande existe deja pour ce devis')
+  if (existingOrder) throw new Error('Une commande existe déjà pour ce devis')
 
   const hasPersonalization = quote.items.some(item => item.hasPersonalization)
   const depositPct = await getDepositPercentage()
@@ -320,22 +320,3 @@ export async function changeOrderStatus(id: string, toStatus: string, adminId: s
   })
 }
 
-export async function getOrderStats() {
-  const [total, byStatus, recent] = await Promise.all([
-    db.order.count(),
-    db.order.groupBy({ by: ['status'], _count: true }),
-    db.order.findMany({
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        quote: { include: { quoteRequest: { include: { client: true } } } },
-      },
-    }),
-  ])
-
-  return {
-    total,
-    byStatus: Object.fromEntries(byStatus.map(s => [s.status, s._count])),
-    recent,
-  }
-}

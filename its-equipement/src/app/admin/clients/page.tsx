@@ -97,7 +97,7 @@ export default function ClientsPage() {
     },
     {
       key: 'phone',
-      header: 'Telephone',
+      header: 'Téléphone',
     },
     {
       key: 'quoteRequests',
