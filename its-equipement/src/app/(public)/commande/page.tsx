@@ -17,7 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { buildWhatsAppOrderLink } from '@/lib/whatsapp-order'
+import { buildWhatsAppOrderLink, ADMIN_WHATSAPP_NUMBER } from '@/lib/whatsapp-order'
 
 const checkoutSchema = z.object({
   clientType: z.enum(['PARTICULIER', 'ENTREPRISE']),
@@ -141,8 +141,10 @@ export default function CommandePage() {
     setSubmitting(true)
     try {
       // Vérifier la configuration WhatsApp AVANT d'enregistrer la commande
-      // (sinon la commande serait créée sans que le client puisse la transmettre)
-      if (!process.env.NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER) {
+      // (sinon la commande serait créée sans que le client puisse la transmettre).
+      // ADMIN_WHATSAPP_NUMBER embarque un numéro par défaut, ce blocage ne
+      // survient donc qu'en cas de suppression volontaire du fallback.
+      if (!ADMIN_WHATSAPP_NUMBER) {
         toast.error('Numéro WhatsApp non configuré. Contactez l\'administrateur.')
         setSubmitting(false)
         return

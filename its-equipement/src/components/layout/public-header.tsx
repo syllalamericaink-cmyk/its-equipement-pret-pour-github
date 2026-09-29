@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Menu, ShoppingCart } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { ArrowRight, Menu, Search, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Sheet,
@@ -54,6 +56,17 @@ function LogoMark({ size = 'md' }: { size?: 'md' | 'sm' }) {
 }
 
 export function PublicHeader() {
+  const router = useRouter()
+  const [query, setQuery] = useState('')
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = query.trim()
+    if (!q) return
+    router.push(`/produits?search=${encodeURIComponent(q)}`)
+    setQuery('')
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full" role="banner">
       {/* Barre supérieure noire */}
@@ -187,6 +200,25 @@ export function PublicHeader() {
           </div>
         </div>
       </div>
+
+      {/* Recherche mobile — maquette mobile v3 */}
+      <form onSubmit={submitSearch} role="search" className="flex items-center gap-0 border-b border-its-border bg-its-dark p-2 md:hidden">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Rechercher un casque, des gants, un gilet…"
+          aria-label="Rechercher un produit"
+          className="h-11 min-w-0 flex-1 bg-white px-3.5 text-base text-its-dark outline-none placeholder:text-its-gray"
+        />
+        <button
+          type="submit"
+          aria-label="Lancer la recherche"
+          className="flex h-11 w-12 shrink-0 items-center justify-center bg-its-lime text-its-dark transition-colors hover:bg-its-lime-dark"
+        >
+          <Search className="h-5 w-5" />
+        </button>
+      </form>
     </header>
   )
 }

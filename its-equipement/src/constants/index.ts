@@ -1,6 +1,6 @@
 export const APP_NAME = 'ITS Équipement'
 export const COMPANY_NAME = 'ITSchool & Dynamic Group'
 export const CONTACT_PHONE = '+225 07 79 07 45 47'
-export const CONTACT_WHATSAPP = 'https://wa.me/2250779074547?text=Bonjour%20ITS%20%C3%89quipement%2C%20je%20souhaite%20des%20informations%20sur%20vos%20produits%20EPI'
+export const CONTACT_WHATSAPP = 'https://wa.me/2250700249278?text=Bonjour%20ITS%20%C3%89quipement%2C%20je%20souhaite%20des%20informations%20sur%20vos%20produits%20EPI'
 export const CONTACT_EMAIL = 'contact@itschoolci.com'
 export const CONTACT_ADDRESS = 'Cocody 2 Plateaux, Cité Sanon — Abidjan'

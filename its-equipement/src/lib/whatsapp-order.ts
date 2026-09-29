@@ -12,7 +12,11 @@
 
 import type { CartItem } from '@/stores/cart-store'
 
-const ADMIN_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER ?? ''
+// Numéro WhatsApp de réception des demandes. Le fallback en dur garantit que
+// le bouton fonctionne même si la variable NEXT_PUBLIC_* n'est pas définie
+// dans l'environnement de build (elle peut la remplacer à tout moment).
+export const ADMIN_WHATSAPP_NUMBER =
+  process.env.NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER ?? '+2250700249278'
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL ?? ''
 
 function normalizePhone(phone: string): string {
