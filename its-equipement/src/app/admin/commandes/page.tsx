@@ -67,6 +67,7 @@ export default function CommandesPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [loading, setLoading] = useState(true)
+  const [refreshTick, setRefreshTick] = useState(0)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
@@ -90,7 +91,18 @@ export default function CommandesPage() {
       }
     })()
     return () => { cancelled = true }
-  }, [page, statusFilter, search])
+  }, [page, statusFilter, search, refreshTick])
+
+  // Suivi temps réel : rechargement automatique toutes les 30 s quand
+  // l'onglet est visible (utile depuis la PWA installée sur mobile).
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        setRefreshTick((t) => t + 1)
+      }
+    }, 30_000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleSearchChange = useCallback((value: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Loader2, ArrowLeft, Info, MessageCircle, Clock } from 'lucide-react'
+import { Loader2, ArrowLeft, Info, MessageCircle, Clock, Upload, X } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -112,6 +112,31 @@ export default function CommandePage() {
   const hasPersonalization = watch('hasPersonalization')
   const needsCompanyInfo = requestType !== 'COMMANDE_SIMPLE' || clientType === 'ENTREPRISE'
 
+  // === Logo de personnalisation (obligatoire) ===
+  const [logoUpload, setLogoUpload] = useState<{ id: string; fileName: string } | null>(null)
+  const [logoUploading, setLogoUploading] = useState(false)
+
+  const handleLogoUpload = async (file: File) => {
+    setLogoUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('entityType', 'ORDER_LOGO')
+      const res = await fetch('/api/public/upload', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!json.success || !json.data?.id) {
+        toast.error(json.error || "Échec de l'envoi du logo")
+        return
+      }
+      setLogoUpload({ id: json.data.id, fileName: json.data.originalName })
+      toast.success('Logo reçu ! Il sera joint à votre commande.')
+    } catch {
+      toast.error("Échec de l'envoi du logo. Réessayez.")
+    } finally {
+      setLogoUploading(false)
+    }
+  }
+
   const onSubmit = async (data: CheckoutFormData) => {
     setSubmitting(true)
     try {
@@ -125,6 +150,12 @@ export default function CommandePage() {
       // Si personnalisation activée mais détail vide
       if (data.hasPersonalization && !data.personalizationSummary?.trim()) {
         toast.error('Veuillez décrire votre personnalisation')
+        setSubmitting(false)
+        return
+      }
+      // Logo OBLIGATOIRE dès qu'une personnalisation est demandée
+      if (data.hasPersonalization && !logoUpload) {
+        toast.error('Veuillez téléverser votre logo : il est requis pour la personnalisation')
         setSubmitting(false)
         return
       }
@@ -145,6 +176,7 @@ export default function CommandePage() {
           companyInfo: data.companyInfo || undefined,
           requestType: data.requestType,
           personalizationSummary: data.hasPersonalization ? data.personalizationSummary : undefined,
+          personalizationLogoUploadId: data.hasPersonalization ? logoUpload?.id : undefined,
           city: data.city,
           commune: data.commune || undefined,
           address: data.address || undefined,
@@ -197,6 +229,7 @@ export default function CommandePage() {
             hasPersonalization: data.hasPersonalization,
             summary: data.personalizationSummary,
           },
+          logo: data.hasPersonalization && logoUpload ? { id: logoUpload.id, fileName: logoUpload.fileName } : undefined,
           orderRef: apiJson.data?.orderNumber ?? undefined,
         },
       )
@@ -485,9 +518,70 @@ export default function CommandePage() {
                 {errors.personalizationSummary && (
                   <p className="text-sm text-destructive">{errors.personalizationSummary.message}</p>
                 )}
+              </div>
+            )}
+            {hasPersonalization && (
+              <div className="space-y-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3">
+                <Label>
+                  Votre logo <span className="text-destructive">*</span>
+                </Label>
                 <p className="text-xs text-muted-foreground">
-                  Vous pouvez envoyer votre logo et vos éléments graphiques directement via WhatsApp après validation.
+                  Formats acceptés : JPG, PNG, WEBP (4 Mo max). Il est joint automatiquement à votre commande
+                  et transmis à notre équipe avec le récapitulatif.
                 </p>
+                {logoUpload ? (
+                  <div className="flex items-center gap-3 rounded-lg border bg-background p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/api/public/uploads/${logoUpload.id}`}
+                      alt={`Logo ${logoUpload.fileName}`}
+                      className="size-14 shrink-0 rounded border bg-white object-contain"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{logoUpload.fileName}</p>
+                      <p className="text-xs font-medium text-green-600">Logo joint à la commande</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-9 shrink-0"
+                      onClick={() => setLogoUpload(null)}
+                      aria-label="Supprimer le logo"
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      id="logo-upload"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="sr-only"
+                      disabled={logoUploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        e.target.value = ''
+                        if (file) void handleLogoUpload(file)
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full min-h-[44px] border-dashed"
+                      disabled={logoUploading}
+                      onClick={() => document.getElementById('logo-upload')?.click()}
+                    >
+                      {logoUploading ? (
+                        <Loader2 className="size-4 mr-2 animate-spin" />
+                      ) : (
+                        <Upload className="size-4 mr-2" />
+                      )}
+                      {logoUploading ? 'Envoi en cours…' : 'Téléverser mon logo'}
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </CardContent>

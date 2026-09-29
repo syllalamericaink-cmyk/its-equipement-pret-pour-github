@@ -1,5 +1,6 @@
 import { requireAdmin } from '@/lib/api-auth'
 import { getPayments, getPaymentStatusCounts, initiatePayment } from '@/lib/services/payment.service'
+import { isOnlinePaymentEnabled } from '@/lib/online-payment'
 import { success, error, getPaginationParams, buildMeta, serverError } from '@/lib/api-response'
 import { logAction } from '@/lib/services/admin-log.service'
 import type { NextRequest } from 'next/server'
@@ -31,6 +32,16 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { orderId, type, provider } = body as { orderId: string; type: string; provider?: string }
+
+    // Paiement en ligne DÉSACTIVÉ : on ne peut pas créer un paiement fournisseur.
+    // L'enregistrement manuel (espèces, mobile money, virement) reste possible
+    // via POST /api/admin/payments/[id] avec une preuve d'encaissement réelle.
+    if (!isOnlinePaymentEnabled()) {
+      return error(
+        'Le paiement en ligne est désactivé. Enregistrez les paiements reçus manuellement depuis la fiche commande.',
+        403,
+      )
+    }
 
     if (!orderId || !type) {
       return error('orderId et type sont requis', 422)

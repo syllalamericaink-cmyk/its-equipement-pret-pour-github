@@ -1,4 +1,5 @@
 import { db } from '../db'
+import { isOnlinePaymentEnabled } from '../online-payment'
 import { createProvider } from './payment-provider.service'
 import type { Prisma } from '@prisma/client'
 
@@ -61,6 +62,13 @@ export async function createPayment(data: {
 }
 
 export async function initiatePayment(orderId: string, type: string, provider?: string, adminId?: string) {
+  // Défense en profondeur : le paiement en ligne est désactivé par défaut.
+  // Aucun paiement fournisseur ne peut être initié tant que le drapeau est OFF,
+  // même si une route oubliait de vérifier.
+  if (!isOnlinePaymentEnabled()) {
+    throw new Error('Paiement en ligne desactive')
+  }
+
   const order = await db.order.findUnique({ where: { id: orderId } })
   if (!order) throw new Error('Commande introuvable')
 

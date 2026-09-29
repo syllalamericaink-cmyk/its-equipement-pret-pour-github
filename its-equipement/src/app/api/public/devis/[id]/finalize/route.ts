@@ -1,5 +1,7 @@
 import { success, error, serverError } from '@/lib/api-response'
 import { sendOrderNotification } from '@/lib/services/public-order.service'
+import { sendOrderTelegramNotification } from '@/lib/services/telegram.service'
+import { syncOrderToSheets } from '@/lib/services/google-sheets.service'
 import { checkApiRateLimit } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import type { NextRequest } from 'next/server'
@@ -69,7 +71,10 @@ export async function POST(
       },
     })
 
+    // Notifications non bloquantes (commande déjà enregistrée)
     sendOrderNotification(id).catch(() => {})
+    sendOrderTelegramNotification(id).catch(() => {})
+    syncOrderToSheets(id).catch(() => {})
 
     return success({ orderNumber })
   } catch {

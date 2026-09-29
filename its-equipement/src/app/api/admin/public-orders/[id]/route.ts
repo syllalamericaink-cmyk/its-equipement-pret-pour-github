@@ -1,6 +1,7 @@
 import { requireAdmin } from '@/lib/api-auth'
 import { success, error, serverError } from '@/lib/api-response'
 import { getPublicOrderById, changePublicOrderStatus } from '@/lib/services/public-order.service'
+import { syncOrderToSheets } from '@/lib/services/google-sheets.service'
 import type { NextRequest } from 'next/server'
 
 export async function GET(
@@ -34,6 +35,8 @@ export async function PATCH(
 
     if (body.status) {
       const order = await changePublicOrderStatus(id, body.status, session!.user.id)
+      // Suivi Google Sheets : la ligne de la commande est mise à jour (non bloquant)
+      syncOrderToSheets(id).catch(() => {})
       return success(order)
     }
 

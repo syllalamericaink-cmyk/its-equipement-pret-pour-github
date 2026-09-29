@@ -45,6 +45,7 @@ export async function createPublicOrder(data: {
   companyInfo?: string
   requestType?: string
   personalizationSummary?: string
+  personalizationLogoUploadId?: string
   city: string
   commune?: string
   address?: string
@@ -111,6 +112,32 @@ export async function createPublicOrder(data: {
     }
   })
 
+  // Logo de personnalisation : validé côté serveur (doit exister dans Upload,
+  // et être une image). Injecté dans les articles personnalisés pour que
+  // l'admin le voie directement sur la fiche commande.
+  let personalizationLogo: { id: string; originalName: string } | null = null
+  if (data.personalizationLogoUploadId) {
+    const upload = await db.upload.findUnique({
+      where: { id: data.personalizationLogoUploadId },
+      select: { id: true, mimeType: true, originalName: true },
+    })
+    if (!upload || !upload.mimeType.startsWith('image/')) {
+      throw new Error('Logo de personnalisation invalide')
+    }
+    personalizationLogo = { id: upload.id, originalName: upload.originalName }
+  }
+
+  if (personalizationLogo) {
+    for (const item of authoritativeItems) {
+      if (!item.hasPersonalization) continue
+      item.personalizationData = {
+        ...(item.personalizationData ?? {}),
+        logoFileId: personalizationLogo.id,
+        logoFileName: personalizationLogo.originalName,
+      }
+    }
+  }
+
   const subtotal = authoritativeItems.reduce((sum, item) => sum + item.lineTotal, 0)
   // Delivery pricing is currently server-controlled. The browser may not
   // increase it by submitting an arbitrary deliveryFee.
@@ -128,6 +155,7 @@ export async function createPublicOrder(data: {
     companyInfo: data.companyInfo,
     requestType,
     personalizationSummary: data.personalizationSummary,
+    personalizationLogoUploadId: personalizationLogo?.id,
     city: data.city,
     commune: data.commune,
     address: data.address,
@@ -230,9 +258,15 @@ function buildNotificationMessage(order: PublicOrderWithItems): string {
   if (order.deliveryComment) message += `Instructions : ${order.deliveryComment}\n`
   message += '\n'
   // Récap personnalisations global
-  if (order.personalizationSummary) {
+  if (order.personalizationSummary || order.personalizationLogoUploadId) {
     message += `\u{1F3A8} Personnalisation\n`
-    message += `${order.personalizationSummary}\n\n`
+    if (order.personalizationSummary) message += `${order.personalizationSummary}\n`
+    if (order.personalizationLogoUploadId) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL ?? ''
+      const logoUrl = `${siteUrl}/api/public/uploads/${order.personalizationLogoUploadId}`
+      message += `Logo client (cliquer pour ouvrir) : ${logoUrl}\n`
+    }
+    message += '\n'
   }
   message += `\u{1F4E6} Produits\n`
 
@@ -274,6 +308,7 @@ type PublicOrderWithItems = {
   companyInfo: string | null
   requestType: string
   personalizationSummary: string | null
+  personalizationLogoUploadId: string | null
   city: string
   commune: string | null
   address: string | null

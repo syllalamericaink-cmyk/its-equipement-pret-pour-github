@@ -34,6 +34,7 @@ import {
   MapPin,
   ExternalLink,
   Package,
+  Palette,
   AlertTriangle,
   RefreshCw,
   FileText,
@@ -65,6 +66,8 @@ interface PersonalizationDetail {
   emplacement: string | null
   taille: string | null
   couleur: string | null
+  logoFileId?: string
+  logoFileName?: string
 }
 
 interface OrderItem {
@@ -105,11 +108,49 @@ interface PublicOrderDetail {
   totalAmount: number
   deliveryComment: string | null
   notificationStatus: string | null
+  personalizationSummary: string | null
+  personalizationLogoUploadId: string | null
   createdAt: string
   updatedAt: string
   items: OrderItem[]
   statusHistory: StatusHistoryEntry[]
   quote: LinkedQuote | null
+}
+
+interface RawApiOrderItem {
+  id: string
+  productName: string
+  variantName: string | null
+  quantity: number
+  unitPrice: number
+  lineTotal: number
+  personalizationData?: Record<string, unknown> | null
+}
+
+/** Forme brute renvoyée par l'API (données Prisma telles quelles). */
+interface RawApiOrder {
+  id: string
+  orderNumber: string
+  status: string
+  clientName: string
+  clientPhone: string
+  clientEmail: string | null
+  clientType: string
+  city: string
+  commune: string | null
+  address: string | null
+  subtotal: number
+  deliveryFee: number
+  total: number
+  deliveryComment: string | null
+  notificationStatus: string | null
+  personalizationSummary: string | null
+  personalizationLogoUploadId: string | null
+  createdAt: string
+  updatedAt: string
+  statusHistory: StatusHistoryEntry[]
+  quote: LinkedQuote | null
+  items: RawApiOrderItem[]
 }
 
 function PersonalizationSection({ p }: { p: PersonalizationDetail }) {
@@ -159,6 +200,23 @@ function PersonalizationSection({ p }: { p: PersonalizationDetail }) {
               <span className="font-medium">{p.couleur}</span>
             </div>
           )}
+          {p.logoFileId && (
+            <div className="col-span-2 sm:col-span-3">
+              <span className="text-muted-foreground">Logo fourni : </span>
+              <a
+                href={`/api/admin/uploads/${p.logoFileId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 align-middle"
+              >
+                <img
+                  src={`/api/admin/uploads/${p.logoFileId}`}
+                  alt={p.logoFileName ?? 'Logo du client'}
+                  className="mt-1 inline size-16 rounded border bg-white object-contain"
+                />
+              </a>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -183,10 +241,39 @@ export default function CommandeDetailPage() {
     let cancelled = false
     ;(async () => {
       setLoading(true)
-      const res = await adminFetch<PublicOrderDetail>(`/api/admin/public-orders/${id}`)
+      const res = await adminFetch<RawApiOrder>(`/api/admin/public-orders/${id}`)
       if (!cancelled) {
         if (res.success && res.data) {
-          setData(res.data)
+          // L'API renvoie les données brutes Prisma : on normalise ici
+          // - `total` → `totalAmount` (bug d'affichage du total corrigé)
+          // - `personalizationData` (JSON brut) → `personalization` + logo
+          const raw = res.data
+          const normalized: PublicOrderDetail = {
+            ...raw,
+            clientEmail: raw.clientEmail ?? '',
+            commune: raw.commune ?? '',
+            address: raw.address ?? '',
+            totalAmount: raw.total,
+            items: (raw.items ?? []).map((it) => {
+              const pd = (it.personalizationData ?? null) as Record<string, unknown> | null
+              return {
+                ...it,
+                personalization: pd
+                  ? {
+                      impression: Boolean(pd.impression),
+                      logo: Boolean(pd.logo),
+                      texte: typeof pd.texte === 'string' ? pd.texte : null,
+                      emplacement: typeof pd.emplacement === 'string' ? pd.emplacement : null,
+                      taille: typeof pd.taille === 'string' ? pd.taille : null,
+                      couleur: typeof pd.couleur === 'string' ? pd.couleur : null,
+                      logoFileId: typeof pd.logoFileId === 'string' ? pd.logoFileId : undefined,
+                      logoFileName: typeof pd.logoFileName === 'string' ? pd.logoFileName : undefined,
+                    }
+                  : null,
+              }
+            }),
+          }
+          setData(normalized)
         }
         setLoading(false)
       }
@@ -325,6 +412,39 @@ export default function CommandeDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {(data.personalizationSummary || data.personalizationLogoUploadId) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Personnalisation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {data.personalizationSummary && (
+                <p className="whitespace-pre-line text-sm">{data.personalizationSummary}</p>
+              )}
+              {data.personalizationLogoUploadId && (
+                <div>
+                  <p className="mb-1 text-sm text-muted-foreground">Logo fourni par le client :</p>
+                  <a
+                    href={`/api/admin/uploads/${data.personalizationLogoUploadId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block"
+                  >
+                    <img
+                      src={`/api/admin/uploads/${data.personalizationLogoUploadId}`}
+                      alt="Logo du client"
+                      className="size-24 rounded border bg-white object-contain"
+                    />
+                  </a>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="space-y-6 lg:col-span-2">
           <Card>

@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { confirmPayment, failPayment } from '@/lib/services/payment.service'
+import { isOnlinePaymentEnabled } from '@/lib/online-payment'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import crypto from 'crypto'
@@ -9,6 +10,12 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ provider: string }> }
 ) {
+  // Paiement en ligne DÉSACTIVÉ : aucun callback fournisseur ne peut marquer
+  // un paiement comme effectué, même avec une signature valide.
+  if (!isOnlinePaymentEnabled()) {
+    return new Response('Paiement en ligne désactivé', { status: 503 })
+  }
+
   const { provider } = await params
   const webhookSecret = process.env.PAYMENT_WEBHOOK_SECRET
 

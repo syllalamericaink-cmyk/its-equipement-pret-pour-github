@@ -519,6 +519,8 @@ model PublicOrder {
   // COMMANDE_SIMPLE | DEVIS | BON_COMMANDE | FNE
   personalizationSummary String?
   // Récap texte des personnalisations demandées
+  personalizationLogoUploadId String?
+  // Upload (logo client) associé à la personnalisation — référence vers Upload.id
   city              String
   commune           String?
   address           String?

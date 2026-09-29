@@ -56,6 +56,11 @@ export interface PersonalizationInfo {
   summary?: string
 }
 
+export interface LogoInfo {
+  id: string
+  fileName?: string
+}
+
 /**
  * Construit une URL wa.me avec le récap COMPLET de la commande pré-rempli.
  * Le client clique sur le bouton → WhatsApp s'ouvre avec le message déjà
@@ -78,6 +83,7 @@ export function buildWhatsAppOrderLink(
     requestType: RequestType
     company?: CompanyInfo
     personalization?: PersonalizationInfo
+    logo?: LogoInfo
     orderRef?: string
   },
 ): string {
@@ -135,6 +141,10 @@ export function buildWhatsAppOrderLink(
       lines.push(options.personalization.summary.trim())
     } else {
       lines.push('Oui — voir le détail par article ci-dessous.')
+    }
+    if (options.logo?.id) {
+      const logoUrl = `${SITE_URL}/api/public/uploads/${options.logo.id}`
+      lines.push(`🖼 Logo du client (cliquer pour ouvrir) : ${logoUrl}`)
     }
     lines.push('⚠ Délai de préparation des personnalisations : 24h.')
     lines.push('')

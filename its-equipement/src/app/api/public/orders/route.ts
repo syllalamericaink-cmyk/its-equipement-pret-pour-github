@@ -1,5 +1,7 @@
 import { success, error, serverError } from '@/lib/api-response'
 import { createPublicOrder, sendOrderNotification } from '@/lib/services/public-order.service'
+import { sendOrderTelegramNotification } from '@/lib/services/telegram.service'
+import { syncOrderToSheets } from '@/lib/services/google-sheets.service'
 import { checkApiRateLimit } from '@/lib/api-auth'
 import type { NextRequest } from 'next/server'
 
@@ -44,6 +46,15 @@ export async function POST(request: NextRequest) {
       if (!emailRegex.test(body.clientEmail.trim())) return error('Email invalide')
     }
 
+    // Logo de personnalisation OBLIGATOIRE dès qu'une personnalisation est demandée
+    const hasPersonalization =
+      Boolean(body.personalizationSummary?.trim()) ||
+      (Array.isArray(body.items) && body.items.some((i: Record<string, unknown>) => Boolean(i.hasPersonalization)))
+    const logoUploadId = typeof body.personalizationLogoUploadId === 'string' ? body.personalizationLogoUploadId.trim() : ''
+    if (hasPersonalization && !logoUploadId) {
+      return error('Veuillez téléverser votre logo : il est requis pour toute personnalisation')
+    }
+
     const order = await createPublicOrder({
       clientName: body.clientName.trim(),
       clientFirstName: body.clientFirstName?.trim() || undefined,
@@ -54,6 +65,7 @@ export async function POST(request: NextRequest) {
       companyInfo: body.companyInfo?.trim() || undefined,
       requestType,
       personalizationSummary: body.personalizationSummary?.trim() || undefined,
+      personalizationLogoUploadId: logoUploadId || undefined,
       city: body.city.trim(),
       commune: body.commune?.trim(),
       address: body.address?.trim(),
@@ -74,7 +86,11 @@ export async function POST(request: NextRequest) {
       })),
     })
 
+    // Notifications non bloquantes : l'échec d'un canal ne doit jamais faire
+    // échouer la commande déjà enregistrée.
     sendOrderNotification(order.id).catch(() => {})
+    sendOrderTelegramNotification(order.id).catch(() => {})
+    syncOrderToSheets(order.id).catch(() => {})
 
     return success({ orderNumber: order.orderNumber, id: order.id, requestType })
   } catch {
