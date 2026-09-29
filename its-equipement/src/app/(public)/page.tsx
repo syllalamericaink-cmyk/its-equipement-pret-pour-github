@@ -46,6 +46,12 @@ interface Product {
   images: ProductImage[]
 }
 
+interface HeroSlide {
+  id: string
+  url: string
+  altText: string
+}
+
 /* ---------- données statiques du design ---------- */
 
 const SECTEURS = ['BTP', 'Industrie', 'Logistique', 'Agroalimentaire', 'Maintenance', 'Collectivités']
@@ -112,6 +118,8 @@ function TitreSection({ children, className = '' }: { children: React.ReactNode;
 export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
+  const [heroIndex, setHeroIndex] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -119,16 +127,27 @@ export default function HomePage() {
     Promise.all([
       publicFetch<Category[]>('/api/public/categories'),
       publicFetch<Product[]>('/api/public/products?page=1&limit=8'),
-    ]).then(([cats, prods]) => {
+      publicFetch<HeroSlide[]>('/api/public/hero'),
+    ]).then(([cats, prods, slides]) => {
       if (!alive) return
       if (cats.success && cats.data) setCategories(cats.data)
       if (prods.success && prods.data) setProducts(prods.data)
+      if (slides.success && slides.data) setHeroSlides(slides.data)
       setLoading(false)
     })
     return () => {
       alive = false
     }
   }, [])
+
+  // Carrousel de la bannière : rotation automatique toutes les 6 s
+  useEffect(() => {
+    if (heroSlides.length <= 1) return
+    const timer = setInterval(() => {
+      setHeroIndex((i) => (i + 1) % heroSlides.length)
+    }, 6000)
+    return () => clearInterval(timer)
+  }, [heroSlides.length])
 
   const produitsCarte = products.slice(0, 4)
   const heroImage = products.find((p) => p.images?.[0])?.images?.[0]
@@ -190,9 +209,36 @@ export default function HomePage() {
           </div>
 
           <div>
-            {/* Visuel principal — bannière gérée depuis le dashboard */}
+            {/* Visuel principal — images gérées depuis le dashboard (Admin → Images d'accueil) */}
             <div className="relative aspect-[5/4] w-full overflow-hidden bg-its-panel">
-              {heroImage ? (
+              {heroSlides.length > 0 ? (
+                <>
+                  {heroSlides.map((slide, i) => (
+                    <div
+                      key={slide.id}
+                      className="absolute inset-0 bg-cover bg-center transition-opacity duration-700"
+                      style={{ backgroundImage: `url(${slide.url})`, opacity: i === heroIndex ? 1 : 0 }}
+                      role="img"
+                      aria-label={slide.altText || 'Équipements ITS Équipement'}
+                    />
+                  ))}
+                  {heroSlides.length > 1 && (
+                    <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+                      {heroSlides.map((slide, i) => (
+                        <button
+                          key={slide.id}
+                          type="button"
+                          aria-label={`Afficher l'image ${i + 1}`}
+                          onClick={() => setHeroIndex(i)}
+                          className={`h-1.5 rounded-full transition-all ${
+                            i === heroIndex ? 'w-6 bg-its-lime' : 'w-1.5 bg-white/70 hover:bg-white'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : heroImage ? (
                 <div
                   className="h-full w-full bg-cover bg-center"
                   style={{ backgroundImage: `url(${heroImage.url})` }}

@@ -23,6 +23,10 @@ export async function GET(request: NextRequest) {
       ordersWithPersonalization,
       ordersWithoutPersonalization,
       activeDeliveries,
+      publicOrdersByStatus,
+      publicOrdersTotal,
+      publicOrdersToday,
+      recentPublicOrders,
     ] = await Promise.all([
       db.order.count(),
       db.quoteRequest.count(),
@@ -49,6 +53,27 @@ export async function GET(request: NextRequest) {
       db.order.count({ where: { hasPersonalization: true } }),
       db.order.count({ where: { hasPersonalization: false } }),
       db.delivery.count({ where: { status: { in: ['A_PREPARER', 'PRETE', 'EN_LIVRAISON'] } } }),
+      // Commandes web (nouveau parcours client)
+      db.publicOrder.groupBy({ by: ['status'], _count: true }),
+      db.publicOrder.count(),
+      db.publicOrder.count({
+        where: { createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+      }),
+      db.publicOrder.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          orderNumber: true,
+          devisNumber: true,
+          status: true,
+          clientName: true,
+          clientPhone: true,
+          total: true,
+          createdAt: true,
+          _count: { select: { items: true } },
+        },
+      }),
     ])
 
     return success({
@@ -63,6 +88,11 @@ export async function GET(request: NextRequest) {
       ordersWithPersonalization,
       ordersWithoutPersonalization,
       activeDeliveries,
+      // Commandes web (nouveau parcours)
+      publicOrdersTotal,
+      publicOrdersToday,
+      publicOrdersByStatus: Object.fromEntries(publicOrdersByStatus.map(s => [s.status, s._count])),
+      recentPublicOrders,
     })
   } catch {
     return serverError()

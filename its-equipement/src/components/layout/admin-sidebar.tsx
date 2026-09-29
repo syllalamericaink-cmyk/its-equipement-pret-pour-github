@@ -19,7 +19,8 @@ import {
   LogOut,
   HardHat,
   Inbox,
-  Mail
+  Mail,
+  Images
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -32,6 +33,7 @@ import {
 
 const sidebarLinks = [
   { href: '/admin/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+  { href: '/admin/hero', label: "Images d'accueil", icon: Images },
   { href: '/admin/products', label: 'Produits', icon: Package },
   { href: '/admin/categories', label: 'Catégories', icon: FolderTree },
   { href: '/admin/quote-requests', label: 'Demandes de devis', icon: ClipboardList },

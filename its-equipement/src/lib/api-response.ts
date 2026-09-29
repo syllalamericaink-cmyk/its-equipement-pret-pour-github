@@ -13,6 +13,10 @@ export function unauthorized(): NextResponse<ApiResponse> {
   return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 })
 }
 
+export function badRequest(message = 'Requête invalide'): NextResponse<ApiResponse> {
+  return NextResponse.json({ success: false, error: message }, { status: 400 })
+}
+
 export function notFound(message = 'Ressource introuvable'): NextResponse<ApiResponse> {
   return NextResponse.json({ success: false, error: message }, { status: 404 })
 }

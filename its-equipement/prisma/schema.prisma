@@ -503,6 +503,18 @@ model DeliveryStatusHistory {
   @@index([createdAt])
 }
 
+model HeroImage {
+  id        String   @id @default(cuid())
+  uploadId  String   @unique
+  altText   String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
 model PublicOrder {
   id                String              @id @default(cuid())
   orderNumber       String?
