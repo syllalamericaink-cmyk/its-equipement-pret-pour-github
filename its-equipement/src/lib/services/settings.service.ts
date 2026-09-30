@@ -58,8 +58,16 @@ export async function getQuoteValidityDays(): Promise<number> {
 }
 
 export async function getTvaRate(): Promise<number> {
-  // Taux de TVA ivoirien : 18 % (source de vérité : setting TVA_RATE en base)
-  return getSettingNumber('TVA_RATE', 0.18)
+  // Taux de TVA ivoirien officiel : 18 %.
+  // Migration douce : la base contient encore l'ancien défaut 0.20 (taux
+  // français) créé par le premier seed — on le remplace automatiquement par
+  // 0.18 tant que l'admin n'a pas explicitement choisi une autre valeur
+  // (toute valeur ≠ 0.20 reste honorée).
+  const value = await getSetting('TVA_RATE')
+  if (value === null) return 0.18
+  const parsed = parseFloat(value)
+  if (isNaN(parsed)) return 0.18
+  return parsed === 0.20 ? 0.18 : parsed
 }
 
 export async function getDepositPercentage(): Promise<number> {
