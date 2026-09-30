@@ -95,7 +95,7 @@ function DevisConfirmationContent() {
           Devis créé avec succès
         </h1>
         <p className="text-muted-foreground">
-          Votre demande de devis a été enregistrée. Voici votre reference.
+          Votre demande de devis a été enregistrée. Voici votre référence.
         </p>
       </div>
 
@@ -112,7 +112,7 @@ function DevisConfirmationContent() {
             className="gap-2"
           >
             <Copy className="size-4" />
-            Copier la reference
+            Copier la référence
           </Button>
         </CardContent>
       </Card>
@@ -158,7 +158,7 @@ function DevisConfirmationContent() {
         <Button variant="ghost" asChild className="gap-2 min-h-[44px]">
           <Link href="/">
             <Home className="size-4" />
-            Retour a l'accueil
+            Retour à l'accueil
           </Link>
         </Button>
       </div>

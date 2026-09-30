@@ -15,7 +15,8 @@ export async function GET(
     const { id } = await params
     const images = await getProductImages(id)
     return success(images)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/products/[id]/images] Erreur:', err)
     return serverError()
   }
 }
@@ -43,7 +44,8 @@ export async function POST(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/products/[id]/images] Erreur:', err)
     return serverError()
   }
 }
@@ -61,7 +63,8 @@ export async function DELETE(
 
     const result = await deleteImage(imageId)
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/products/[id]/images] Erreur:', err)
     return serverError()
   }
 }

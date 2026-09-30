@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
     })
 
     return success(items, buildMeta(page, limit, total))
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/products] Erreur:', err)
     return serverError()
   }
 }
@@ -78,7 +79,8 @@ export async function POST(request: NextRequest) {
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/products] Erreur:', err)
     return serverError()
   }
 }

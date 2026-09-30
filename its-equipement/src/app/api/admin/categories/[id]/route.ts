@@ -17,7 +17,8 @@ export async function GET(
     const result = await getCategoryById(id)
     if (!result) return notFound('Catégorie introuvable')
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/categories/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -49,7 +50,8 @@ export async function PUT(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/categories/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -74,7 +76,8 @@ export async function DELETE(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/categories/[id]] Erreur:', err)
     return serverError()
   }
 }

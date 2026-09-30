@@ -17,7 +17,8 @@ export async function GET(
     const result = await getClientById(id)
     if (!result) return notFound('Client introuvable')
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/clients/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -50,7 +51,8 @@ export async function PUT(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/clients/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -76,7 +78,8 @@ export async function DELETE(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/clients/[id]] Erreur:', err)
     return serverError()
   }
 }

@@ -17,7 +17,8 @@ export async function GET(request: NextRequest) {
     const { items, total } = await getNotifications({ page, limit, skip, status, channel, search })
 
     return success(items, buildMeta(page, limit, total))
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/notifications] Erreur:', err)
     return serverError()
   }
 }

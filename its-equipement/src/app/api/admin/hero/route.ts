@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
         createdAt: h.createdAt,
       }))
     )
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/hero] Erreur:', err)
     return serverError()
   }
 }
@@ -80,7 +81,8 @@ export async function POST(request: NextRequest) {
       isActive: hero.isActive,
       createdAt: hero.createdAt,
     })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/hero] Erreur:', err)
     return serverError()
   }
 }

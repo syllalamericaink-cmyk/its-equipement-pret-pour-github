@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
     const { items, total } = await getOrders({ page, limit, skip, status, search })
 
     return success(items, buildMeta(page, limit, total))
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/orders] Erreur:', err)
     return serverError()
   }
 }

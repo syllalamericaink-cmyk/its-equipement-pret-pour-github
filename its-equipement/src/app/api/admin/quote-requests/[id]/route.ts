@@ -17,7 +17,8 @@ export async function GET(
     const result = await getQuoteRequestById(id)
     if (!result) return notFound('Demande de devis introuvable')
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/quote-requests/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -54,7 +55,8 @@ export async function PUT(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/quote-requests/[id]] Erreur:', err)
     return serverError()
   }
 }

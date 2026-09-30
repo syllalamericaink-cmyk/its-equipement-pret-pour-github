@@ -15,7 +15,8 @@ export async function GET(
       return success(bySlug)
     }
     return success(product)
-  } catch {
+  } catch (err) {
+    console.error('[api /public/products/[id]] Erreur:', err)
     return serverError()
   }
 }

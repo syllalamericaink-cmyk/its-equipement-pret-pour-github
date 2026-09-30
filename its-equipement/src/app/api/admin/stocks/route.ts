@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
 
     const stocks = await getAllVariantStocks()
     return success(stocks)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/stocks] Erreur:', err)
     return serverError()
   }
 }

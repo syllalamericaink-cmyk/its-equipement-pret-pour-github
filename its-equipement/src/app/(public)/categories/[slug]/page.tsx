@@ -218,7 +218,7 @@ function CategoriePage() {
       <section className="container mx-auto px-4 py-6 sm:py-8">
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Package className="size-12 text-muted-foreground/40 mb-4" />
-          <h2 className="text-lg font-semibold mb-2">Categorie introuvable</h2>
+          <h2 className="text-lg font-semibold mb-2">Catégorie introuvable</h2>
           <p className="text-sm text-muted-foreground mb-4">
             La categorie que vous recherchez n'existe pas ou a été supprimée.
           </p>
@@ -255,11 +255,11 @@ function CategoriePage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher dans cette categorie..."
+            placeholder="Rechercher dans cette catégorie…"
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-9 min-h-[44px]"
-            aria-label="Rechercher dans cette categorie"
+            aria-label="Rechercher dans cette catégorie"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -290,7 +290,7 @@ function CategoriePage() {
           <Package className="size-12 text-muted-foreground/40 mb-4" />
           <h2 className="text-lg font-semibold mb-2">Aucun produit trouvé</h2>
           <p className="text-sm text-muted-foreground max-w-md">
-            Aucun produit ne correspond a vos criteres de recherche dans cette categorie.
+            Aucun produit ne correspond à vos critères de recherche dans cette catégorie.
           </p>
           {searchParam && (
             <Button

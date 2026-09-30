@@ -18,7 +18,8 @@ export async function GET(
     const result = await getProductById(id, true)
     if (!result) return notFound('Produit introuvable')
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/products/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -76,7 +77,8 @@ export async function PUT(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/products/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -102,7 +104,8 @@ export async function DELETE(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/products/[id]] Erreur:', err)
     return serverError()
   }
 }

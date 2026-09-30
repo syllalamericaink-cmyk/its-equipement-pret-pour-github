@@ -26,7 +26,8 @@ export async function POST(
     })
 
     return success({ retried: true })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/notifications/[id]/retry] Erreur:', err)
     return serverError()
   }
 }

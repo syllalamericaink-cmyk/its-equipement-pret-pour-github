@@ -313,7 +313,7 @@ function ProduitsPage() {
           <Package className="size-12 text-muted-foreground/40 mb-4" />
           <h2 className="text-lg font-semibold mb-2">Aucun produit trouvé</h2>
           <p className="text-sm text-muted-foreground max-w-md">
-            Aucun produit ne correspond a vos criteres de recherche. Essayez de modifier vos filtres.
+            Aucun produit ne correspond à vos critères de recherche. Essayez de modifier vos filtres.
           </p>
           {searchParam && (
             <Button

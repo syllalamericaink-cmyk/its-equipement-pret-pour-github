@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
     })
 
     return success({ id: contactMessage.id })
-  } catch {
+  } catch (err) {
+    console.error('[api /public/contact] Erreur:', err)
     return serverError()
   }
 }

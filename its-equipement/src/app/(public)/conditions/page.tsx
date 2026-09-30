@@ -31,17 +31,17 @@ La commande n'est considérée comme définitive qu'après validation écrite du
   },
   {
     title: 'Article 3 : Prix',
-    content: `Les prix indiques sur les devis et factures sont exprimés en FCFA (Francs CFA BCEAO). Les prix comprennent les frais de personnalisation le cas échéant, sauf mention contraire.
+    content: `Les prix indiqués sur les devis et factures sont exprimés en FCFA (Francs CFA BCEAO). Les prix comprennent les frais de personnalisation le cas échéant, sauf mention contraire.
 
 ITS Équipement se réserve le droit de modifier ses tarifs à tout moment. Toutefois, les prix annoncés dans un devis accepte par le Client restent fermes et non révisables.
 
-Les conditions de paiement sont les suivantes : pour les commandes sans personnalisation, le paiement intégral est exigible à la livraison. Pour les commandes avec personnalisation (impression, broderie, gravure), un acompte de 50% est exigible à la commande, le solde étant du à la livraison. Ces modalites sont rappelées sur chaque devis et facture.
+Les conditions de paiement sont les suivantes : pour les commandes sans personnalisation, le paiement intégral est exigible à la livraison. Pour les commandes avec personnalisation (impression, broderie, gravure), un acompte de 50% est exigible à la commande, le solde étant du à la livraison. Ces modalités sont rappelées sur chaque devis et facture.
 
 Le paiement s'effectue par virement bancaire, par Mobile Money (Orange Money, MTN Mobile Money, Moov Money) ou par chèque.`,
   },
   {
     title: 'Article 4 : Personnalisation',
-    content: `La personnalisation des produits (impression de logo, texte, broderie, gravure) est réalisée conformément aux spécifications fournies par le Client lors de la commande. Le Client est seul responsable de la qualite des fichiers graphiques transmis et de l'exactitude des informations a imprimer.
+    content: `La personnalisation des produits (impression de logo, texte, broderie, gravure) est réalisée conformément aux spécifications fournies par le Client lors de la commande. Le Client est seul responsable de la qualité des fichiers graphiques transmis et de l'exactitude des informations à imprimer.
 
 ITS Équipement se réserve le droit de refuser toute personnalisation contraire à l'ordre public, aux bonnes moeurs ou portant atteinte aux droits de tiers. Le Client garantit détenir les droits nécessaires sur les logos, marques et éléments graphiques fournis.
 
@@ -53,7 +53,7 @@ Les zones de personnalisation varient selon les produits et sont précisées dan
 
 Toute annulation de la part du Client doit être notifiée par écrit. Si l'annulation intervient après le démarrage de la production, le Client pourra être tenu de rembourser les frais deja engages, notamment les coûts de personnalisation et d'approvisionnement des matières premieres.
 
-La production est lancée à compter de la réception du paiement de l'acompte le cas échéant. ITS Équipement s'engage a respecter les délais indiques dans le devis, sous réserve de la réception des éléments nécessaires à la commande dans les délais impartis.`,
+La production est lancée à compter de la réception du paiement de l'acompte le cas échéant. ITS Équipement s'engage à respecter les délais indiqués dans le devis, sous réserve de la réception des éléments nécessaires à la commande dans les délais impartis.`,
   },
   {
     title: 'Article 6 : Paiement',

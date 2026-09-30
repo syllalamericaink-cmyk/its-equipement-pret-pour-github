@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
     })
 
     return success(items, buildMeta(page, limit, total))
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/quote-requests] Erreur:', err)
     return serverError()
   }
 }

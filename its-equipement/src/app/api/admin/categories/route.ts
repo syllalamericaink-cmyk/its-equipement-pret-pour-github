@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
     const { items, total } = await getCategories({ includeInactive })
 
     return success(items, buildMeta(page, limit, total))
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/categories] Erreur:', err)
     return serverError()
   }
 }
@@ -43,7 +44,8 @@ export async function POST(request: NextRequest) {
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/categories] Erreur:', err)
     return serverError()
   }
 }

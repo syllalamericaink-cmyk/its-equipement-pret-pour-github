@@ -1,16 +1,16 @@
 import type { MetadataRoute } from 'next'
 
 /**
- * Manifeste PWA : rend l'espace administrateur installable sur mobile
- * (« Ajouter à l'écran d'accueil ») — alternative simple et sécurisée à une
- * application native, même codebase, même authentification NextAuth.
+ * Manifeste PWA du site public (un seul manifeste s'applique à tout le site :
+ * un visiteur qui installe le site doit voir le nom et la page d'accueil du
+ * magasin, pas l'espace admin).
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'ITS Équipement — Administration',
-    short_name: 'ITS Admin',
-    description: 'Suivi des commandes ITS Équipement en temps réel',
-    start_url: '/admin',
+    name: 'ITS Équipement',
+    short_name: 'ITS Équipement',
+    description: 'Équipement de protection individuelle et collective — Abidjan, Côte d\'Ivoire',
+    start_url: '/',
     display: 'standalone',
     background_color: '#0B1626',
     theme_color: '#0B1626',

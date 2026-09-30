@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
     const { items, total } = await getCategories()
 
     return success(items, buildMeta(page, limit, total))
-  } catch {
+  } catch (err) {
+    console.error('[api /public/categories] Erreur:', err)
     return serverError()
   }
 }

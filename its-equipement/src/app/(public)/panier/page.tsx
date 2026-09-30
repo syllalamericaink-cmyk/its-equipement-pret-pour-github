@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ShoppingBag, Minus, Plus, Trash2, FileText, MessageCircle, Clock, BadgePercent } from 'lucide-react'
-import { useCartStore } from '@/stores/cart-store'
+import { useCartStore, itemMinQuantity } from '@/stores/cart-store'
 import { publicFetch } from '@/lib/public-api'
 import { applicableDiscount, discountedLineTotal, type QuantityDiscountLite } from '@/lib/quantity-discount'
 import { Button } from '@/components/ui/button'
@@ -28,7 +28,6 @@ export default function PanierPage() {
   const items = useCartStore((s) => s.items)
   const removeItem = useCartStore((s) => s.removeItem)
   const updateQuantity = useCartStore((s) => s.updateQuantity)
-  const subtotal = useCartStore((s) => s.subtotal)
 
   // Paliers de réduction par produit (définis dans l'admin) — prévisualisation
   const [discountsByProduct, setDiscountsByProduct] = useState<Record<string, QuantityDiscountLite[]>>({})
@@ -78,7 +77,7 @@ export default function PanierPage() {
           Votre panier est vide
         </h1>
         <p className="text-muted-foreground mb-8">
-          Ajoutez des produits a votre panier pour passer commande.
+          Ajoutez des produits à votre panier pour passer commande.
         </p>
         <Button asChild size="lg">
           <Link href="/produits">
@@ -154,7 +153,7 @@ export default function PanierPage() {
                           size="icon"
                           className="size-8"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          disabled={item.quantity <= 1}
+                          disabled={item.quantity <= itemMinQuantity(item)}
                           aria-label="Diminuer"
                         >
                           <Minus className="size-3" />
@@ -257,7 +256,7 @@ export default function PanierPage() {
                     size="icon"
                     className="size-9"
                     onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                    disabled={item.quantity <= 1}
+                    disabled={item.quantity <= itemMinQuantity(item)}
                     aria-label="Diminuer"
                   >
                     <Minus className="size-4" />

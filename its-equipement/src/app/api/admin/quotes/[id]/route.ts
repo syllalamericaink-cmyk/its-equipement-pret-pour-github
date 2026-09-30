@@ -17,7 +17,8 @@ export async function GET(
     const result = await getQuoteById(id)
     if (!result) return notFound('Devis introuvable')
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/quotes/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -57,7 +58,8 @@ export async function POST(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/quotes/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -120,7 +122,8 @@ export async function PUT(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/quotes/[id]] Erreur:', err)
     return serverError()
   }
 }

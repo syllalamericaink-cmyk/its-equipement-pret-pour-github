@@ -16,7 +16,8 @@ export async function GET(
     const { id } = await params
     const variants = await getProductVariants(id)
     return success(variants)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/products/[id]/variants] Erreur:', err)
     return serverError()
   }
 }
@@ -55,7 +56,8 @@ export async function POST(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/products/[id]/variants] Erreur:', err)
     return serverError()
   }
 }
@@ -73,7 +75,8 @@ export async function DELETE(
 
     const result = await deleteVariant(variantId)
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/products/[id]/variants] Erreur:', err)
     return serverError()
   }
 }

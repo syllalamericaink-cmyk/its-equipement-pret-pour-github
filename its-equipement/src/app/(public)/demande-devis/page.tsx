@@ -831,10 +831,11 @@ function DemandeDevisPage() {
                                             <SelectValue placeholder="Choisir un emplacement" />
                                           </SelectTrigger>
                                           <SelectContent>
+                                            {/* On stocke le libellé (pas l'ID) : il s'affiche tel quel dans le récapitulatif */}
                                             {po.config.locations
                                               .filter((loc) => loc.enabled)
                                               .map((loc) => (
-                                                <SelectItem key={loc.id} value={loc.id}>
+                                                <SelectItem key={loc.id} value={loc.label}>
                                                   {loc.label}
                                                 </SelectItem>
                                               ))}

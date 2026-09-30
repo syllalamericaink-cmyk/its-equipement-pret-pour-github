@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
         altText: h.altText ?? 'Équipements ITS Équipement',
       }))
     )
-  } catch {
+  } catch (err) {
+    console.error('[api /public/hero] Erreur:', err)
     return serverError()
   }
 }

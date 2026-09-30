@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
     ])
 
     return success(messages, { ...buildMeta(page, limit, total), unreadCount })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/contact-messages] Erreur:', err)
     return serverError()
   }
 }

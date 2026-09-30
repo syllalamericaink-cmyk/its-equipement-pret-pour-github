@@ -1,4 +1,5 @@
 import { success, error, serverError } from '@/lib/api-response'
+import { BusinessError } from '@/lib/errors'
 import { createPublicOrder, sendOrderNotification } from '@/lib/services/public-order.service'
 import { sendOrderTelegramNotification } from '@/lib/services/telegram.service'
 import { syncOrderToSheets } from '@/lib/services/google-sheets.service'
@@ -21,8 +22,13 @@ export async function POST(request: NextRequest) {
     const validTypes = ['PARTICULIER', 'ENTREPRISE']
     if (!validTypes.includes(body.clientType)) return error('Type de client invalide')
 
-    if (body.clientType === 'ENTREPRISE' && !body.companyName?.trim()) {
-      return error('Le nom de l\'entreprise est requis')
+    if (body.clientType === 'ENTREPRISE') {
+      if (!body.companyName?.trim()) {
+        return error('Le nom de l\'entreprise est requis')
+      }
+      if (!body.clientEmail?.trim()) {
+        return error('L\'email est requis pour les entreprises')
+      }
     }
 
     const validRequestTypes = ['COMMANDE_SIMPLE', 'DEVIS', 'BON_COMMANDE', 'FNE']
@@ -98,7 +104,10 @@ export async function POST(request: NextRequest) {
     })
 
     return success({ orderNumber: order.orderNumber, id: order.id, requestType })
-  } catch {
+  } catch (err) {
+    // Erreur métier (quantité, stock, logo…) : message clair en 400, pas un 500
+    if (err instanceof BusinessError) return error(err.message)
+    console.error('[public/orders] Erreur creation commande:', err)
     return serverError()
   }
 }

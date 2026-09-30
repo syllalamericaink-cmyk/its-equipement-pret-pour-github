@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
 
     const items = await getAllSettings(category)
     return success(items)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/settings] Erreur:', err)
     return serverError()
   }
 }
@@ -49,7 +50,8 @@ export async function PUT(request: NextRequest) {
     }
 
     return error('Format invalide. Envoyez { settings: [...] }', 422)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/settings] Erreur:', err)
     return serverError()
   }
 }

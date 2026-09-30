@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
 
     const result = await getPublicOrders({ page, limit, skip, search, status })
     return success(result.items, buildMeta(page, limit, result.total))
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/public-orders] Erreur:', err)
     return serverError()
   }
 }

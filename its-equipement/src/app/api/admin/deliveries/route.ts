@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
     const statusCounts = Object.fromEntries(statusCountsRows.map(r => [r.status, r._count]))
 
     return success(items, { ...buildMeta(page, limit, total), statusCounts })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/deliveries] Erreur:', err)
     return serverError()
   }
 }

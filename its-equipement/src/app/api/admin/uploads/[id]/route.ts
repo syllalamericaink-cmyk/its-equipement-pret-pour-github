@@ -26,7 +26,8 @@ export async function GET(
         'Cache-Control': 'private, max-age=3600',
       },
     })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/uploads/[id]] Erreur:', err)
     return serverError()
   }
 }

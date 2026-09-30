@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
     const statusCounts = await getPaymentStatusCounts()
 
     return success(items, { ...buildMeta(page, limit, total), statusCounts })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/payments] Erreur:', err)
     return serverError()
   }
 }
@@ -65,7 +66,8 @@ export async function POST(request: NextRequest) {
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/payments] Erreur:', err)
     return serverError()
   }
 }

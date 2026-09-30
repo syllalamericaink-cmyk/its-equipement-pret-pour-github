@@ -1,4 +1,5 @@
 import { success, error, serverError } from '@/lib/api-response'
+import { BusinessError } from '@/lib/errors'
 import { createPublicOrder, sendOrderNotification } from '@/lib/services/public-order.service'
 import { sendOrderTelegramNotification } from '@/lib/services/telegram.service'
 import { syncOrderToSheets } from '@/lib/services/google-sheets.service'
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
 
     return success({ devisNumber: order.devisNumber, id: order.id })
   } catch (err) {
+    if (err instanceof BusinessError) return error(err.message)
     console.error('[public/devis] Erreur creation devis:', err)
     return serverError()
   }

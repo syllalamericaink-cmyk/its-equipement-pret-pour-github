@@ -17,7 +17,8 @@ export async function GET(
     const result = await getPaymentById(id)
     if (!result) return notFound('Paiement introuvable')
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/payments/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -136,7 +137,8 @@ export async function POST(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/payments/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -181,7 +183,8 @@ export async function PUT(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/payments/[id]] Erreur:', err)
     return serverError()
   }
 }

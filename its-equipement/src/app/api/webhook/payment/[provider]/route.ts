@@ -45,7 +45,8 @@ export async function POST(
 
     const body = JSON.parse(rawBody)
     return processWebhook(provider, body)
-  } catch {
+  } catch (err) {
+    console.error('[api /webhook/payment/[provider]] Erreur:', err)
     return new Response('Invalid request', { status: 400 })
   }
 }

@@ -18,7 +18,8 @@ export async function GET(
     const result = await getOrderById(id)
     if (!result) return notFound('Commande introuvable')
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/orders/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -85,7 +86,8 @@ export async function PUT(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/orders/[id]] Erreur:', err)
     return serverError()
   }
 }

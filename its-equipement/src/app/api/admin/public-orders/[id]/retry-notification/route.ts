@@ -18,7 +18,8 @@ export async function POST(
     await sendOrderNotification(id)
     const updated = await getPublicOrderById(id)
     return success(updated)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/public-orders/[id]/retry-notification] Erreur:', err)
     return serverError()
   }
 }

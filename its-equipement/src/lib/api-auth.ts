@@ -7,7 +7,6 @@ import type { NextRequest } from 'next/server'
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT_WINDOW = 60 * 1000
 const RATE_LIMIT_MAX = 60
-const AUTH_RATE_LIMIT_MAX = 5
 
 function checkRateLimit(key: string, max: number): boolean {
   const now = Date.now()

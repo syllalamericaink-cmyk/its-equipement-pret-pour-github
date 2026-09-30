@@ -94,7 +94,8 @@ export async function GET(request: NextRequest) {
       publicOrdersByStatus: Object.fromEntries(publicOrdersByStatus.map(s => [s.status, s._count])),
       recentPublicOrders,
     })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/dashboard] Erreur:', err)
     return serverError()
   }
 }

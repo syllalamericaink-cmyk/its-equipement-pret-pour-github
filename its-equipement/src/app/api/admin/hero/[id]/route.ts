@@ -67,7 +67,8 @@ export async function PATCH(
       sortOrder: updated.sortOrder,
       isActive: updated.isActive,
     })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/hero/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -90,12 +91,14 @@ export async function DELETE(
     // L'upload associé est supprimé dans un second temps (ignoré s'il est déjà parti)
     try {
       await db.upload.delete({ where: { id: hero.uploadId } })
-    } catch {
+    } catch (err) {
+  console.error('[api /admin/hero/[id]] Erreur:', err)
       /* upload déjà supprimé ou référencé ailleurs */
     }
 
     return success({ deleted: true })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/hero/[id]] Erreur:', err)
     return serverError()
   }
 }

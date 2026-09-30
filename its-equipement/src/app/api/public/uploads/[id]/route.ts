@@ -44,7 +44,8 @@ export async function GET(
         'X-Content-Type-Options': 'nosniff',
       },
     })
-  } catch {
+  } catch (err) {
+    console.error('[api /public/uploads/[id]] Erreur:', err)
     return new Response('Erreur serveur', { status: 500 })
   }
 }

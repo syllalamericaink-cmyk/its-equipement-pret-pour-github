@@ -27,7 +27,8 @@ export async function PUT(
     })
 
     return success(message)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/contact-messages/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -47,7 +48,8 @@ export async function DELETE(
     await db.contactMessage.delete({ where: { id } })
 
     return success({ deleted: true })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/contact-messages/[id]] Erreur:', err)
     return serverError()
   }
 }

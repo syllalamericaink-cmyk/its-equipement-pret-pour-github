@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
     if (!admin) return error('Utilisateur introuvable', 404)
 
     return success(admin)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/profile] Erreur:', err)
     return serverError()
   }
 }
@@ -68,7 +69,8 @@ export async function PUT(request: NextRequest) {
     })
 
     return success({ updated: true })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/profile] Erreur:', err)
     return serverError()
   }
 }

@@ -96,7 +96,8 @@ export async function GET(request: NextRequest) {
           const bot = me.result as { username?: string } | undefined
           telegram.botUsername = bot?.username ?? null
         }
-      } catch {
+      } catch (err) {
+      console.error('[api /admin/integrations/status] Erreur:', err)
         /* token injoignable : chatCandidates restera vide */
       }
       try {
@@ -104,7 +105,8 @@ export async function GET(request: NextRequest) {
         if (updates.ok) {
           telegram.chatCandidates = extractChats(updates.result)
         }
-      } catch {
+      } catch (err) {
+      console.error('[api /admin/integrations/status] Erreur:', err)
         /* pas grave */
       }
     }
@@ -162,7 +164,8 @@ export async function GET(request: NextRequest) {
     }
 
     return success({ telegram, sheets })
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/integrations/status] Erreur:', err)
     return serverError()
   }
 }

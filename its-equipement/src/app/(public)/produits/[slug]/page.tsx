@@ -239,6 +239,7 @@ export default function ProductDetailPage() {
       variantId: variant?.id,
       variantName: variant?.name,
       quantity,
+      minQuantity: product.minQuantity,
       unitPrice,
       // Personnalisable ≠ personnalisé : le client choisit s'il veut la
       // personnalisation au moment de la commande (/commande). On ne la

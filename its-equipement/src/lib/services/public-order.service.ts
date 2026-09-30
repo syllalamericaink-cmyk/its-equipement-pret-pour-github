@@ -1,4 +1,5 @@
 import { db } from '../db'
+import { BusinessError } from '../errors'
 import { formatCurrency } from '../format'
 import { sendWhatsAppMessage } from './whatsapp.service'
 import { getWhatsAppRecipient } from './settings.service'
@@ -67,7 +68,7 @@ export async function createPublicOrder(data: {
     personalizationData?: Record<string, unknown>
   }[]
 }) {
-  if (!data.items.length) throw new Error('La commande doit contenir au moins un produit')
+  if (!data.items.length) throw new BusinessError('La commande doit contenir au moins un produit')
 
   // Server is the source of truth: never trust prices, names, variants or
   // totals sent by the browser.
@@ -82,20 +83,20 @@ export async function createPublicOrder(data: {
   const productMap = new Map(products.map(product => [product.id, product]))
 
   if (products.length !== productIds.length) {
-    throw new Error('Un ou plusieurs produits sont introuvables ou inactifs')
+    throw new BusinessError('Un ou plusieurs produits sont introuvables ou inactifs')
   }
 
   const authoritativeItems = data.items.map(item => {
     const product = productMap.get(item.productId)!
     const quantity = Number.isInteger(item.quantity) ? item.quantity : 0
     if (quantity < product.minQuantity || quantity <= 0) {
-      throw new Error(`Quantité invalide pour ${product.name}`)
+      throw new BusinessError(`Quantité invalide pour ${product.name}`)
     }
 
     let variant: (typeof product.variants)[number] | undefined = undefined
     if (item.variantId) {
       variant = product.variants.find(v => v.id === item.variantId)
-      if (!variant) throw new Error(`Variante invalide pour ${product.name}`)
+      if (!variant) throw new BusinessError(`Variante invalide pour ${product.name}`)
     }
 
     const unitPrice = Number(product.basePrice) + Number(variant?.priceModifier ?? 0)
@@ -134,7 +135,7 @@ export async function createPublicOrder(data: {
       select: { id: true, mimeType: true, originalName: true },
     })
     if (!upload || !upload.mimeType.startsWith('image/')) {
-      throw new Error('Logo de personnalisation invalide')
+      throw new BusinessError('Logo de personnalisation invalide')
     }
     personalizationLogo = { id: upload.id, originalName: upload.originalName }
   }

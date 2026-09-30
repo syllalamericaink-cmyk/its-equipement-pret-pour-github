@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
     const { items, total } = await getClients({ page, limit, skip, search })
 
     return success(items, buildMeta(page, limit, total))
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/clients] Erreur:', err)
     return serverError()
   }
 }

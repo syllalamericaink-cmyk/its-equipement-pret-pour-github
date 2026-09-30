@@ -23,7 +23,7 @@ const TABS = [
   },
   {
     href: '/produits',
-    label: 'Univers',
+    label: 'Produits',
     icon: LayoutGrid,
     isActive: (p: string) => p.startsWith('/produits') || p.startsWith('/categories'),
   },
@@ -32,7 +32,7 @@ const TABS = [
     label: 'Devis',
     icon: FileText,
     isActive: (p: string) =>
-      p.startsWith('/demande-devis') || p.startsWith('/devis') || p.startsWith('/quote'),
+      p.startsWith('/demande-devis') || p.startsWith('/devis'),
   },
   {
     href: '/panier',

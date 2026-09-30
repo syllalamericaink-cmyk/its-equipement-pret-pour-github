@@ -17,7 +17,8 @@ export async function GET(
     const result = await getDeliveryById(id)
     if (!result) return notFound('Livraison introuvable')
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/deliveries/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -59,7 +60,8 @@ export async function POST(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/deliveries/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -125,7 +127,8 @@ export async function PUT(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/deliveries/[id]] Erreur:', err)
     return serverError()
   }
 }

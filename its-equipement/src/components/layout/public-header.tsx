@@ -65,15 +65,19 @@ export function PublicHeader() {
   const navRefs = useRef<(HTMLAnchorElement | null)[]>([])
   const [indicator, setIndicator] = useState({ left: 0, ready: false })
 
-  const activeIndex = (() => {
-    if (typeof window === 'undefined') return -1
+  // Calculé APRÈS montage : le premier rendu (serveur comme client) n'active
+  // aucun lien, ce qui supprime le décalage d'hydratation. `personalizable=1`
+  // ne peut pas être lu par usePathname, d'où la lecture de window ici.
+  const [activeIndex, setActiveIndex] = useState(-1)
+
+  useEffect(() => {
     const search = window.location.search
-    if (pathname === '/') return 0
-    if (pathname.startsWith('/produits')) return search.includes('personalizable=1') ? 2 : 1
-    if (pathname.startsWith('/a-propos')) return 3
-    if (pathname.startsWith('/contact')) return 4
-    return -1
-  })()
+    if (pathname === '/') setActiveIndex(0)
+    else if (pathname.startsWith('/produits')) setActiveIndex(search.includes('personalizable=1') ? 2 : 1)
+    else if (pathname.startsWith('/a-propos')) setActiveIndex(3)
+    else if (pathname.startsWith('/contact')) setActiveIndex(4)
+    else setActiveIndex(-1)
+  }, [pathname])
 
   const updateIndicator = useCallback(() => {
     const el = activeIndex >= 0 ? navRefs.current[activeIndex] : undefined

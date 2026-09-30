@@ -39,6 +39,7 @@ interface Product {
   isPersonalizable: boolean
   isActive: boolean
   showOnHome?: boolean
+  minQuantity?: number
   category: { id: string; name: string; slug: string }
   images: ProductImage[]
 }
@@ -324,7 +325,8 @@ export default function HomePage() {
       productSlug: product.slug,
       productSku: product.sku || undefined,
       productImage: product.images?.[0]?.url ?? '',
-      quantity: 1,
+      quantity: Math.max(1, Number(product.minQuantity) || 1),
+      minQuantity: product.minQuantity,
       unitPrice: product.basePrice,
       // La personnalisation détaillée se règle sur la fiche produit ou dans le
       // panier : l'ajout rapide ne l'active pas (sinon le logo serait exigé).
@@ -414,7 +416,6 @@ export default function HomePage() {
           <div className="flex snap-x gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:grid md:grid-cols-2 [&::-webkit-scrollbar]:hidden">
             {heroSlides.map((s) => (
               <div key={s.id} className="w-[88%] shrink-0 snap-center md:w-auto">
-                { }
                 <img src={s.url} alt={s.altText} loading="lazy" className="h-48 w-full object-cover md:h-72" />
               </div>
             ))}

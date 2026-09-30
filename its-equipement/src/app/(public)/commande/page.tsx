@@ -37,12 +37,19 @@ const checkoutSchema = z.object({
   address: z.string().max(500).optional(),
   deliveryComment: z.string().max(2000).optional(),
 }).superRefine((data, ctx) => {
-  // Aligné avec l'API : raison sociale requise pour les entreprises
+  // Aligné avec l'API : raison sociale + email requis pour les entreprises
   if (data.clientType === 'ENTREPRISE' && !data.companyName?.trim()) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['companyName'],
       message: "Le nom de l'entreprise est requis",
+    })
+  }
+  if (data.clientType === 'ENTREPRISE' && !data.clientEmail?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['clientEmail'],
+      message: "L'email est requis pour les entreprises",
     })
   }
   if (data.requestType !== 'COMMANDE_SIMPLE' && !data.companyName?.trim()) {
@@ -80,7 +87,6 @@ export default function CommandePage() {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const items = useCartStore((s) => s.items)
-  const subtotal = useCartStore((s) => s.subtotal)
   const clearCart = useCartStore((s) => s.clearCart)
 
   // Paliers de réduction par produit (définis dans l'admin) — prévisualisation
@@ -255,7 +261,6 @@ export default function CommandePage() {
           deliveryComment: data.deliveryComment || undefined,
         },
         items,
-        total,
         {
           requestType: data.requestType,
           company: {
@@ -792,7 +797,7 @@ export default function CommandePage() {
             <div className="flex gap-2 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
               <Info className="size-4 shrink-0 mt-0.5" />
               <p>
-                Les prix sont indicatifs. Le devis final sera envoye apres
+                Les prix sont indicatifs. Le devis final sera envoyé après
                 validation.
               </p>
             </div>

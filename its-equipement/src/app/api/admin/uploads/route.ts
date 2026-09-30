@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
 
     const uploads = await getUploadsByIds(ids)
     return success(uploads)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/uploads] Erreur:', err)
     return serverError()
   }
 }

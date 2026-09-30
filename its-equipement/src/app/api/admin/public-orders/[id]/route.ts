@@ -17,7 +17,8 @@ export async function GET(
     if (!order) return error('Commande introuvable', 404)
 
     return success(order)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/public-orders/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -43,7 +44,8 @@ export async function PATCH(
     }
 
     return error('Aucune donnee a mettre a jour')
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/public-orders/[id]] Erreur:', err)
     return serverError()
   }
 }

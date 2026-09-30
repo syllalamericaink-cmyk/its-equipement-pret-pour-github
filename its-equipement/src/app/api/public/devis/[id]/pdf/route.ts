@@ -199,7 +199,8 @@ export async function GET(
     const logoPath = path.join(process.cwd(), 'public', 'logo-its-equipement.jpg')
     try {
       doc.image(logoPath, ML + 6, headerTop + 12, { fit: [64, 50], align: 'center', valign: 'center' })
-    } catch {
+    } catch (err) {
+    console.error('[api /public/devis/[id]/pdf] Erreur:', err)
       /* logo absent : en-tête textuel conservé */
     }
 
@@ -399,7 +400,8 @@ export async function GET(
         'Content-Length': String(pdfArray.byteLength),
       },
     })
-  } catch {
+  } catch (err) {
+    console.error('[api /public/devis/[id]/pdf] Erreur:', err)
     // Log volontairement minimal : on n'écrit pas l'erreur détaillée (risque
     // de fuite d'infos si les logs sont exposés).
     return serverError()

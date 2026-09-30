@@ -86,7 +86,8 @@ export async function POST(
     })
 
     return success({ orderNumber })
-  } catch {
+  } catch (err) {
+    console.error('[api /public/devis/[id]/finalize] Erreur:', err)
     return serverError()
   }
 }

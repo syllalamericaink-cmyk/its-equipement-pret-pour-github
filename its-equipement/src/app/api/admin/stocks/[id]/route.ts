@@ -29,7 +29,8 @@ export async function GET(
 
     const result = await getVariantStock(id)
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/stocks/[id]] Erreur:', err)
     return serverError()
   }
 }
@@ -72,7 +73,8 @@ export async function POST(
     })
 
     return success(result)
-  } catch {
+  } catch (err) {
+    console.error('[api /admin/stocks/[id]] Erreur:', err)
     return serverError()
   }
 }

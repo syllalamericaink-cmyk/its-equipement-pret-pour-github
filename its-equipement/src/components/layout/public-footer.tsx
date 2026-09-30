@@ -24,7 +24,7 @@ function FooterLegal() {
         <Link href="/legal" className="transition-colors hover:text-white">
           Mentions légales
         </Link>
-        <Link href="/conditions" className="transition-colors hover:text-white">
+        <Link href="/legal" className="transition-colors hover:text-white">
           Politique de confidentialité
         </Link>
       </div>

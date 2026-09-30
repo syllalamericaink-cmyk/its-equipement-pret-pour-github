@@ -36,13 +36,6 @@ function normalizePhone(phone: string): string {
 
 export type RequestType = 'COMMANDE_SIMPLE' | 'DEVIS' | 'BON_COMMANDE' | 'FNE'
 
-export const REQUEST_TYPE_LABELS: Record<RequestType, string> = {
-  COMMANDE_SIMPLE: 'Commande simple',
-  DEVIS: 'Demande de devis',
-  BON_COMMANDE: 'Bon de commande',
-  FNE: 'Demande de FNE',
-}
-
 /** Verbe d'introduction adapté au type de demande. */
 function introForType(requestType: RequestType): string {
   switch (requestType) {
@@ -106,7 +99,6 @@ export interface LogoInfo {
 export function buildWhatsAppOrderLink(
   customer: OrderCustomerInfo,
   items: CartItem[],
-  _total: number,
   options: {
     requestType: RequestType
     company?: CompanyInfo
