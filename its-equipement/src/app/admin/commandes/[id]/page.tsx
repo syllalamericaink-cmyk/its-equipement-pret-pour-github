@@ -84,7 +84,8 @@ interface OrderItem {
 
 interface StatusHistoryEntry {
   id: string
-  status: string
+  fromStatus: string | null
+  toStatus: string
   createdAt: string
 }
 
@@ -635,7 +636,8 @@ export default function CommandeDetailPage() {
                     )}
                   </div>
                   <div className="flex flex-1 items-center justify-between rounded-lg border p-3">
-                    <StatusBadge status={entry.status} />
+                    {/* L'API renvoie le champ Prisma brut toStatus */}
+                    <StatusBadge status={entry.toStatus} />
                     <span className="text-sm text-muted-foreground">
                       {formatDateTime(entry.createdAt)}
                     </span>

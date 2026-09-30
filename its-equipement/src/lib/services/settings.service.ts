@@ -58,7 +58,8 @@ export async function getQuoteValidityDays(): Promise<number> {
 }
 
 export async function getTvaRate(): Promise<number> {
-  return getSettingNumber('TVA_RATE', 0.20)
+  // Taux de TVA ivoirien : 18 % (source de vérité : setting TVA_RATE en base)
+  return getSettingNumber('TVA_RATE', 0.18)
 }
 
 export async function getDepositPercentage(): Promise<number> {
@@ -67,5 +68,19 @@ export async function getDepositPercentage(): Promise<number> {
 
 export async function getBalancePercentage(): Promise<number> {
   return getSettingNumber('BALANCE_PERCENTAGE', 50)
+}
+
+/**
+ * Numéro WhatsApp du commercial (destinataire des notifications).
+ * Source unique de vérité, utilisée par TOUS les flux (commande web, devis,
+ * commande depuis devis) : 1) réglages admin en base, 2) variable
+ * d'environnement, 3) null.
+ */
+export async function getWhatsAppRecipient(): Promise<string | null> {
+  const dbValue = await getSetting('WHATSAPP_RECIPIENT_NUMBER')
+  if (dbValue && dbValue.trim()) return dbValue.trim()
+  const envValue = process.env.WHATSAPP_RECIPIENT_NUMBER
+  if (envValue && envValue.trim()) return envValue.trim()
+  return null
 }
 

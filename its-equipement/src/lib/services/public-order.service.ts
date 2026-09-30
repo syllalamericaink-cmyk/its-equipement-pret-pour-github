@@ -1,6 +1,7 @@
 import { db } from '../db'
 import { formatCurrency } from '../format'
 import { sendWhatsAppMessage } from './whatsapp.service'
+import { getWhatsAppRecipient } from './settings.service'
 import type { Prisma } from '@prisma/client'
 
 async function generateOrderNumber(): Promise<string> {
@@ -347,8 +348,8 @@ export async function sendOrderNotification(orderId: string) {
   })
   if (!order) throw new Error('Commande introuvable')
 
-  const recipient = await db.setting.findUnique({ where: { key: 'WHATSAPP_RECIPIENT_NUMBER' } })
-  if (!recipient?.value) {
+  const recipient = await getWhatsAppRecipient()
+  if (!recipient) {
     await db.publicOrder.update({
       where: { id: orderId },
       data: { notificationStatus: 'FAILED', notificationError: 'Numero destinataire non configure' },
@@ -357,7 +358,7 @@ export async function sendOrderNotification(orderId: string) {
   }
 
   const message = buildNotificationMessage(order as unknown as PublicOrderWithItems)
-  const result = await sendWhatsAppMessage(recipient.value, message)
+  const result = await sendWhatsAppMessage(recipient, message)
 
   await db.publicOrder.update({
     where: { id: orderId },
@@ -371,7 +372,7 @@ export async function sendOrderNotification(orderId: string) {
     data: {
       type: 'ORDER_CREATED',
       channel: 'WHATSAPP',
-      to: recipient.value,
+      to: recipient,
       message,
       status: result.success ? 'SENT' : 'FAILED',
       response: result.success ? { messageId: result.messageId } : { error: result.error },
@@ -395,6 +396,7 @@ export async function getPublicOrders(params: {
   if (params.search) {
     where.OR = [
       { orderNumber: { contains: params.search } },
+      { devisNumber: { contains: params.search } },
       { clientName: { contains: params.search } },
       { clientEmail: { contains: params.search } },
       { clientPhone: { contains: params.search } },

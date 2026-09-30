@@ -44,7 +44,8 @@ const STATUSES = [
 
 interface PublicOrder {
   id: string
-  orderNumber: string
+  orderNumber: string | null
+  devisNumber: string | null
   status: string
   clientName: string
   clientPhone: string
@@ -200,7 +201,8 @@ export default function CommandesPage() {
                         href={`/admin/commandes/${order.id}`}
                         className="font-bold text-primary hover:underline"
                       >
-                        {order.orderNumber}
+                        {/* Un devis non finalisé n'a pas de numéro de commande : on affiche son numéro de devis */}
+                        {order.orderNumber ?? order.devisNumber ?? '—'}
                       </Link>
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm">

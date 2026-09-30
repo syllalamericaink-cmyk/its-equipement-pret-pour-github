@@ -1,6 +1,7 @@
 import { db } from '../db'
 import { formatCurrency } from '../format'
 import { sendWhatsAppMessage } from './whatsapp.service'
+import { getWhatsAppRecipient } from './settings.service'
 import type { Prisma } from '@prisma/client'
 
 function sanitizeForText(input: string): string {
@@ -35,12 +36,11 @@ export async function sendOrderNotification(orderId: string): Promise<void> {
   if (!order) throw new Error('Commande introuvable')
 
   const client = order.quote.quoteRequest.client
-  const baseUrl = process.env.NEXTAUTH_URL ?? ''
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL ?? ''
 
   const products: string[] = []
   const quantities: string[] = []
-  const tailles: string[] = []
-  const couleurs: string[] = []
+  const variantes: string[] = []
   const impressions: string[] = []
   const textesImpression: string[] = []
   const emplacements: string[] = []
@@ -51,11 +51,9 @@ export async function sendOrderNotification(orderId: string): Promise<void> {
     quantities.push(String(item.quantity))
 
     if (item.productVariant) {
-      tailles.push(sanitizeForText(item.productVariant.name))
-      couleurs.push(sanitizeForText(item.productVariant.name))
+      variantes.push(sanitizeForText(item.productVariant.name))
     } else {
-      tailles.push('\u2014')
-      couleurs.push('\u2014')
+      variantes.push('\u2014')
     }
 
     if (item.hasPersonalization) {
@@ -69,10 +67,13 @@ export async function sendOrderNotification(orderId: string): Promise<void> {
     for (const p of item.personalizations) {
       const opt = p.personalizationOption
       const val = typeof p.value === 'string' ? p.value : JSON.stringify(p.value)
-      if (opt.type === 'TEXT' || opt.label.toLowerCase().includes('texte')) {
+      // Le type est stocké en minuscules ('text', 'location', 'logo'…) :
+      // on normalise pour que la comparaison fonctionne vraiment.
+      const optType = (opt.type ?? '').toUpperCase()
+      if (optType === 'TEXT' || opt.label.toLowerCase().includes('texte')) {
         textPerso = sanitizeForText(val)
       }
-      if (opt.type === 'LOCATION' || opt.label.toLowerCase().includes('emplac')) {
+      if (optType === 'LOCATION' || opt.label.toLowerCase().includes('emplac')) {
         locationPerso = sanitizeForText(val)
       }
       if (typeof p.value === 'object' && p.value !== null) {
@@ -102,8 +103,7 @@ export async function sendOrderNotification(orderId: string): Promise<void> {
   if (client.phone) message += `Tel: ${sanitizeForText(client.phone)}\n`
   message += `Produit(s): ${products.join(', ')}\n`
   message += `Quantité(s) : ${quantities.join(', ')}\n`
-  message += `Tailles: ${tailles.join(', ')}\n`
-  message += `Couleurs: ${couleurs.join(', ')}\n`
+  message += `Variantes: ${variantes.join(', ')}\n`
   message += `Impression: ${impressions.join(', ')}\n`
   message += `Texte si impression: ${textesImpression.join(', ')}\n`
   message += `Emplacement: ${emplacements.join(', ')}\n`
@@ -121,8 +121,8 @@ export async function sendOrderNotification(orderId: string): Promise<void> {
     message += `Lien fichiers: ${fileLinks.join(', ')}\n`
   }
 
-  const recipient = process.env.WHATSAPP_RECIPIENT_NUMBER
-  if (!recipient) throw new Error('Numero destinataire WhatsApp non configure')
+  const recipient = await getWhatsAppRecipient()
+  if (!recipient) throw new Error('Numero destinataire WhatsApp non configure (reglages admin ou WHATSAPP_RECIPIENT_NUMBER)')
 
   const result = await sendWhatsAppMessage(recipient, message)
 

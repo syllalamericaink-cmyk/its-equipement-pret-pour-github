@@ -1,5 +1,7 @@
 import { success, error, serverError } from '@/lib/api-response'
 import { createPublicOrder, sendOrderNotification } from '@/lib/services/public-order.service'
+import { sendOrderTelegramNotification } from '@/lib/services/telegram.service'
+import { syncOrderToSheets } from '@/lib/services/google-sheets.service'
 import { checkApiRateLimit } from '@/lib/api-auth'
 import { after, type NextRequest } from 'next/server'
 
@@ -63,12 +65,19 @@ export async function POST(request: NextRequest) {
       })),
     })
 
+    // Les 3 canaux sont notifiés aussi pour un devis (avant on n'envoyait que
+    // WhatsApp : ni Telegram ni Google Sheets n'étaient prévenus).
     after(async () => {
-      await sendOrderNotification(order.id)
+      await Promise.allSettled([
+        sendOrderNotification(order.id),
+        sendOrderTelegramNotification(order.id),
+        syncOrderToSheets(order.id),
+      ])
     })
 
     return success({ devisNumber: order.devisNumber, id: order.id })
-  } catch {
+  } catch (err) {
+    console.error('[public/devis] Erreur creation devis:', err)
     return serverError()
   }
 }

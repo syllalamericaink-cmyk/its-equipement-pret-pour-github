@@ -1,3 +1,5 @@
+import { getSetting } from './settings.service'
+
 type WhatsAppResult = {
   success: boolean
   messageId?: string
@@ -6,8 +8,18 @@ type WhatsAppResult = {
 
 export async function sendWhatsAppMessage(to: string, message: string, components?: unknown): Promise<WhatsAppResult> {
   try {
-    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
+    // Credentials : d'abord les réglages admin (base), sinon l'environnement.
+    // Comme ça, ce que l'admin configure dans Réglages a un effet réel.
+    const [
+      dbToken, dbPhoneId, envToken, envPhoneId,
+    ] = await Promise.all([
+      getSetting('WHATSAPP_ACCESS_TOKEN'),
+      getSetting('WHATSAPP_PHONE_NUMBER_ID'),
+      Promise.resolve(process.env.WHATSAPP_ACCESS_TOKEN),
+      Promise.resolve(process.env.WHATSAPP_PHONE_NUMBER_ID),
+    ])
+    const accessToken = (dbToken && dbToken.trim()) || envToken || ''
+    const phoneNumberId = (dbPhoneId && dbPhoneId.trim()) || envPhoneId || ''
     const apiVersion = process.env.WHATSAPP_API_VERSION ?? 'v21.0'
 
     if (!accessToken || !phoneNumberId) {
