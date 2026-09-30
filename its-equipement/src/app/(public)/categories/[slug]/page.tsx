@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { decodeSlug } from '@/lib/slug'
 import { Search, Package, ArrowLeft, ArrowRight, SlidersHorizontal } from 'lucide-react'
 import { publicFetch, formatCurrency } from '@/lib/public-api'
 import { Input } from '@/components/ui/input'
@@ -96,7 +97,7 @@ function CategoriePage() {
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
-  const slug = params.slug as string
+  const slug = decodeSlug(params.slug as string)
 
   const searchParam = searchParams.get('search') || ''
   const sortParam = (searchParams.get('sort') || 'relevance') as SortValue

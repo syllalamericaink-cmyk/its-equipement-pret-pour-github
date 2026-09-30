@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
+import { decodeSlug } from '@/lib/slug'
 
 type Props = {
   params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params
+  const slug = decodeSlug((await params).slug)
 
   try {
     const product = await db.product.findUnique({
@@ -52,7 +53,7 @@ export default async function ProductDetailLayout({
   children: React.ReactNode
   params: Promise<{ slug: string }>
 }) {
-  const { slug } = await params
+  const slug = decodeSlug((await params).slug)
 
   try {
     const product = await db.product.findUnique({
