@@ -262,7 +262,7 @@ model Quote {
   subtotalHT     Float               @default(0)
   discountAmount Float               @default(0)
   totalAmountHT  Float               @default(0)
-  tvaRate        Float               @default(0.20)
+  tvaRate        Float               @default(0.18)
   totalAmountTTC Float               @default(0)
   conditions     String?
   createdAt      DateTime            @default(now())
@@ -309,7 +309,7 @@ model Order {
   paymentMethod      String              @default("ON_DELIVERY")
   subtotalHT         Float               @default(0)
   totalAmountHT      Float               @default(0)
-  tvaRate            Float               @default(0.20)
+  tvaRate            Float               @default(0.18)
   totalAmountTTC     Float               @default(0)
   depositAmount      Float               @default(0)
   depositPercentage  Float               @default(0)

@@ -16,9 +16,9 @@ import path from 'path'
 
 const INK = '#000000'
 
-/** Montant au format du modèle : « 1 500 CFA ». */
+/** Montant au format du site : « 1 500 FCFA ». */
 function fmtCFA(montant: number): string {
-  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(montant) + ' CFA'
+  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(montant) + ' FCFA'
 }
 
 /** Dessine des segments [texte, gras, italique] sur une même ligne. */
@@ -300,12 +300,15 @@ export async function GET(
       quantity: number
       unitPrice: number
       lineTotal: number
+      discountPercent?: number
     }, idx: number) => {
       const designation = item.variantName
         ? `${item.productName} (${item.variantName})`
         : item.productName
       const note = item.hasPersonalization ? 'Personnalisé — logo client fourni' : null
-      const prixNet = Number(item.unitPrice) // pas de remise en base : Prix U Net = Prix Unitaire
+      // Remise quantité appliquée à la création du devis (PublicOrderItem.discountPercent)
+      const remise = Number(item.discountPercent ?? 0)
+      const prixNet = Number(item.unitPrice) * (1 - remise / 100)
       ligneProduit(
         String(idx + 1),
         designation,
@@ -313,7 +316,7 @@ export async function GET(
         '',
         String(item.quantity),
         fmtCFA(Number(item.unitPrice)),
-        '',
+        remise > 0 ? `${remise % 1 === 0 ? remise : remise.toFixed(1)}` : '',
         fmtCFA(prixNet),
         fmtCFA(Number(item.lineTotal)),
       )
@@ -355,7 +358,7 @@ export async function GET(
     doc.font('Helvetica-Bold').fontSize(8).fillColor(INK)
     doc.text('DELAI LIVRAISON :', ML, condTop + 14, { lineBreak: false })
     doc.font('Helvetica-BoldOblique').fontSize(8)
-    doc.text('PAIEMENT : 60 JOURS APRES LIVRAISON', ML, condTop + 25, { lineBreak: false })
+    doc.text('PAIEMENT : A LA LIVRAISON', ML, condTop + 25, { lineBreak: false })
 
     const bxW = 130
     const bxX = W - MR - bxW

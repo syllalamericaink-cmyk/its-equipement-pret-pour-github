@@ -52,6 +52,10 @@ export async function POST(
       return error('Ce devis a deja ete finalise en commande')
     }
 
+    if (devis.status === 'ANNULEE') {
+      return error('Ce devis a ete annule et ne peut plus etre finalise')
+    }
+
     const orderNumber = await generateOrderNumber()
 
     await db.publicOrder.update({

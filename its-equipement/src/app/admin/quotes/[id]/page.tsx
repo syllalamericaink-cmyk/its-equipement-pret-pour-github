@@ -319,7 +319,7 @@ export default function DevisDetailPage() {
   const [editLoading, setEditLoading] = useState(false)
   const [editRows, setEditRows] = useState<EditRow[]>([])
   const [editDiscount, setEditDiscount] = useState('0')
-  const [editTva, setEditTva] = useState('20')
+  const [editTva, setEditTva] = useState('18')
   const [editValidUntil, setEditValidUntil] = useState('')
   const [editConditions, setEditConditions] = useState('')
   const [products, setProducts] = useState<AdminProductLite[]>([])

@@ -2,7 +2,7 @@ import { db } from '../db'
 import { getTvaRate, getQuoteValidityDays } from './settings.service'
 import type { Prisma } from '@prisma/client'
 
-async function generateQuoteNumber(): Promise<string> {
+export async function generateQuoteNumber(): Promise<string> {
   const year = new Date().getFullYear()
   for (let attempt = 0; attempt < 10; attempt++) {
     const count = await db.quote.count({
@@ -69,7 +69,11 @@ export async function createQuote(data: {
       if (variant) verifiedPrice = verifiedPrice + Number(variant.priceModifier)
     }
 
-    const unitPrice = verifiedPrice
+    // Prix négoce : si l'admin a saisi un prix unitaire personnalisé (remise
+    // entreprise, négociation…), il est honoré — même comportement que
+    // updateQuote. Sinon on retombe sur le prix catalogue vérifié.
+    const providedPrice = Number(item.unitPrice)
+    const unitPrice = Number.isFinite(providedPrice) && providedPrice > 0 ? providedPrice : verifiedPrice
     const lineTotal = unitPrice * item.quantity
     subtotalHT += lineTotal
 
@@ -293,6 +297,19 @@ export async function updateQuote(id: string, data: {
 export async function changeQuoteStatus(id: string, toStatus: string, adminId: string) {
   const quote = await db.quote.findUnique({ where: { id } })
   if (!quote) throw new Error('Devis introuvable')
+
+  // Statuts terminaux : plus de changement possible
+  if (['CANCELLED', 'REJECTED'].includes(quote.status)) {
+    throw new Error('Ce devis est cloture, son statut ne peut plus changer')
+  }
+
+  // Un devis expiré ne peut pas être accepté tel quel :
+  // il faut d'abord étendre sa validité depuis l'édition du devis.
+  if (toStatus === 'ACCEPTED' && quote.validUntil && quote.validUntil.getTime() < Date.now()) {
+    throw new Error(
+      `Devis expire depuis le ${quote.validUntil.toLocaleDateString('fr-FR')} — etendez d'abord sa validite avant de l'accepter`
+    )
+  }
 
   await db.quoteStatusHistory.create({
     data: {

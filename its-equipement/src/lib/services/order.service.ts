@@ -1,12 +1,18 @@
 import { db } from '../db'
 import { getTvaRate, getDepositPercentage, getBalancePercentage } from './settings.service'
-import { checkStockAvailability, reserveStockForOrder, releaseStockForOrder, deductStockOnShipment, returnStockOnCancel } from './stock.service'
+import { checkStockAvailability, reserveStockForOrder, deductStockOnShipment, returnStockOnCancel } from './stock.service'
 import type { Prisma } from '@prisma/client'
 
 async function generateOrderNumber(): Promise<string> {
-  const count = await db.order.count()
-  const num = (count + 1).toString().padStart(4, '0')
-  return `CMD-${num}`
+  // Anti-collision : on vérifie l'existence du candidat avant de le renvoyer
+  // (count + 1 seul peut entrer en course avec une création simultanée).
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await db.order.count()
+    const candidate = `CMD-${(count + 1 + attempt).toString().padStart(4, '0')}`
+    const exists = await db.order.findUnique({ where: { orderNumber: candidate } })
+    if (!exists) return candidate
+  }
+  return `CMD-${Date.now().toString().slice(-8)}`
 }
 
 export async function createOrderFromQuote(quoteId: string, adminId: string) {
@@ -63,13 +69,9 @@ export async function createOrderFromQuote(quoteId: string, adminId: string) {
     const product = await db.product.findUnique({ where: { id: quoteItem.productId } })
     if (!product) throw new Error(`Produit ${quoteItem.productId} introuvable`)
 
-    let verifiedPrice: number = Number(product.basePrice)
-    if (quoteItem.productVariantId) {
-      const variant = await db.productVariant.findUnique({ where: { id: quoteItem.productVariantId } })
-      if (variant) verifiedPrice = Number(product.basePrice) + Number(variant.priceModifier)
-    }
-
-    const unitPrice = verifiedPrice
+    // On honore le prix du devis (éventuellement négocié par l'admin) :
+    // la commande doit correspondre au devis signé, pas au prix catalogue.
+    const unitPrice = Number(quoteItem.unitPrice)
     const lineTotal = unitPrice * quoteItem.quantity
 
     orderItems.push({

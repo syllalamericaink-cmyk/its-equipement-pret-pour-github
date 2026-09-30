@@ -40,7 +40,7 @@ async function main() {
     { key: 'COMPANY_ADDRESS', value: '', type: 'STRING', label: 'Adresse de l\'entreprise', category: 'company' },
     { key: 'COMPANY_PHONE', value: '', type: 'STRING', label: 'Téléphone de l\'entreprise', category: 'company' },
     { key: 'COMPANY_EMAIL', value: '', type: 'STRING', label: 'Email de l\'entreprise', category: 'company' },
-    { key: 'TVA_RATE', value: '0.20', type: 'NUMBER', label: 'Taux de TVA par défaut', category: 'billing' },
+    { key: 'TVA_RATE', value: '0.18', type: 'NUMBER', label: 'Taux de TVA par défaut', category: 'billing' },
     { key: 'QUOTE_VALIDITY_DAYS', value: '30', type: 'NUMBER', label: 'Durée de validité des devis (jours)', category: 'billing' },
     { key: 'BANK_DETAILS', value: '', type: 'STRING', label: 'Coordonnées bancaires (RIB)', category: 'billing' },
     { key: 'DEPOSIT_PERCENTAGE', value: '50', type: 'NUMBER', label: 'Pourcentage d\'acompte (impression)', category: 'billing' },
