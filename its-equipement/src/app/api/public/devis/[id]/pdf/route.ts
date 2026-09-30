@@ -199,8 +199,7 @@ export async function GET(
     const logoPath = path.join(process.cwd(), 'public', 'logo-its-equipement.jpg')
     try {
       doc.image(logoPath, ML + 6, headerTop + 12, { fit: [64, 50], align: 'center', valign: 'center' })
-    } catch (err) {
-    console.error('[api /public/devis/[id]/pdf] Erreur:', err)
+    } catch {
       /* logo absent : en-tête textuel conservé */
     }
 
@@ -359,7 +358,7 @@ export async function GET(
     doc.font('Helvetica-Bold').fontSize(8).fillColor(INK)
     doc.text('DELAI LIVRAISON :', ML, condTop + 14, { lineBreak: false })
     doc.font('Helvetica-BoldOblique').fontSize(8)
-    doc.text('PAIEMENT : A LA LIVRAISON', ML, condTop + 25, { lineBreak: false })
+    doc.text('PAIEMENT : 60 JOURS APRES LIVRAISON', ML, condTop + 25, { lineBreak: false })
 
     const bxW = 130
     const bxX = W - MR - bxW
