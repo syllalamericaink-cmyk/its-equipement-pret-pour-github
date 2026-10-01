@@ -13,6 +13,8 @@ import {
   Images,
   Plus,
   Mail,
+  RefreshCw,
+  ArrowRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -119,27 +121,6 @@ function getKpiCards(data: DashboardData): KpiCard[] {
 
   return [
     {
-      label: 'Demandes de devis en attente',
-      value: pendingRequests,
-      icon: <ClipboardList className="h-5 w-5" />,
-      accent: 'text-yellow-600',
-      iconBg: 'bg-yellow-100',
-    },
-    {
-      label: 'Commandes web',
-      value: data.publicOrdersTotal,
-      icon: <ShoppingCart className="h-5 w-5" />,
-      accent: 'text-green-600',
-      iconBg: 'bg-green-100',
-    },
-    {
-      label: 'Reçues aujourd\'hui',
-      value: data.publicOrdersToday,
-      icon: <CalendarClock className="h-5 w-5" />,
-      accent: 'text-blue-600',
-      iconBg: 'bg-blue-100',
-    },
-    {
       label: 'Nouvelles commandes',
       value: webNew,
       icon: <Inbox className="h-5 w-5" />,
@@ -154,6 +135,20 @@ function getKpiCards(data: DashboardData): KpiCard[] {
       iconBg: 'bg-orange-100',
     },
     {
+      label: "Demandes de devis en attente",
+      value: pendingRequests,
+      icon: <ClipboardList className="h-5 w-5" />,
+      accent: 'text-yellow-600',
+      iconBg: 'bg-yellow-100',
+    },
+    {
+      label: "Reçues aujourd'hui",
+      value: data.publicOrdersToday,
+      icon: <CalendarClock className="h-5 w-5" />,
+      accent: 'text-blue-600',
+      iconBg: 'bg-blue-100',
+    },
+    {
       label: 'Commandes livrées',
       value: webDelivered,
       icon: <CheckCircle2 className="h-5 w-5" />,
@@ -161,14 +156,14 @@ function getKpiCards(data: DashboardData): KpiCard[] {
       iconBg: 'bg-emerald-100',
     },
     {
-      label: 'Demandes de devis en attente',
-      value: pendingRequests,
-      icon: <ClipboardList className="h-5 w-5" />,
-      accent: 'text-yellow-600',
-      iconBg: 'bg-yellow-100',
+      label: 'Commandes web',
+      value: data.publicOrdersTotal,
+      icon: <ShoppingCart className="h-5 w-5" />,
+      accent: 'text-green-600',
+      iconBg: 'bg-green-100',
     },
     {
-      label: 'Chiffre d\'affaires encaissé',
+      label: "Chiffre d'affaires encaissé",
       value: formatCurrency(revenue),
       icon: <Banknote className="h-5 w-5" />,
       accent: 'text-teal-600',
@@ -359,15 +354,39 @@ function TableSkeleton() {
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const loadDashboard = useCallback(async (silent = false) => {
+    if (silent) {
+      setRefreshing(true)
+    } else {
+      setLoading(true)
+    }
+
+    const res = await adminFetch<DashboardData>('/api/admin/dashboard')
+
+    if (res.success && res.data) {
+      setData(res.data)
+    }
+
+    if (silent) {
+      setRefreshing(false)
+    } else {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    adminFetch<DashboardData>('/api/admin/dashboard').then((res) => {
-      if (res.success && res.data) {
-        setData(res.data)
+    void loadDashboard()
+
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        void loadDashboard(true)
       }
-      setLoading(false)
-    })
-  }, [])
+    }, 30_000)
+
+    return () => clearInterval(interval)
+  }, [loadDashboard])
 
   return (
     <div className="space-y-6">
@@ -378,15 +397,65 @@ export default function AdminDashboardPage() {
             Vue d&apos;ensemble des commandes web et de l&apos;activité du site.
           </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          {new Intl.DateTimeFormat('fr-FR', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          }).format(new Date())}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="hidden text-sm text-muted-foreground sm:block">
+            {new Intl.DateTimeFormat('fr-FR', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            }).format(new Date())}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void loadDashboard(true)}
+            disabled={refreshing}
+            title="Actualiser"
+          >
+            <RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+            <span className="sr-only">Actualiser</span>
+          </Button>
+        </div>
       </div>
+
+      {data && (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold">À traiter maintenant</p>
+              <p className="text-sm text-muted-foreground">
+                Concentrez-vous d’abord sur les demandes qui bloquent le traitement commercial.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {(data.publicOrdersByStatus?.NOUVELLE_COMMANDE ?? 0) > 0 && (
+                <Button asChild size="sm">
+                  <Link href="/admin/commandes">
+                    {data.publicOrdersByStatus.NOUVELLE_COMMANDE} nouvelle(s) commande(s)
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
+              {(data.quoteRequestsByStatus?.PENDING ?? 0) > 0 && (
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/admin/quote-requests">
+                    {data.quoteRequestsByStatus.PENDING} demande(s) de devis
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
+              {(data.publicOrdersByStatus?.NOUVELLE_COMMANDE ?? 0) === 0 &&
+                (data.quoteRequestsByStatus?.PENDING ?? 0) === 0 && (
+                  <span className="text-sm font-medium text-emerald-700">
+                    Rien d’urgent pour le moment.
+                  </span>
+                )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Raccourcis du quotidien : ce que l'admin fait le plus souvent */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
