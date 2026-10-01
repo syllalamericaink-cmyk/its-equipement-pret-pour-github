@@ -102,13 +102,6 @@ function tagCategorie(name: string): string {
   return 'GAMME'
 }
 
-/** Initiale courte pour les ronds de raccourcis (maquette : EPI, EPC, VT, CH…) */
-function shortTag(name: string): string {
-  const t = tagCategorie(name)
-  const map: Record<string, string> = { TEXTILE: 'VT', PIEDS: 'CH', SITE: 'M', GAMME: name.slice(0, 2).toUpperCase() }
-  return map[t] ?? t
-}
-
 const fmtPrice = (n: number) =>
   new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n) + ' FCFA'
 
@@ -266,18 +259,6 @@ export default function HomePage() {
     }
   }, [products])
 
-  /** Raccourcis ronds : catégories marquées « showOnHome » dans l'admin,
-   * triées par sortOrder. Repli : les 5 premières catégories actives. */
-  const raccourcis = useMemo(() => {
-    const flagged = categories.filter((c) => c.showOnHome)
-    const source = flagged.length > 0 ? flagged : categories.slice(0, 5)
-    return source.slice(0, 8).map((c) => ({
-      href: `/categories/${c.slug}`,
-      short: shortTag(c.name),
-      label: c.name,
-    }))
-  }, [categories])
-
   /** Tuiles « Nos univers » : catégories marquées « isFeatured » dans l'admin.
    * Repli : les 4 univers classiques trouvés par type de catégorie. */
   const universTiles = useMemo(() => {
@@ -336,39 +317,7 @@ export default function HomePage() {
       {/* Images gérées depuis /admin/hero ; bannières colorées en attendant */}
       <HeroCarousel slides={heroSlides} />
 
-      {/* ========== raccourcis catégories (ronds) ========== */}
-      <nav id="categories" aria-label="Catégories" className="bg-white py-4">
-        <div className="flex gap-3.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {(loading ? Array.from({ length: 5 }) : raccourcis).map((c, i) => (
-            <div key={i} className="w-[72px] shrink-0 text-center">
-              {loading ? (
-                <Skeleton className="mx-auto mb-1.5 h-16 w-16 rounded-full" />
-              ) : (
-                <Link
-                  href={(c as { href: string }).href}
-                  className="mx-auto mb-1.5 grid h-16 w-16 place-items-center border border-its-border bg-its-cream font-display text-[1.05rem] font-bold text-its-dark transition-colors hover:bg-its-lime"
-                >
-                  {(c as { short: string }).short}
-                </Link>
-              )}
-              {!loading && (
-                <span className="block text-[0.8rem] font-medium leading-tight text-its-dark">
-                  {(c as { label: string }).label}
-                </span>
-              )}
-            </div>
-          ))}
-          {/* raccourci Devis fixe */}
-          <Link href="/demande-devis" className="w-[72px] shrink-0 text-center">
-            <span className="mx-auto mb-1.5 grid h-16 w-16 place-items-center bg-its-lime font-display text-[1.05rem] font-bold text-its-dark">
-              Dv
-            </span>
-            <span className="block text-[0.8rem] font-medium leading-tight text-its-dark">Devis</span>
-          </Link>
-        </div>
-      </nav>
-
-      {/* ========== rails produits ========== */}
+      {/* ========== rails produits (sélection gérée depuis /admin/produits) ========== */}
       <ProductRail
         titre="EPI, sélection terrain"
         href="/produits"

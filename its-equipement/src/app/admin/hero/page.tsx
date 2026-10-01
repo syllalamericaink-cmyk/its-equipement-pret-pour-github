@@ -26,8 +26,8 @@ interface HeroItem {
   createdAt: string
 }
 
-/** Champs de texte optionnels d'une bannière (form d'ajout et édition par carte). */
-const emptyTexts = { title: '', text: '', ctaLabel: '', href: '' }
+/** Champs modifiables d'une bannière (form d'ajout et édition par carte). */
+const emptyTexts = { altText: '', title: '', text: '', ctaLabel: '', href: '' }
 type Texts = typeof emptyTexts
 
 export default function AdminHeroPage() {
@@ -52,7 +52,13 @@ export default function AdminHeroPage() {
         Object.fromEntries(
           res.data.map((it) => [
             it.id,
-            { title: it.title ?? '', text: it.text ?? '', ctaLabel: it.ctaLabel ?? '', href: it.href ?? '' },
+            {
+              altText: it.altText ?? '',
+              title: it.title ?? '',
+              text: it.text ?? '',
+              ctaLabel: it.ctaLabel ?? '',
+              href: it.href ?? '',
+            },
           ])
         )
       )
@@ -106,6 +112,7 @@ export default function AdminHeroPage() {
     const d = drafts[item.id] ?? emptyTexts
     setBusyId(item.id)
     const res = await adminPatch<HeroItem>(`/api/admin/hero/${item.id}`, {
+      altText: d.altText,
       title: d.title,
       text: d.text,
       ctaLabel: d.ctaLabel,
@@ -161,7 +168,7 @@ export default function AdminHeroPage() {
     <div className="space-y-6">
       <PageHeader
         title="Bannières d'accueil"
-        description="Images du carrousel en haut de la page d'accueil. Elles défilent toutes les 5 secondes ; la première image active apparaît en premier."
+        description="Les photos qui défilent en haut de la page d'accueil. Ajoutez une image, modifiez ses textes, réordonnez, masquez ou supprimez : tout est appliqué immédiatement sur l'accueil."
       />
 
       {/* Zone d'ajout */}
@@ -347,15 +354,16 @@ export default function AdminHeroPage() {
                   </Button>
                 </div>
 
-                {/* Édition des textes affichés sur la bannière */}
+                {/* Édition complète de la bannière : description + textes affichés */}
                 <details className="rounded-md border px-3 py-2">
                   <summary className="cursor-pointer list-none text-sm font-medium">
-                    Textes de la bannière
+                    Modifier cette bannière
                     <span className="ml-2 text-xs text-muted-foreground">
-                      {(item.title || item.text || item.ctaLabel) ? '— renseignés' : '— optionnels'}
+                      {(item.title || item.text || item.ctaLabel) ? '— textes renseignés' : '— textes optionnels'}
                     </span>
                   </summary>
                   <div className="mt-3 space-y-3">
+                    {textField(item.id, 'altText', "Description de l'image", 'Ex. : Équipe de chantier équipée', 180)}
                     {textField(item.id, 'title', 'Titre', 'Ex. : Équiper vos équipes.', 120)}
                     {textField(item.id, 'text', 'Sous-titre', 'Ex. : BTP, industrie, logistique.', 220)}
                     <div className="grid grid-cols-2 gap-3">
@@ -373,7 +381,7 @@ export default function AdminHeroPage() {
                       ) : (
                         <Save className="h-3.5 w-3.5" />
                       )}
-                      Enregistrer les textes
+                      Enregistrer les modifications
                     </Button>
                   </div>
                 </details>

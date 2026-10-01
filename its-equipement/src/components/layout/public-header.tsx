@@ -18,7 +18,7 @@ import { openQuickCart } from '@/components/layout/quick-cart'
 import { CONTACT_PHONE, CONTACT_EMAIL } from '@/constants'
 
 const navLinks = [
-  { href: '/#categories', label: 'Catégories' },
+  { href: '/#univers', label: 'Catégories' },
   { href: '/produits', label: 'Produits' },
   { href: '/produits?personalizable=1', label: 'Personnalisation' },
   { href: '/a-propos', label: 'Notre méthode' },

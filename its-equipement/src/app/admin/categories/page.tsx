@@ -270,9 +270,6 @@ export default function CategoriesPage() {
                     ) : (
                       <Badge variant="secondary">Inactive</Badge>
                     )}
-                    {category.showOnHome && (
-                      <Badge variant="outline" className="ml-1">Raccourci</Badge>
-                    )}
                     {category.isFeatured && (
                       <Badge variant="outline" className="ml-1">Univers</Badge>
                     )}
@@ -382,22 +379,12 @@ export default function CategoriesPage() {
               <p className="text-sm font-semibold">Affichage sur la page d&apos;accueil</p>
               <div className="flex items-center gap-3">
                 <Switch
-                  id="showOnHome"
-                  checked={form.showOnHome}
-                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, showOnHome: checked }))}
-                />
-                <Label htmlFor="showOnHome" className="cursor-pointer">
-                  Raccourci rond (rangée CA / GI / Dv)
-                </Label>
-              </div>
-              <div className="flex items-center gap-3">
-                <Switch
                   id="isFeatured"
                   checked={form.isFeatured}
                   onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isFeatured: checked }))}
                 />
                 <Label htmlFor="isFeatured" className="cursor-pointer">
-                  Tuile « Nos univers »
+                  Tuile « Nos univers » (grille de l&apos;accueil)
                 </Label>
               </div>
             </div>

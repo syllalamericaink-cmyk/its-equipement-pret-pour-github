@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { signOut, useSession } from 'next-auth/react'
 import {
   LayoutDashboard,
@@ -19,7 +20,8 @@ import {
   LogOut,
   Inbox,
   Mail,
-  Images
+  Images,
+  ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -29,29 +31,74 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
-const sidebarLinks = [
+/* ============================== Navigation ==============================
+ * Volontairement minimaliste : les 7 liens du quotidien en haut,
+ * tout le reste regroupé dans « Avancé » (replié par défaut).
+ * Toutes les pages restent accessibles, simplement rangées.
+ * ====================================================================== */
+
+const mainLinks = [
   { href: '/admin/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-  { href: '/admin/hero', label: "Images d'accueil", icon: Images },
+  { href: '/admin/hero', label: "Bannières d'accueil", icon: Images },
   { href: '/admin/products', label: 'Produits', icon: Package },
   { href: '/admin/categories', label: 'Catégories', icon: FolderTree },
   { href: '/admin/quote-requests', label: 'Demandes de devis', icon: ClipboardList },
-  { href: '/admin/commandes', label: 'Commandes (Web)', icon: Inbox },
-  { href: '/admin/quotes', label: 'Devis', icon: FileText },
-  { href: '/admin/orders', label: 'Commandes (Devis)', icon: ShoppingCart },
+  { href: '/admin/commandes', label: 'Commandes', icon: Inbox },
+  { href: '/admin/messages', label: 'Messages', icon: Mail },
+]
+
+const advancedLinks = [
+  { href: '/admin/quotes', label: 'Devis (ancien flux)', icon: FileText },
+  { href: '/admin/orders', label: 'Commandes (ancien flux)', icon: ShoppingCart },
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/payments', label: 'Paiements', icon: CreditCard },
   { href: '/admin/deliveries', label: 'Livraisons', icon: Truck },
-  { href: '/admin/notifications', label: 'Notifications', icon: Bell },
-  { href: '/admin/messages', label: 'Messages contact', icon: Mail },
   { href: '/admin/stocks', label: 'Stocks', icon: Warehouse },
-  { href: '/admin/settings', label: 'Paramètres', icon: Settings },
+  { href: '/admin/notifications', label: 'Notifications', icon: Bell },
 ]
+
+function NavLink({ link, isActive }: { link: (typeof mainLinks)[number]; isActive: boolean }) {
+  const Icon = link.icon
+  return (
+    <Tooltip delayDuration={0}>
+      <TooltipTrigger asChild>
+        <Link
+          href={link.href}
+          className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
+            ${isActive
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+              : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+            }`}
+        >
+          {/* Barre lime : marque l'item actif (charte ITS) */}
+          {isActive && (
+            <span
+              aria-hidden="true"
+              className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-its-lime"
+            />
+          )}
+          <Icon className={`h-4 w-4 ${isActive ? 'text-its-dark' : ''}`} />
+          <span className="truncate">{link.label}</span>
+        </Link>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="lg:hidden">
+        {link.label}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
 
 export function AdminSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { data: session } = useSession()
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+
+  const advancedActive = advancedLinks.some(
+    (l) => pathname === l.href || pathname.startsWith(l.href + '/')
+  )
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -74,38 +121,40 @@ export function AdminSidebar() {
 
       <ScrollArea className="flex-1 py-2">
         <nav className="flex flex-col gap-1 px-2">
-          {sidebarLinks.map((link) => {
-            const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
-            const Icon = link.icon
+          {mainLinks.map((link) => (
+            <NavLink
+              key={link.href}
+              link={link}
+              isActive={pathname === link.href || pathname.startsWith(link.href + '/')}
+            />
+          ))}
 
-            return (
-              <Tooltip key={link.href} delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <Link
-                    href={link.href}
-                    className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
-                      ${isActive
-                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-                      }`}
-                  >
-                    {/* Barre lime : marque l'item actif (charte ITS) */}
-                    {isActive && (
-                      <span
-                        aria-hidden="true"
-                        className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-its-lime"
-                      />
-                    )}
-                    <Icon className={`h-4 w-4 ${isActive ? 'text-its-dark' : ''}`} />
-                    <span className="truncate">{link.label}</span>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="lg:hidden">
-                  {link.label}
-                </TooltipContent>
-              </Tooltip>
-            )
-          })}
+          {/* ---- Groupe Avancé (replié par défaut) ---- */}
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen((v) => !v)}
+            aria-expanded={advancedOpen}
+            className="mt-3 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/50"
+          >
+            <ChevronDown
+              className={`h-4 w-4 transition-transform ${advancedOpen ? 'rotate-0' : '-rotate-90'}`}
+            />
+            Avancé
+            {!advancedOpen && advancedActive && (
+              <span aria-hidden="true" className="ml-auto h-2 w-2 rounded-full bg-its-lime" />
+            )}
+          </button>
+          {advancedOpen && (
+            <div className="ml-3 flex flex-col gap-0.5 border-l border-sidebar-accent pl-2">
+              {advancedLinks.map((link) => (
+                <NavLink
+                  key={link.href}
+                  link={link}
+                  isActive={pathname === link.href || pathname.startsWith(link.href + '/')}
+                />
+              ))}
+            </div>
+          )}
         </nav>
       </ScrollArea>
 
@@ -122,6 +171,18 @@ export function AdminSidebar() {
             </p>
           </div>
         )}
+        <Link
+          href="/admin/settings"
+          className={cn(
+            'mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+            pathname.startsWith('/admin/settings')
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+              : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+          )}
+        >
+          <Settings className="h-4 w-4" />
+          Paramètres
+        </Link>
         <Button
           variant="ghost"
           size="sm"

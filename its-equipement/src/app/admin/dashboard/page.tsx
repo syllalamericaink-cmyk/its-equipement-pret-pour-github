@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   ClipboardList,
@@ -9,13 +9,10 @@ import {
   Package,
   CalendarClock,
   Inbox,
-  Send,
-  RefreshCw,
-  Table2,
   CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  ExternalLink,
+  Images,
+  Plus,
+  Mail,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -28,7 +25,6 @@ import {
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { adminFetch, formatCurrency, formatDate } from '@/lib/admin-api'
 import { StatusBadge } from '@/components/admin/status-badge'
 
@@ -95,24 +91,6 @@ interface DashboardData {
   recentPublicOrders: RecentPublicOrder[]
 }
 
-interface IntegrationsStatus {
-  telegram: {
-    configured: boolean
-    botUsername: string | null
-    chatId: string | null
-    chatCandidates: { id: string; type: string; name: string }[]
-    testMessage?: { success: boolean; detail: string }
-    hint: string
-  }
-  sheets: {
-    configured: boolean
-    sheetId: string | null
-    tab: string
-    access: { success: boolean; detail: string }
-    hint: string
-  }
-}
-
 interface KpiCard {
   label: string
   value: number | string
@@ -140,6 +118,13 @@ function getKpiCards(data: DashboardData): KpiCard[] {
   const revenue = data.revenue ?? 0
 
   return [
+    {
+      label: 'Demandes de devis en attente',
+      value: pendingRequests,
+      icon: <ClipboardList className="h-5 w-5" />,
+      accent: 'text-yellow-600',
+      iconBg: 'bg-yellow-100',
+    },
     {
       label: 'Commandes web',
       value: data.publicOrdersTotal,
@@ -189,13 +174,6 @@ function getKpiCards(data: DashboardData): KpiCard[] {
       accent: 'text-teal-600',
       iconBg: 'bg-teal-100',
     },
-    {
-      label: 'Commandes ancien flux',
-      value: data.totals.totalOrders,
-      icon: <Package className="h-5 w-5" />,
-      accent: 'text-slate-600',
-      iconBg: 'bg-slate-100',
-    },
   ]
 }
 
@@ -224,7 +202,7 @@ function KpiGrid({ data }: { data: DashboardData }) {
 function KpiGridSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: 7 }).map((_, i) => (
         <Card key={i} className="gap-4 py-4">
           <CardContent className="flex items-center gap-4 p-0 px-4">
             <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
@@ -236,147 +214,6 @@ function KpiGridSkeleton() {
         </Card>
       ))}
     </div>
-  )
-}
-
-function IntegrationsPanel() {
-  const [status, setStatus] = useState<IntegrationsStatus | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [testing, setTesting] = useState(false)
-
-  const load = useCallback((sendTest = false) => {
-    adminFetch<IntegrationsStatus>(
-      `/api/admin/integrations/status${sendTest ? '?sendTest=1' : ''}`
-    ).then((res) => {
-      if (res.success && res.data) setStatus(res.data)
-      setLoading(false)
-      setTesting(false)
-    })
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-5 w-48" />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const telegram = status?.telegram
-  const sheets = status?.sheets
-
-  return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-base">Intégrations automatiques</CardTitle>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => load()}>
-          <RefreshCw className="h-3.5 w-3.5" /> Actualiser
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Telegram */}
-        <div className="rounded-lg border p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Send className="h-4 w-4 text-sky-600" />
-            <p className="text-sm font-semibold">Bot Telegram</p>
-            {telegram?.configured ? (
-              <Badge className="gap-1 bg-green-100 text-green-800 hover:bg-green-100">
-                <CheckCircle2 className="h-3 w-3" /> Connecté
-                {telegram.botUsername ? ` (@${telegram.botUsername})` : ''}
-              </Badge>
-            ) : telegram?.botUsername ? (
-              <Badge className="gap-1 bg-amber-100 text-amber-800 hover:bg-amber-100">
-                <AlertTriangle className="h-3 w-3" /> Bot détecté — chat à confirmer
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="gap-1">
-                <XCircle className="h-3 w-3" /> Non connecté
-              </Badge>
-            )}
-            {telegram?.configured && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="ml-auto gap-1.5"
-                disabled={testing}
-                onClick={() => {
-                  setTesting(true)
-                  load(true)
-                }}
-              >
-                {testing ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                Recevoir un message de test
-              </Button>
-            )}
-          </div>
-          {telegram?.testMessage && (
-            <p className={`mt-2 text-xs ${telegram.testMessage.success ? 'text-green-700' : 'text-red-600'}`}>
-              {telegram.testMessage.success ? '✓ ' : '✗ '}
-              {telegram.testMessage.detail}
-            </p>
-          )}
-          {telegram && !telegram.configured && (
-            <p className="mt-2 text-xs text-muted-foreground">{telegram.hint}</p>
-          )}
-          {telegram?.chatCandidates && telegram.chatCandidates.length > 0 && !telegram.configured && (
-            <div className="mt-2 rounded-md bg-muted p-2">
-              <p className="text-xs font-medium">Chats détectés — copiez le « id » dans TELEGRAM_CHAT_ID (Vercel) :</p>
-              <ul className="mt-1 space-y-0.5">
-                {telegram.chatCandidates.map((chat) => (
-                  <li key={chat.id} className="font-mono text-xs text-muted-foreground">
-                    {chat.id} — {chat.name} ({chat.type})
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-        {/* Google Sheets */}
-        <div className="rounded-lg border p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Table2 className="h-4 w-4 text-green-700" />
-            <p className="text-sm font-semibold">Google Sheets</p>
-            {sheets?.configured && sheets.access.success ? (
-              <Badge className="gap-1 bg-green-100 text-green-800 hover:bg-green-100">
-                <CheckCircle2 className="h-3 w-3" /> Connecté — onglet « {sheets.tab} »
-              </Badge>
-            ) : sheets?.configured ? (
-              <Badge className="gap-1 bg-amber-100 text-amber-800 hover:bg-amber-100">
-                <AlertTriangle className="h-3 w-3" /> Accès à corriger
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="gap-1">
-                <XCircle className="h-3 w-3" /> Non connecté
-              </Badge>
-            )}
-            {sheets?.sheetId && sheets.access.success && (
-              <a
-                href={`https://docs.google.com/spreadsheets/d/${sheets.sheetId}/edit`}
-                target="_blank"
-                rel="noreferrer"
-                className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-              >
-                Ouvrir le classeur <ExternalLink className="h-3 w-3" />
-              </a>
-            )}
-          </div>
-          {sheets && !(sheets.configured && sheets.access.success) && (
-            <p className="mt-2 text-xs text-muted-foreground">{sheets.hint}</p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   )
 }
 
@@ -551,6 +388,26 @@ export default function AdminDashboardPage() {
         </p>
       </div>
 
+      {/* Raccourcis du quotidien : ce que l'admin fait le plus souvent */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        {[
+          { href: '/admin/hero', label: 'Modifier les bannières', icon: Images },
+          { href: '/admin/products/new', label: 'Ajouter un produit', icon: Plus },
+          { href: '/admin/products', label: 'Choisir les produits de l\u2019accueil', icon: Package },
+          { href: '/admin/quote-requests', label: 'Demandes de devis', icon: ClipboardList },
+          { href: '/admin/messages', label: 'Messages', icon: Mail },
+        ].map((a) => (
+          <Link
+            key={a.href}
+            href={a.href}
+            className="flex min-h-[64px] flex-col justify-center gap-1 rounded-lg border p-3 transition-colors hover:border-primary/40 hover:bg-muted/60"
+          >
+            <a.icon className="h-4 w-4 text-primary" aria-hidden="true" />
+            <span className="text-sm font-medium leading-tight">{a.label}</span>
+          </Link>
+        ))}
+      </div>
+
       {loading ? (
         <KpiGridSkeleton />
       ) : data ? (
@@ -570,8 +427,6 @@ export default function AdminDashboardPage() {
           </>
         ) : null}
       </div>
-
-      <IntegrationsPanel />
     </div>
   )
 }
