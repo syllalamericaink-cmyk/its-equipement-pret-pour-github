@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Check, Package, Plus } from 'lucide-react'
+import { Check, MessageCircle, Package, Plus } from 'lucide-react'
 import { publicFetch } from '@/lib/public-api'
 import { useCartStore } from '@/stores/cart-store'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CONTACT_PHONE, CONTACT_EMAIL, CONTACT_ADDRESS } from '@/constants'
+import { HeroCarousel, type HeroSlideData } from '@/components/home/hero-carousel'
+import { HomeQuoteForm } from '@/components/home/home-quote-form'
+import { CONTACT_PHONE, CONTACT_EMAIL, CONTACT_ADDRESS, CONTACT_WHATSAPP } from '@/constants'
 
 /* ============================= types API ============================= */
 
@@ -44,37 +46,7 @@ interface Product {
   images: ProductImage[]
 }
 
-interface HeroSlide {
-  id: string
-  url: string
-  altText: string
-}
-
 /* ======================= données statiques (maquette) ======================= */
-
-const BANNIERES = [
-  {
-    style: 'bg-its-dark text-white',
-    titre: 'Équiper vos équipes, sans compromis sur le terrain.',
-    texte: 'Protection et tenues pour le BTP, l’industrie, la logistique.',
-    cta: 'Recevoir un devis',
-    href: '/demande-devis',
-  },
-  {
-    style: 'bg-its-panel text-white',
-    titre: 'Vos couleurs sur chaque tenue.',
-    texte: 'Broderie, sérigraphie, transfert. Bon à tirer avant production.',
-    cta: 'Personnaliser',
-    href: '/#personnalisation',
-  },
-  {
-    style: 'bg-its-lime text-its-dark',
-    titre: 'Référence introuvable ?',
-    texte: 'Envoyez une fiche technique ou une photo, on cherche l’équivalent.',
-    cta: 'Décrire mon besoin',
-    href: '/demande-devis',
-  },
-]
 
 const MARQUAGES = [
   { nom: 'Broderie', desc: 'Durable : polos, vestes, chemises, casquettes.' },
@@ -106,8 +78,17 @@ const FAQ = [
   },
 ]
 
-const SECTEURS =
-  'Secteurs : BTP, industrie, logistique, agroalimentaire, maintenance, collectivités.'
+/** Pastilles « Secteurs accompagnés » (maquette v5) — défilement continu. */
+const SECTEURS_LIST = [
+  'BTP',
+  'Industrie',
+  'Logistique',
+  'Agroalimentaire',
+  'Maintenance',
+  'Collectivités',
+  'Mines & Énergie',
+  'Hôtellerie & Restauration',
+]
 
 /* ============================= helpers ============================= */
 
@@ -156,7 +137,7 @@ function ProductCard({ product, added, onAdd }: { product: Product; added: boole
       <Link href={`/produits/${product.slug}`} className="block" aria-label={product.name}>
         <div className="relative aspect-square bg-its-light">
           {image ? (
-             
+
             <img src={image} alt={product.name} loading="lazy" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-its-gray">
@@ -241,7 +222,7 @@ function ProductRail({ titre, href, products, addedIds, onAdd, loading }: {
 export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
+  const [heroSlides, setHeroSlides] = useState<HeroSlideData[]>([])
   const [loading, setLoading] = useState(true)
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
   const addItem = useCartStore((s) => s.addItem)
@@ -251,7 +232,7 @@ export default function HomePage() {
     Promise.all([
       publicFetch<Category[]>('/api/public/categories'),
       publicFetch<Product[]>('/api/public/products?page=1&limit=24'),
-      publicFetch<HeroSlide[]>('/api/public/hero'),
+      publicFetch<(HeroSlideData & { title?: string | null; text?: string | null; ctaLabel?: string | null; href?: string | null })[]>('/api/public/hero'),
     ]).then(([cats, prods, slides]) => {
       if (!alive) return
       if (cats.success && cats.data) setCategories(cats.data)
@@ -344,12 +325,16 @@ export default function HomePage() {
       <div className="flex items-center justify-between gap-2.5 border-b border-its-border bg-its-cream px-4 py-2 text-[0.85rem] text-its-dark">
         <span>Livraison à Abidjan et partout en Côte d’Ivoire</span>
         <Link
-          href="/demande-devis"
+          href="#devis"
           className="whitespace-nowrap font-semibold underline decoration-its-lime decoration-[3px] underline-offset-4"
         >
           Devis 24–48 h
         </Link>
       </div>
+
+      {/* ========== carrousel des bannières (5 s) — maquette v4/v6 ========== */}
+      {/* Images gérées depuis /admin/hero ; bannières colorées en attendant */}
+      <HeroCarousel slides={heroSlides} />
 
       {/* ========== raccourcis catégories (ronds) ========== */}
       <nav id="categories" aria-label="Catégories" className="bg-white py-4">
@@ -382,46 +367,6 @@ export default function HomePage() {
           </Link>
         </div>
       </nav>
-
-      {/* ========== bannières (scroll-snap) ========== */}
-      <section className="bg-white py-4">
-        <div className="flex snap-x gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:grid md:grid-cols-3 [&::-webkit-scrollbar]:hidden">
-          {BANNIERES.map((b, i) => (
-            <div
-              key={i}
-              className={`flex min-h-[170px] w-[88%] shrink-0 snap-center flex-col justify-between p-5 md:w-auto ${b.style}`}
-            >
-              <div>
-                <h2 className="font-display text-[1.65rem] font-bold leading-[1.05]">{b.titre}</h2>
-                <p className={`mb-3 mt-1.5 text-[0.92rem] ${b.style.includes('lime') ? 'text-its-dark/80' : 'text-white/90'}`}>
-                  {b.texte}
-                </p>
-              </div>
-              <Link
-                href={b.href}
-                className={`inline-flex min-h-[44px] items-center self-start px-4 py-2 font-semibold ${
-                  b.style.includes('lime') ? 'bg-its-dark text-its-lime' : 'bg-its-lime text-its-dark'
-                }`}
-              >
-                {b.cta}
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ========== images d'accueil gérées depuis l'admin ========== */}
-      {heroSlides.length > 0 && (
-        <section className="bg-white py-4" aria-label="Galerie d’accueil">
-          <div className="flex snap-x gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:grid md:grid-cols-2 [&::-webkit-scrollbar]:hidden">
-            {heroSlides.map((s) => (
-              <div key={s.id} className="w-[88%] shrink-0 snap-center md:w-auto">
-                <img src={s.url} alt={s.altText} loading="lazy" className="h-48 w-full object-cover md:h-72" />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* ========== rails produits ========== */}
       <ProductRail
@@ -456,7 +401,33 @@ export default function HomePage() {
             </Link>
           ))}
         </div>
-        <p className="mt-3 px-4 text-[0.92rem] text-its-gray">{SECTEURS}</p>
+
+        {/* Pastilles « Secteurs accompagnés » défilantes (maquette v5) */}
+        <div className="mt-4">
+          <p className="px-4 pb-2 text-[0.92rem] font-semibold text-its-dark">Secteurs accompagnés</p>
+          <div className="overflow-hidden">
+            <div className="its-marquee flex w-max gap-2">
+              {SECTEURS_LIST.map((s) => (
+                <span
+                  key={s}
+                  className="whitespace-nowrap border border-its-border bg-its-cream px-3 py-1.5 text-[0.85rem] font-medium text-its-dark"
+                >
+                  {s}
+                </span>
+              ))}
+              <div className="its-marquee-copy" aria-hidden="true">
+                {SECTEURS_LIST.map((s) => (
+                  <span
+                    key={`copy-${s}`}
+                    className="whitespace-nowrap border border-its-border bg-its-cream px-3 py-1.5 text-[0.85rem] font-medium text-its-dark"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ========== personnalisation (bloc sombre) ========== */}
@@ -525,27 +496,18 @@ export default function HomePage() {
         </ol>
       </section>
 
-      {/* ========== bandeau devis (lime) ========== */}
-      <section id="devis" className="mt-2.5 bg-its-lime">
-        <div className="px-4 py-8 md:mx-auto md:max-w-3xl md:py-12">
-          <h2 className="font-display text-[1.7rem] font-bold leading-[1.05] text-its-dark md:text-4xl">
-            Donnez-nous les contraintes. Nous préparons une réponse claire.
-          </h2>
-          <p className="mb-3.5 mt-2 text-its-dark/80">
-            Produits, volumes, tailles, personnalisation, lieu de livraison. Retour sous 24–48 h.
-          </p>
-          <Link
-            href="/demande-devis"
-            className="mb-2.5 flex min-h-[50px] items-center justify-center bg-its-dark font-semibold text-white transition-colors hover:bg-its-panel"
-          >
-            Demander un devis
-          </Link>
-          <a
-            href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`}
-            className="flex min-h-[50px] items-center justify-center border-2 border-its-dark font-semibold text-its-dark transition-colors hover:bg-its-dark hover:text-its-lime"
-          >
-            Appeler {CONTACT_PHONE}
-          </a>
+      {/* ========== bandeau devis (lime) + formulaire court — maquette v5/v6 ========== */}
+      <section id="devis" className="mt-2.5 bg-its-lime py-8 md:py-12">
+        <div className="md:mx-auto md:max-w-3xl">
+          <div className="px-4">
+            <h2 className="font-display text-[1.7rem] font-bold leading-[1.05] text-its-dark md:text-4xl">
+              Donnez-nous les contraintes. Nous préparons une réponse claire.
+            </h2>
+            <p className="mb-4 mt-2 text-its-dark/80">
+              Produits, volumes, tailles, personnalisation, lieu de livraison. Retour sous 24–48 h.
+            </p>
+          </div>
+          <HomeQuoteForm />
         </div>
       </section>
 
@@ -570,10 +532,22 @@ export default function HomePage() {
       {/* ========== contact ========== */}
       <section id="contact" className="mt-2.5 bg-white py-4">
         <SectionHead titre="Nous joindre" />
-        <div className="grid gap-2 px-4 md:grid-cols-3">
+        <div className="grid gap-2 px-4 sm:grid-cols-2 md:grid-cols-4">
           <a href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`} className="block border border-its-border p-3 px-3.5">
             <small className="block text-[0.78rem] text-its-gray">Téléphone</small>
             <b className="font-semibold text-its-dark">{CONTACT_PHONE}</b>
+          </a>
+          <a
+            href={CONTACT_WHATSAPP}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block border border-its-border p-3 px-3.5 transition-colors hover:bg-its-light"
+          >
+            <small className="block text-[0.78rem] text-its-gray">WhatsApp</small>
+            <b className="flex min-h-[24px] items-center gap-1.5 font-semibold text-its-dark">
+              <MessageCircle className="h-4 w-4 text-its-dark" aria-hidden="true" />
+              Écrire sur WhatsApp
+            </b>
           </a>
           <a href={`mailto:${CONTACT_EMAIL}`} className="block border border-its-border p-3 px-3.5">
             <small className="block text-[0.78rem] text-its-gray">E-mail</small>

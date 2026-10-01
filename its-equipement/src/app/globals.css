@@ -174,3 +174,32 @@
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* Pastilles « Secteurs accompagnés » défilantes (maquette mobile v5).
+   Défilement continu ; pause au survol ; défilement manuel si
+   prefers-reduced-motion (la copie est masquée dans ce cas). */
+@keyframes its-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.its-marquee {
+  animation: its-marquee 26s linear infinite;
+}
+.its-marquee:hover {
+  animation-play-state: paused;
+}
+.its-marquee-copy {
+  display: contents;
+}
+@media (prefers-reduced-motion: reduce) {
+  .its-marquee {
+    animation: none;
+    flex-wrap: wrap;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    row-gap: 0.5rem;
+  }
+  .its-marquee-copy {
+    display: none;
+  }
+}

@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { CONTACT_PHONE, CONTACT_EMAIL, CONTACT_ADDRESS } from '@/constants'
+import { MessageCircle } from 'lucide-react'
+import { CONTACT_PHONE, CONTACT_EMAIL, CONTACT_ADDRESS, CONTACT_WHATSAPP } from '@/constants'
 
 const offreLinks = [
   { href: '/produits', label: 'EPI' },
@@ -89,6 +90,17 @@ function FooterAccordions() {
             </a>
           </p>
           <p>
+            <a
+              href={CONTACT_WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[44px] items-center gap-2 bg-its-lime px-3.5 py-2 text-sm font-bold text-its-dark transition-opacity hover:opacity-90"
+            >
+              <MessageCircle className="h-4 w-4" aria-hidden="true" />
+              Écrire sur WhatsApp
+            </a>
+          </p>
+          <p>
             <a href={`mailto:${CONTACT_EMAIL}`} className="text-sm text-white/75">
               {CONTACT_EMAIL}
             </a>
@@ -164,6 +176,17 @@ function FooterColumns() {
             className="font-display text-2xl font-bold tracking-tight text-white transition-colors hover:text-its-lime"
           >
             {CONTACT_PHONE}
+          </a>
+        </p>
+        <p className="mt-2">
+          <a
+            href={CONTACT_WHATSAPP}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] items-center gap-2 bg-its-lime px-3.5 py-2 text-sm font-bold text-its-dark transition-opacity hover:opacity-90"
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            Écrire sur WhatsApp
           </a>
         </p>
         <p className="mt-2">

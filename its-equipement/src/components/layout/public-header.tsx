@@ -14,6 +14,7 @@ import {
   SheetClose,
 } from '@/components/ui/sheet'
 import { useCartStore } from '@/stores/cart-store'
+import { openQuickCart } from '@/components/layout/quick-cart'
 import { CONTACT_PHONE, CONTACT_EMAIL } from '@/constants'
 
 const navLinks = [
@@ -40,6 +41,27 @@ function CartIcon() {
         </span>
       )}
     </Link>
+  )
+}
+
+/** Version mobile : ouvre la feuille du panier rapide (maquette v5). */
+function CartButton() {
+  const itemCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0))
+
+  return (
+    <button
+      type="button"
+      onClick={openQuickCart}
+      className="relative flex h-11 w-11 items-center justify-center text-its-dark transition-colors hover:bg-its-light"
+      aria-label={`Panier rapide${itemCount > 0 ? ` (${itemCount} articles)` : ''}`}
+    >
+      <ShoppingCart className="h-5 w-5" />
+      {itemCount > 0 && (
+        <span className="absolute right-0.5 top-0.5 flex h-4 min-w-[18px] items-center justify-center rounded-full bg-its-dark px-1 text-[10px] font-bold text-white">
+          {itemCount > 99 ? '99+' : itemCount}
+        </span>
+      )}
+    </button>
   )
 }
 
@@ -72,11 +94,17 @@ export function PublicHeader() {
 
   useEffect(() => {
     const search = window.location.search
-    if (pathname === '/') setActiveIndex(0)
-    else if (pathname.startsWith('/produits')) setActiveIndex(search.includes('personalizable=1') ? 2 : 1)
-    else if (pathname.startsWith('/a-propos')) setActiveIndex(3)
-    else if (pathname.startsWith('/contact')) setActiveIndex(4)
-    else setActiveIndex(-1)
+    // Mesure hors cycle de rendu (évite le setState synchrone dans l'effet).
+    // `personalizable=1` ne peut pas être lu par usePathname, d'où la lecture
+    // de window ici.
+    const raf = requestAnimationFrame(() => {
+      if (pathname === '/') setActiveIndex(0)
+      else if (pathname.startsWith('/produits')) setActiveIndex(search.includes('personalizable=1') ? 2 : 1)
+      else if (pathname.startsWith('/a-propos')) setActiveIndex(3)
+      else if (pathname.startsWith('/contact')) setActiveIndex(4)
+      else setActiveIndex(-1)
+    })
+    return () => cancelAnimationFrame(raf)
   }, [pathname])
 
   const updateIndicator = useCallback(() => {
@@ -109,8 +137,58 @@ export function PublicHeader() {
     setQuery('')
   }
 
+  /* ---------- Recherche mobile : se replie en descendant, revient en remontant ---------- */
+  const [searchHidden, setSearchHidden] = useState(false)
+  // Miroir de l'état pour le handler (attaché une seule fois)
+  const hiddenRef = useRef(false)
+
+  useEffect(() => {
+    let lastY = window.scrollY
+    let acc = 0 // distance cumulée vers le bas
+    let hiddenAtY = Infinity // position du dernier repli
+    let expandFloor = -Infinity // plancher anti-repli juste après un déploiement
+    let lockedUntil = 0
+    // Traitement direct dans le handler (listener passive) : le travail est
+    // minime et on évite tout blocage si requestAnimationFrame est suspendu.
+    const onScroll = () => {
+      const y = window.scrollY
+      const dy = y - lastY
+      lastY = y
+      if (Date.now() < lockedUntil) return
+      acc = dy > 0 ? acc + dy : 0
+      if (hiddenRef.current) {
+        // Dépliage : remontée nette (100 px au-dessus du point de repli) ou haut
+        // de page. Le seuil de 100 px absorbe la compensation du scroll
+        // anchoring (-72 px) qui suit le repli de la barre.
+        if (y <= 140 || y < hiddenAtY - 100) {
+          hiddenRef.current = false
+          setSearchHidden(false)
+          expandFloor = y
+          lockedUntil = Date.now() + 200
+        }
+      } else {
+        // Repliage : exige un vrai défilement vers le bas (40 px cumulés),
+        // pas un rebond élastique ni la compensation d'ancrage (+72 px)
+        // qui suit un déploiement.
+        if (y > 140 && acc > 40 && y > expandFloor + 120) {
+          hiddenRef.current = true
+          setSearchHidden(true)
+          hiddenAtY = y
+          acc = 0
+          lockedUntil = Date.now() + 200
+        }
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
-    <header className="sticky top-0 z-50 w-full" role="banner">
+    <header
+      className="sticky top-0 z-50 w-full"
+      role="banner"
+      onFocusCapture={() => setSearchHidden(false)}
+    >
       {/* Barre supérieure noire */}
       <div className="bg-its-dark text-white">
         <div className="container mx-auto flex h-9 items-center justify-between gap-4 px-4">
@@ -199,7 +277,7 @@ export function PublicHeader() {
           </div>
 
           <div className="flex items-center gap-1 lg:hidden">
-            <CartIcon />
+            <CartButton />
             <Sheet>
               <SheetTrigger asChild>
                 <Button
@@ -272,24 +350,34 @@ export function PublicHeader() {
         </div>
       </div>
 
-      {/* Recherche mobile — maquette mobile v3 */}
-      <form onSubmit={submitSearch} role="search" className="flex items-center gap-0 border-b border-its-border bg-its-dark p-2 md:hidden">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher un casque, des gants, un gilet…"
-          aria-label="Rechercher un produit"
-          className="h-11 min-w-0 flex-1 bg-white px-3.5 text-base text-its-dark outline-none placeholder:text-its-gray"
-        />
-        <button
-          type="submit"
-          aria-label="Lancer la recherche"
-          className="flex h-11 w-12 shrink-0 items-center justify-center bg-its-lime text-its-dark transition-colors hover:bg-its-lime-dark"
-        >
-          <Search className="h-5 w-5" />
-        </button>
-      </form>
+      {/* Recherche mobile — maquette mobile v3/v6 : se replie au scroll vers le bas,
+          revient au scroll vers le haut ou au focus (gain de place sur téléphone) */}
+      <div
+        className={`overflow-hidden border-its-border bg-its-dark transition-all duration-300 md:hidden ${
+          searchHidden ? 'max-h-0 border-b-0' : 'max-h-[72px] border-b'
+        }`}
+        aria-hidden={searchHidden}
+      >
+        <form onSubmit={submitSearch} role="search" className="flex items-center gap-0 p-2">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher un casque, des gants, un gilet…"
+            aria-label="Rechercher un produit"
+            tabIndex={searchHidden ? -1 : undefined}
+            className="h-11 min-w-0 flex-1 bg-white px-3.5 text-base text-its-dark outline-none placeholder:text-its-gray"
+          />
+          <button
+            type="submit"
+            aria-label="Lancer la recherche"
+            tabIndex={searchHidden ? -1 : undefined}
+            className="flex h-11 w-12 shrink-0 items-center justify-center bg-its-lime text-its-dark transition-colors hover:bg-its-lime-dark"
+          >
+            <Search className="h-5 w-5" />
+          </button>
+        </form>
+      </div>
     </header>
   )
 }

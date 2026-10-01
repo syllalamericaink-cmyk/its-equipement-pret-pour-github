@@ -528,6 +528,12 @@ model HeroImage {
   id        String   @id @default(cuid())
   uploadId  String   @unique
   altText   String?
+  // Textes optionnels affichés en bas de la bannière (dégradé sombre).
+  // Si « href » est renseigné sans « title », toute l'image devient cliquable.
+  title     String?
+  text      String?
+  ctaLabel  String?
+  href      String?
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())

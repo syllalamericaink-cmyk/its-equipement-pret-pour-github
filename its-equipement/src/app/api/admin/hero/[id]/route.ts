@@ -1,12 +1,14 @@
 /**
  * Modification / réordonnancement / suppression d'une image hero — ADMIN UNIQUEMENT.
  *
- *   PATCH  /api/admin/hero/[id]   → { altText?, isActive?, move?: 'up' | 'down' }
+ *   PATCH  /api/admin/hero/[id]   → { altText?, title?, text?, ctaLabel?, href?,
+ *                                    isActive?, move?: 'up' | 'down' }
  *   DELETE /api/admin/hero/[id]   → supprime l'image hero + l'upload associé
  */
 
 import { requireAdmin } from '@/lib/api-auth'
 import { success, serverError, badRequest, notFound } from '@/lib/api-response'
+import { ensureHeroTextColumns } from '@/lib/hero-columns'
 import { db } from '@/lib/db'
 import type { NextRequest } from 'next/server'
 
@@ -33,9 +35,15 @@ export async function PATCH(
     const { id } = await params
     const body = (await request.json().catch(() => ({}))) as {
       altText?: string
+      title?: string
+      text?: string
+      ctaLabel?: string
+      href?: string
       isActive?: boolean
       move?: 'up' | 'down'
     }
+
+    await ensureHeroTextColumns()
 
     const hero = await db.heroImage.findUnique({ where: { id } })
     if (!hero) return notFound('Image introuvable')
@@ -56,6 +64,10 @@ export async function PATCH(
       where: { id },
       data: {
         ...(body.altText !== undefined ? { altText: body.altText.trim().slice(0, 180) || null } : {}),
+        ...(body.title !== undefined ? { title: body.title.trim().slice(0, 120) || null } : {}),
+        ...(body.text !== undefined ? { text: body.text.trim().slice(0, 220) || null } : {}),
+        ...(body.ctaLabel !== undefined ? { ctaLabel: body.ctaLabel.trim().slice(0, 40) || null } : {}),
+        ...(body.href !== undefined ? { href: body.href.trim().slice(0, 300) || null } : {}),
         ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
       },
     })
@@ -64,6 +76,10 @@ export async function PATCH(
       id: updated.id,
       url: `/api/public/uploads/${updated.uploadId}`,
       altText: updated.altText,
+      title: updated.title,
+      text: updated.text,
+      ctaLabel: updated.ctaLabel,
+      href: updated.href,
       sortOrder: updated.sortOrder,
       isActive: updated.isActive,
     })
