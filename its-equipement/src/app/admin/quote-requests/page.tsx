@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { adminPath } from '@/lib/admin-path'
 import { useRouter } from 'next/navigation'
 import { DataTable } from '@/components/admin/data-table'
 import { PageHeader } from '@/components/admin/page-header'
@@ -90,7 +91,7 @@ export default function DemandesDevisPage() {
   }, [])
 
   const handleRowClick = useCallback((item: QuoteRequest) => {
-    router.push(`/admin/quote-requests/${item.id}`)
+    router.push(adminPath(`/quote-requests/${item.id}`))
   }, [router])
 
   const columns = [

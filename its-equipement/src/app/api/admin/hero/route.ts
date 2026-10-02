@@ -23,6 +23,14 @@ function cleanText(v: FormDataEntryValue | null, max: number): string | null {
 
 const ALLOWED_HERO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 
+/** Cadrage vertical accepté pour l'affichage de la bannière. */
+const OBJECT_POSITIONS = ['top', 'center', 'bottom'] as const
+
+function cleanObjectPosition(v: FormDataEntryValue | null): string {
+  const s = (typeof v === 'string' ? v : '').trim()
+  return (OBJECT_POSITIONS as readonly string[]).includes(s) ? s : 'center'
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { error: authError } = await requireAdmin(request)
@@ -43,6 +51,7 @@ export async function GET(request: NextRequest) {
         text: h.text,
         ctaLabel: h.ctaLabel,
         href: h.href,
+        objectPosition: h.objectPosition ?? 'center',
         sortOrder: h.sortOrder,
         isActive: h.isActive,
         createdAt: h.createdAt,
@@ -77,6 +86,7 @@ export async function POST(request: NextRequest) {
     const text = cleanText(formData.get('text'), 220)
     const ctaLabel = cleanText(formData.get('ctaLabel'), 40)
     const href = cleanText(formData.get('href'), 300)
+    const objectPosition = cleanObjectPosition(formData.get('objectPosition'))
 
     const upload = await uploadFile(file, 'hero-image')
 
@@ -89,6 +99,7 @@ export async function POST(request: NextRequest) {
         text,
         ctaLabel,
         href,
+        objectPosition,
         sortOrder: count,
         isActive: true,
       },
@@ -102,6 +113,7 @@ export async function POST(request: NextRequest) {
       text: hero.text,
       ctaLabel: hero.ctaLabel,
       href: hero.href,
+      objectPosition: hero.objectPosition ?? 'center',
       sortOrder: hero.sortOrder,
       isActive: hero.isActive,
       createdAt: hero.createdAt,

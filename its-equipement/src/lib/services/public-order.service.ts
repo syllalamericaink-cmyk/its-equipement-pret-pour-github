@@ -1,4 +1,4 @@
-import { db } from '../db'
+import { db, ensureSoftColumns } from '../db'
 import { BusinessError } from '../errors'
 import { formatCurrency } from '../format'
 import { sendWhatsAppMessage } from './whatsapp.service'
@@ -73,6 +73,7 @@ export async function createPublicOrder(data: {
   // Server is the source of truth: never trust prices, names, variants or
   // totals sent by the browser.
   const productIds = [...new Set(data.items.map(item => item.productId))]
+  await ensureSoftColumns()
   const products = await db.product.findMany({
     where: { id: { in: productIds }, isActive: true },
     include: {

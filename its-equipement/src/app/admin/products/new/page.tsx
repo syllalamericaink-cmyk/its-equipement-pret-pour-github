@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { adminPath } from '@/lib/admin-path'
 
 interface Category {
   id: string
@@ -153,7 +154,7 @@ export default function NouveauProduitPage() {
 
       if (res.success && res.data) {
         toast.success('Produit créé avec succès')
-        router.push(`/admin/products/${res.data.id}`)
+        router.push(adminPath(`/products/${res.data.id}`))
       } else {
         toast.error(res.error || 'Erreur lors de la création du produit')
       }
@@ -176,7 +177,7 @@ export default function NouveauProduitPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push('/admin/products')}
+          onClick={() => router.push(adminPath('/products'))}
         >
           <ArrowLeft className="h-5 w-5" />
           <span className="sr-only">Retour</span>

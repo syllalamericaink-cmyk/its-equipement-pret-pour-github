@@ -12,6 +12,13 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface HeroItem {
   id: string
@@ -21,13 +28,14 @@ interface HeroItem {
   text: string | null
   ctaLabel: string | null
   href: string | null
+  objectPosition: string | null
   sortOrder: number
   isActive: boolean
   createdAt: string
 }
 
 /** Champs modifiables d'une bannière (form d'ajout et édition par carte). */
-const emptyTexts = { altText: '', title: '', text: '', ctaLabel: '', href: '' }
+const emptyTexts = { altText: '', title: '', text: '', ctaLabel: '', href: '', objectPosition: 'center' }
 type Texts = typeof emptyTexts
 
 export default function AdminHeroPage() {
@@ -58,6 +66,7 @@ export default function AdminHeroPage() {
               text: it.text ?? '',
               ctaLabel: it.ctaLabel ?? '',
               href: it.href ?? '',
+              objectPosition: it.objectPosition ?? 'center',
             },
           ])
         )
@@ -80,6 +89,7 @@ export default function AdminHeroPage() {
       if (texts.text.trim()) fd.append('text', texts.text.trim())
       if (texts.ctaLabel.trim()) fd.append('ctaLabel', texts.ctaLabel.trim())
       if (texts.href.trim()) fd.append('href', texts.href.trim())
+      fd.append('objectPosition', texts.objectPosition || 'center')
       const res = await fetch('/api/admin/hero', { method: 'POST', body: fd })
       const json = (await res.json()) as { success: boolean; error?: string }
       if (json.success) {
@@ -117,6 +127,7 @@ export default function AdminHeroPage() {
       text: d.text,
       ctaLabel: d.ctaLabel,
       href: d.href,
+      objectPosition: d.objectPosition || 'center',
     })
     if (res.success) {
       toast.success('Textes de la bannière enregistrés.')
@@ -228,17 +239,34 @@ export default function AdminHeroPage() {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-pos">Cadrage vertical de l&apos;image</Label>
+                <Select
+                  value={texts.objectPosition || 'center'}
+                  onValueChange={(v) => setTexts((p) => ({ ...p, objectPosition: v }))}
+                >
+                  <SelectTrigger id="new-pos" className="w-full sm:w-[220px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="top">Haut — le sujet est en haut de la photo</SelectItem>
+                    <SelectItem value="center">Centre — cadrage équilibré (défaut)</SelectItem>
+                    <SelectItem value="bottom">Bas — le sujet est en bas de la photo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Image recommandée : <b>1600 × 1000 px</b>, JPG ou WEBP, <b>moins de 300 Ko</b>. Les textes
-              s&apos;affichent en bas de la bannière sur un dégradé sombre, seulement s&apos;ils sont renseignés.
-              Astuce : un lien <b>sans titre</b> rend toute l&apos;image cliquable.
+              Image recommandée : <b>1600 × 1000 px</b> (format paysage), JPG ou WEBP, <b>moins de 300 Ko</b>.
+              L&apos;image est toujours affichée <b>pleine largeur et centrée</b> ; si votre sujet est coupé,
+              changez le « cadrage vertical ». Les textes s&apos;affichent en bas sur un dégradé sombre, seulement
+              s&apos;ils sont renseignés. Astuce : un lien <b>sans titre</b> rend toute l&apos;image cliquable.
             </p>
             <div>
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/avif"
+                accept="image/*"
                 className="hidden"
                 id="hero-file"
                 onChange={(e) => {
@@ -257,7 +285,7 @@ export default function AdminHeroPage() {
                   </>
                 ) : (
                   <>
-                    <Upload className="h-4 w-4" /> Ajouter une image
+                    <Upload className="h-4 w-4" /> Ajouter depuis la galerie
                   </>
                 )}
               </Button>
@@ -284,13 +312,18 @@ export default function AdminHeroPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((item, index) => (
+          {items.map((item, index) => {
+            const draftPos = drafts[item.id]?.objectPosition || item.objectPosition || 'center'
+            const posCss =
+              draftPos === 'top' ? 'center top' : draftPos === 'bottom' ? 'center bottom' : 'center center'
+            return (
             <Card key={item.id} className={`overflow-hidden ${item.isActive ? '' : 'opacity-60'}`}>
               <div className="relative aspect-[16/10] w-full bg-muted">
                 <img
                   src={item.url}
                   alt={item.altText ?? 'Image bannière'}
-                  className="h-full w-full object-cover"
+                  style={{ objectPosition: posCss }}
+                  className="h-full w-full object-cover object-center"
                 />
                 <div className="absolute left-2 top-2 flex gap-1">
                   {index === 0 && item.isActive && <Badge>1re image affichée</Badge>}
@@ -370,6 +403,30 @@ export default function AdminHeroPage() {
                       {textField(item.id, 'ctaLabel', 'Bouton', 'Ex. : Recevoir un devis', 40)}
                       {textField(item.id, 'href', 'Lien', 'Ex. : /demande-devis', 300)}
                     </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`pos-${item.id}`}>Cadrage vertical (centrage du sujet)</Label>
+                      <Select
+                        value={draftPos}
+                        onValueChange={(v) =>
+                          setDrafts((prev) => ({
+                            ...prev,
+                            [item.id]: { ...emptyTexts, ...prev[item.id], objectPosition: v },
+                          }))
+                        }
+                      >
+                        <SelectTrigger id={`pos-${item.id}`} className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="top">Haut de la photo bien visible</SelectItem>
+                          <SelectItem value="center">Centre (défaut)</SelectItem>
+                          <SelectItem value="bottom">Bas de la photo bien visible</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        L&apos;aperçu ci-dessus applique immédiatement ce cadrage, comme sur l&apos;accueil.
+                      </p>
+                    </div>
                     <Button
                       size="sm"
                       className="gap-1.5"
@@ -387,7 +444,8 @@ export default function AdminHeroPage() {
                 </details>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
       )}
 

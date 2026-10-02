@@ -41,6 +41,7 @@ import {
   Palette,
 } from 'lucide-react'
 import Link from 'next/link'
+import { adminPath } from '@/lib/admin-path'
 
 const STATUSES = ['CONFIRMED', 'ACOMPTE_RECU', 'IN_PRODUCTION', 'READY', 'SHIPPED', 'DELIVERED', 'PAIEMENT_A_LIVRAISON', 'CANCELLED'] as const
 
@@ -254,7 +255,7 @@ export default function CommandeDetailPage() {
   if (!data) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => router.push('/admin/orders')}>
+        <Button variant="ghost" onClick={() => router.push(adminPath('/orders'))}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour
         </Button>
@@ -269,7 +270,7 @@ export default function CommandeDetailPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/admin/orders')}>
+          <Button variant="ghost" size="icon" onClick={() => router.push(adminPath('/orders'))}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -337,13 +338,13 @@ export default function CommandeDetailPage() {
             </div>
             <div className="border-t pt-3">
               <p className="text-sm text-muted-foreground">Devis</p>
-              <Link href={`/admin/quotes/${data.quote.id}`} className="text-sm font-medium text-primary hover:underline">
+              <Link href={adminPath(`/quotes/${data.quote.id}`)} className="text-sm font-medium text-primary hover:underline">
                 {data.quote.quoteNumber}
               </Link>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Demande de devis</p>
-              <Link href={`/admin/quote-requests/${data.quote.quoteRequest.id}`} className="text-sm font-medium text-primary hover:underline">
+              <Link href={adminPath(`/quote-requests/${data.quote.quoteRequest.id}`)} className="text-sm font-medium text-primary hover:underline">
                 {data.quote.quoteRequest.reference}
               </Link>
             </div>

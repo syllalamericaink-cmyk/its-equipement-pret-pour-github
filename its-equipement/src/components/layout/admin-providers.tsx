@@ -5,8 +5,11 @@ import { SessionProvider } from 'next-auth/react'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AdminSidebar } from '@/components/layout/admin-sidebar'
 import { AdminHeader } from '@/components/layout/admin-header'
+import { adminPath } from '@/lib/admin-path'
 
-const EXCLUDED_PATHS = ['/admin/login']
+// La page de connexion peut être vue via le segment personnalisé (URL publique,
+// conservée par usePathname) ou via le chemin interne /admin/login (réécriture).
+const EXCLUDED_PATHS = [adminPath('/login'), '/admin/login']
 
 export function AdminProviders({ children, session }: { children: React.ReactNode; session: unknown }) {
   const pathname = usePathname()

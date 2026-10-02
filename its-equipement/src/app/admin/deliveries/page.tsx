@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ClipboardList, Package, Truck, CheckCircle2, MoreHorizontal } from 'lucide-react'
+import { adminPath } from '@/lib/admin-path'
 
 const STATUSES = ['A_PREPARER', 'PRETE', 'EN_LIVRAISON', 'LIVREE'] as const
 
@@ -146,7 +147,7 @@ export default function LivraisonsPage() {
       key: 'orderNumber',
       header: 'Commande',
       render: (item: Delivery) => (
-        <Link href={`/admin/orders/${item.order.id}`} className="font-medium text-primary hover:underline">
+        <Link href={adminPath(`/orders/${item.order.id}`)} className="font-medium text-primary hover:underline">
           {item.order.orderNumber}
         </Link>
       ),

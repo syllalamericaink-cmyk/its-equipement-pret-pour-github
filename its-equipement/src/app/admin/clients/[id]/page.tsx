@@ -31,6 +31,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import Link from 'next/link'
+import { adminPath } from '@/lib/admin-path'
 
 interface Client {
   id: string
@@ -167,7 +168,7 @@ export default function FicheClientPage() {
   if (!client) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => router.push('/admin/clients')}>
+        <Button variant="ghost" onClick={() => router.push(adminPath('/clients'))}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour
         </Button>
@@ -180,7 +181,7 @@ export default function FicheClientPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/admin/clients')}>
+          <Button variant="ghost" size="icon" onClick={() => router.push(adminPath('/clients'))}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -349,7 +350,7 @@ export default function FicheClientPage() {
                   {quoteRequests.map((qr) => (
                     <TableRow key={qr.id}>
                       <TableCell>
-                        <Link href={`/admin/quote-requests/${qr.id}`} className="font-medium text-primary hover:underline">
+                        <Link href={adminPath(`/quote-requests/${qr.id}`)} className="font-medium text-primary hover:underline">
                           {qr.reference}
                         </Link>
                       </TableCell>

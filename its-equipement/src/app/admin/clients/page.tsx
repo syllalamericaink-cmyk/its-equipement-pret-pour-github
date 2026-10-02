@@ -6,6 +6,7 @@ import { DataTable } from '@/components/admin/data-table'
 import { PageHeader } from '@/components/admin/page-header'
 import { adminFetch, formatDate } from '@/lib/admin-api'
 import Link from 'next/link'
+import { adminPath } from '@/lib/admin-path'
 
 interface Client {
   id: string
@@ -74,7 +75,7 @@ export default function ClientsPage() {
   }, [])
 
   const handleRowClick = useCallback((item: Client) => {
-    router.push(`/admin/clients/${item.id}`)
+    router.push(adminPath(`/clients/${item.id}`))
   }, [router])
 
   const columns = [
@@ -82,7 +83,7 @@ export default function ClientsPage() {
       key: 'companyName',
       header: 'Entreprise',
       render: (item: Client) => (
-        <Link href={`/admin/clients/${item.id}`} className="font-medium text-primary hover:underline">
+        <Link href={adminPath(`/clients/${item.id}`)} className="font-medium text-primary hover:underline">
           {item.companyName}
         </Link>
       ),

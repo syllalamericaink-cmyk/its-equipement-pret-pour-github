@@ -56,6 +56,9 @@ model Product {
   category         Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   isPersonalizable Boolean                 @default(false)
   showOnHome       Boolean                 @default(false)
+  // Section de l'accueil où afficher le produit quand « showOnHome » est actif.
+  // NULL = répartition automatique par type de catégorie (EPI / Vêtements).
+  homeSection      String?
   minQuantity      Int                     @default(1)
   isActive         Boolean                 @default(true)
   createdAt        DateTime                @default(now())
@@ -534,6 +537,8 @@ model HeroImage {
   text      String?
   ctaLabel  String?
   href      String?
+  // Cadrage vertical de l'image : top | center | bottom (défaut center)
+  objectPosition String? @default("center")
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())

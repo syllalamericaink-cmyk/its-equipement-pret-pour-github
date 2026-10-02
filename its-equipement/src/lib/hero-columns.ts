@@ -21,7 +21,8 @@ export function ensureHeroTextColumns(): Promise<boolean> {
            ADD COLUMN IF NOT EXISTS "title" TEXT,
            ADD COLUMN IF NOT EXISTS "text" TEXT,
            ADD COLUMN IF NOT EXISTS "ctaLabel" TEXT,
-           ADD COLUMN IF NOT EXISTS "href" TEXT`
+           ADD COLUMN IF NOT EXISTS "href" TEXT,
+           ADD COLUMN IF NOT EXISTS "objectPosition" TEXT DEFAULT 'center'`
       )
       return true
     } catch (err) {

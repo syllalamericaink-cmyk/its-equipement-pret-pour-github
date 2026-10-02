@@ -3,6 +3,7 @@ import type { NextAuthOptions } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { db } from './db'
 import { AUTH_SECRET } from './auth-secret'
+import { adminPath } from '@/lib/admin-path'
 
 const BCRYPT_SALT_ROUNDS = 12
 
@@ -63,7 +64,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/admin/login',
+    signIn: adminPath('/login'),
   },
   session: {
     strategy: 'jwt',

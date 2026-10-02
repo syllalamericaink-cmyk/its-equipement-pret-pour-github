@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { AUTH_SECRET } from '@/lib/auth-secret'
+import { ADMIN_SEGMENT } from '@/lib/admin-path'
 
 const RATE_LIMIT_MAP = new Map<string, { count: number; resetAt: number }>()
 const MW_RATE_LIMIT = 200          // global : 200 req/min/IP
@@ -61,10 +62,41 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith('/admin') && !pathname.startsWith('/api/') && pathname !== '/admin/login') {
+  /* =============================================================
+   * Chemin d'administration non devinable (NEXT_PUBLIC_ADMIN_PATH).
+   *  - /<segment>/...   → authentification puis réécriture interne vers /admin/...
+   *  - /admin/...       → 404 quand un segment personnalisé est défini
+   * ============================================================= */
+  const isLegacyAdmin = pathname === '/admin' || pathname.startsWith('/admin/')
+  const isCustomAdmin =
+    ADMIN_SEGMENT !== 'admin' &&
+    (pathname === `/${ADMIN_SEGMENT}` || pathname.startsWith(`/${ADMIN_SEGMENT}/`))
+
+  if (isCustomAdmin) {
+    // Garde d'authentification sur l'URL publique avant réécriture
     const token = await getToken({ req: request, secret: AUTH_SECRET })
     if (!token || !token.id) {
-      const loginUrl = new URL('/admin/login', request.url)
+      const loginUrl = new URL(`/${ADMIN_SEGMENT}/login`, request.url)
+      loginUrl.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+    const internal = pathname.replace(`/${ADMIN_SEGMENT}`, '/admin') || '/admin'
+    return NextResponse.rewrite(new URL(internal + request.nextUrl.search, request.url))
+  }
+
+  if (isLegacyAdmin && ADMIN_SEGMENT !== 'admin') {
+    // L'ancienne adresse ne doit plus exister publiquement (404, même connecté)
+    return new NextResponse(null, { status: 404 })
+  }
+
+  if (
+    pathname.startsWith('/admin') &&
+    !pathname.startsWith('/api/') &&
+    pathname !== '/admin/login'
+  ) {
+    const token = await getToken({ req: request, secret: AUTH_SECRET })
+    if (!token || !token.id) {
+      const loginUrl = new URL(`/${ADMIN_SEGMENT}/login`, request.url)
       loginUrl.searchParams.set('callbackUrl', pathname)
       return NextResponse.redirect(loginUrl)
     }
@@ -73,7 +105,7 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/auth/login') {
     const token = await getToken({ req: request, secret: AUTH_SECRET })
     if (token && token.id) {
-      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+      return NextResponse.redirect(new URL(`/${ADMIN_SEGMENT}/dashboard`, request.url))
     }
     return NextResponse.next()
   }
@@ -82,5 +114,13 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/auth/:path*', '/api/admin/:path*', '/api/auth/callback/credentials', '/private/:path*'],
+  // Le segment d'administration personnalisé (NEXT_PUBLIC_ADMIN_PATH) n'est pas
+  // exprimable dans ce matcher (statique requis par Next.js) : on couvre donc
+  // toutes les pages via un catch-all (hors API et assets), et le middleware
+  // décide à l'exécution de réécrire /<segment>/... vers /admin/...
+  matcher: [
+    '/api/admin/:path*',
+    '/api/auth/callback/credentials',
+    '/((?!api|_next|favicon\\.ico).*)',
+  ],
 }

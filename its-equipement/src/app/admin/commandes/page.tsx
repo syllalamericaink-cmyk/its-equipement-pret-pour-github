@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table'
 import { Eye, Search, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { adminPath } from '@/lib/admin-path'
 
 const STATUSES = [
   'NOUVELLE_COMMANDE',
@@ -198,7 +199,7 @@ export default function CommandesPage() {
                   <TableRow key={order.id}>
                     <TableCell>
                       <Link
-                        href={`/admin/commandes/${order.id}`}
+                        href={adminPath(`/commandes/${order.id}`)}
                         className="font-bold text-primary hover:underline"
                       >
                         {/* Un devis non finalisé n'a pas de numéro de commande : on affiche son numéro de devis */}
@@ -233,7 +234,7 @@ export default function CommandesPage() {
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/admin/commandes/${order.id}`}>
+                        <Link href={adminPath(`/commandes/${order.id}`)}>
                           <Eye className="h-4 w-4" />
                         </Link>
                       </Button>

@@ -29,6 +29,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { adminFetch, formatCurrency, formatDate } from '@/lib/admin-api'
 import { StatusBadge } from '@/components/admin/status-badge'
+import { adminPath } from '@/lib/admin-path'
 
 interface DashboardTotals {
   totalOrders: number
@@ -240,7 +241,7 @@ function RecentQuoteRequestsTable({ items }: { items: RecentQuoteRequest[] }) {
                 <TableRow key={item.id}>
                   <TableCell>
                     <Link
-                      href={`/admin/quote-requests/${item.id}`}
+                      href={adminPath(`/quote-requests/${item.id}`)}
                       className="font-medium text-primary hover:underline"
                     >
                       {item.reference}
@@ -293,7 +294,7 @@ function RecentPublicOrdersTable({ items }: { items: RecentPublicOrder[] }) {
                 <TableRow key={order.id}>
                   <TableCell>
                     <Link
-                      href={`/admin/commandes/${order.id}`}
+                      href={adminPath(`/commandes/${order.id}`)}
                       className="font-medium text-primary hover:underline"
                     >
                       {order.orderNumber ?? order.devisNumber ?? '—'}
@@ -377,7 +378,15 @@ export default function AdminDashboardPage() {
   }, [])
 
   useEffect(() => {
-    void loadDashboard()
+    let cancelled = false
+    ;(async () => {
+      if (cancelled) return
+      const res = await adminFetch<DashboardData>('/api/admin/dashboard')
+      if (!cancelled && res.success && res.data) {
+        setData(res.data)
+        setLoading(false)
+      }
+    })()
 
     const interval = setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
@@ -385,7 +394,10 @@ export default function AdminDashboardPage() {
       }
     }, 30_000)
 
-    return () => clearInterval(interval)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
   }, [loadDashboard])
 
   return (
@@ -460,11 +472,11 @@ export default function AdminDashboardPage() {
       {/* Raccourcis du quotidien : ce que l'admin fait le plus souvent */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {[
-          { href: '/admin/hero', label: 'Modifier les bannières', icon: Images },
-          { href: '/admin/products/new', label: 'Ajouter un produit', icon: Plus },
-          { href: '/admin/products', label: 'Choisir les produits de l\u2019accueil', icon: Package },
-          { href: '/admin/quote-requests', label: 'Demandes de devis', icon: ClipboardList },
-          { href: '/admin/messages', label: 'Messages', icon: Mail },
+          { href: adminPath('/hero'), label: 'Modifier les bannières', icon: Images },
+          { href: adminPath('/products/new'), label: 'Ajouter un produit', icon: Plus },
+          { href: adminPath('/products'), label: 'Choisir les produits de l\u2019accueil', icon: Package },
+          { href: adminPath('/quote-requests'), label: 'Demandes de devis', icon: ClipboardList },
+          { href: adminPath('/messages'), label: 'Messages', icon: Mail },
         ].map((a) => (
           <Link
             key={a.href}

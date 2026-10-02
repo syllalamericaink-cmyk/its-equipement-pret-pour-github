@@ -33,6 +33,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Clock, CheckCircle2, XCircle, RotateCcw, Ban, MoreHorizontal, ExternalLink } from 'lucide-react'
+import { adminPath } from '@/lib/admin-path'
 
 const STATUSES = ['EN_ATTENTE', 'PAYE', 'ECHEC', 'ANNULE', 'REMBOURSE'] as const
 
@@ -183,7 +184,7 @@ export default function PaiementsPage() {
       key: 'orderNumber',
       header: 'Commande',
       render: (item: Payment) => (
-        <Link href={`/admin/orders/${item.order.id}`} className="font-medium text-primary hover:underline">
+        <Link href={adminPath(`/orders/${item.order.id}`)} className="font-medium text-primary hover:underline">
           {item.order.orderNumber}
         </Link>
       ),

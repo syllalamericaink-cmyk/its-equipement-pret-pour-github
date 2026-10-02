@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { adminPath } from '@/lib/admin-path'
 import { useParams, useRouter } from 'next/navigation'
 import { StatusBadge } from '@/components/admin/status-badge'
 import { ConfirmDialog } from '@/components/admin/confirm-dialog'
@@ -204,7 +205,7 @@ export default function DemandeDevisDetailPage() {
     setCreateQuoteLoading(false)
     if (res.success && res.data) {
       toast.success('Devis créé avec succès')
-      router.push(`/admin/quotes/${res.data.id}`)
+      router.push(adminPath(`/quotes/${res.data.id}`))
     } else {
       toast.error(res.error || 'Erreur lors de la création du devis')
     }
@@ -232,7 +233,7 @@ export default function DemandeDevisDetailPage() {
   if (!data) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => router.push('/admin/quote-requests')}>
+        <Button variant="ghost" onClick={() => router.push(adminPath('/quote-requests'))}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour
         </Button>
@@ -245,7 +246,7 @@ export default function DemandeDevisDetailPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/admin/quote-requests')}>
+          <Button variant="ghost" size="icon" onClick={() => router.push(adminPath('/quote-requests'))}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -444,7 +445,7 @@ export default function DemandeDevisDetailPage() {
                   <div className="flex items-center gap-3">
                     <span className="font-medium">{formatCurrency(quote.totalAmountTTC)}</span>
                     <Button variant="outline" size="sm" asChild>
-                      <a href={`/admin/quotes/${quote.id}`}>
+                      <a href={adminPath(`/quotes/${quote.id}`)}>
                         <ExternalLink className="mr-2 h-4 w-4" />
                         Voir
                       </a>

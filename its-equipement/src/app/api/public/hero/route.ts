@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         text: true,
         ctaLabel: true,
         href: true,
+        objectPosition: true,
       },
     })
 
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
         text: h.text ?? null,
         ctaLabel: h.ctaLabel ?? null,
         href: h.href ?? null,
+        objectPosition: h.objectPosition ?? 'center',
       }))
     )
   } catch (err) {

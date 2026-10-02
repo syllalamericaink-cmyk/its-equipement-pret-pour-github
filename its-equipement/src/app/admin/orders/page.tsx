@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
+import { adminPath } from '@/lib/admin-path'
 
 const STATUSES = ['CONFIRMED', 'ACOMPTE_RECU', 'PAIEMENT_A_LIVRAISON', 'IN_PRODUCTION', 'READY', 'SHIPPED', 'DELIVERED', 'CANCELLED'] as const
 
@@ -111,7 +112,7 @@ export default function CommandesPage() {
   }, [])
 
   const handleRowClick = useCallback((item: Order) => {
-    router.push(`/admin/orders/${item.id}`)
+    router.push(adminPath(`/orders/${item.id}`))
   }, [router])
 
   const columns = [
@@ -119,7 +120,7 @@ export default function CommandesPage() {
       key: 'orderNumber',
       header: 'Commande',
       render: (item: Order) => (
-        <Link href={`/admin/orders/${item.id}`} className="font-medium text-primary hover:underline">
+        <Link href={adminPath(`/orders/${item.id}`)} className="font-medium text-primary hover:underline">
           {item.orderNumber}
         </Link>
       ),

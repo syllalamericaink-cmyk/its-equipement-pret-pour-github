@@ -40,6 +40,7 @@ interface Product {
   basePrice: number
   isPersonalizable: boolean
   isActive: boolean
+  homeSection?: string | null
   showOnHome?: boolean
   minQuantity?: number
   category: { id: string; name: string; slug: string }
@@ -240,19 +241,26 @@ export default function HomePage() {
 
   /** Répartition par univers : EPI/EPC/Site d'un côté, textile/chaussures de l'autre.
    * Si l'admin a marqué des produits « Afficher sur l'accueil », seuls ceux-ci
-   * alimentent les rails (répartis par univers). Sinon, répartition automatique. */
+   * alimentent les rails. La section de chaque produit est celle choisie dans
+   * l'admin (« homeSection ») ; à défaut, répartition automatique par catégorie. */
   const { railEpi, railVet } = useMemo(() => {
     const epiTags = ['EPI', 'EPC', 'SITE', 'GAMME']
     const vetTags = ['TEXTILE', 'PIEDS']
+    const sectionOf = (p: Product): 'EPI' | 'VETEMENTS' | null => {
+      if (p.homeSection === 'EPI' || p.homeSection === 'VETEMENTS') return p.homeSection
+      if (epiTags.includes(tagCategorie(p.category?.name))) return 'EPI'
+      if (vetTags.includes(tagCategorie(p.category?.name))) return 'VETEMENTS'
+      return null
+    }
     const flagged = products.filter((p) => p.showOnHome)
     if (flagged.length > 0) {
       return {
-        railEpi: flagged.filter((p) => epiTags.includes(tagCategorie(p.category?.name))),
-        railVet: flagged.filter((p) => vetTags.includes(tagCategorie(p.category?.name))),
+        railEpi: flagged.filter((p) => sectionOf(p) === 'EPI'),
+        railVet: flagged.filter((p) => sectionOf(p) === 'VETEMENTS'),
       }
     }
-    const epi = products.filter((p) => epiTags.includes(tagCategorie(p.category?.name)))
-    const vet = products.filter((p) => vetTags.includes(tagCategorie(p.category?.name)))
+    const epi = products.filter((p) => sectionOf(p) === 'EPI')
+    const vet = products.filter((p) => sectionOf(p) === 'VETEMENTS')
     return {
       railEpi: epi.length > 0 ? epi : products.slice(0, 8),
       railVet: vet.length > 0 ? vet : products.slice(8, 16),

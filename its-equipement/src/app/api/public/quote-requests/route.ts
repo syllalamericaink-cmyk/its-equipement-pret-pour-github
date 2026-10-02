@@ -1,7 +1,8 @@
 import { createQuoteRequest } from '@/lib/services/quote-request.service'
+import { sendQuoteRequestTelegramNotification } from '@/lib/services/telegram.service'
 import { quoteRequestSchema } from '@/lib/validation'
 import { success, error, serverError } from '@/lib/api-response'
-import type { NextRequest } from 'next/server'
+import { after, type NextRequest } from 'next/server'
 
 const qrRateMap = new Map<string, { count: number; resetAt: number }>()
 
@@ -31,6 +32,12 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await createQuoteRequest(parsed.data)
+
+    // Notification Telegram immédiate (simple et systématique) — non bloquante.
+    after(async () => {
+      await sendQuoteRequestTelegramNotification(result.id)
+    })
+
     return success(result, undefined)
   } catch (e) {
     // Erreurs métier (produit introuvable, quantité minimum non atteinte...) : message clair pour le client

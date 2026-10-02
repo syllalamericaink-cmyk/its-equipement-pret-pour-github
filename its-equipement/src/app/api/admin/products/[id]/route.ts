@@ -1,4 +1,5 @@
 import { requireAdmin } from '@/lib/api-auth'
+import { ensureProductHomeSectionColumn } from '@/lib/product-columns'
 import { getProductById, updateProduct, deleteProduct } from '@/lib/services/product.service'
 import { productSchema } from '@/lib/validation'
 import { success, notFound, error, serverError } from '@/lib/api-response'
@@ -33,6 +34,7 @@ export async function PUT(
     if (authError) return authError
 
     const { id } = await params
+    await ensureProductHomeSectionColumn()
     const body = await request.json()
     const parsed = productSchema.safeParse(body)
     if (!parsed.success) {
@@ -48,6 +50,7 @@ export async function PUT(
       basePrice: parsed.data.basePrice,
       isPersonalizable: parsed.data.isPersonalizable,
       showOnHome: parsed.data.showOnHome ?? false,
+      homeSection: parsed.data.homeSection ?? null,
       minQuantity: parsed.data.minQuantity,
       isActive: parsed.data.isActive,
       category: { connect: { id: parsed.data.categoryId } },

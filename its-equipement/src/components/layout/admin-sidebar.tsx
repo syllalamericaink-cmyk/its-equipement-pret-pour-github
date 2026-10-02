@@ -32,6 +32,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { adminPath } from '@/lib/admin-path'
 
 /* ============================== Navigation ==============================
  * Volontairement minimaliste : les 7 liens du quotidien en haut,
@@ -40,23 +41,23 @@ import { cn } from '@/lib/utils'
  * ====================================================================== */
 
 const mainLinks = [
-  { href: '/admin/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-  { href: '/admin/hero', label: "Bannières d'accueil", icon: Images },
-  { href: '/admin/products', label: 'Produits', icon: Package },
-  { href: '/admin/categories', label: 'Catégories', icon: FolderTree },
-  { href: '/admin/quote-requests', label: 'Demandes de devis', icon: ClipboardList },
-  { href: '/admin/commandes', label: 'Commandes', icon: Inbox },
-  { href: '/admin/messages', label: 'Messages', icon: Mail },
+  { href: adminPath('/dashboard'), label: 'Tableau de bord', icon: LayoutDashboard },
+  { href: adminPath('/hero'), label: "Bannières d'accueil", icon: Images },
+  { href: adminPath('/products'), label: 'Produits', icon: Package },
+  { href: adminPath('/categories'), label: 'Catégories', icon: FolderTree },
+  { href: adminPath('/quote-requests'), label: 'Demandes de devis', icon: ClipboardList },
+  { href: adminPath('/commandes'), label: 'Commandes', icon: Inbox },
+  { href: adminPath('/messages'), label: 'Messages', icon: Mail },
 ]
 
 const advancedLinks = [
-  { href: '/admin/quotes', label: 'Devis (ancien flux)', icon: FileText },
-  { href: '/admin/orders', label: 'Commandes (ancien flux)', icon: ShoppingCart },
-  { href: '/admin/clients', label: 'Clients', icon: Users },
-  { href: '/admin/payments', label: 'Paiements', icon: CreditCard },
-  { href: '/admin/deliveries', label: 'Livraisons', icon: Truck },
-  { href: '/admin/stocks', label: 'Stocks', icon: Warehouse },
-  { href: '/admin/notifications', label: 'Notifications', icon: Bell },
+  { href: adminPath('/quotes'), label: 'Devis (ancien flux)', icon: FileText },
+  { href: adminPath('/orders'), label: 'Commandes (ancien flux)', icon: ShoppingCart },
+  { href: adminPath('/clients'), label: 'Clients', icon: Users },
+  { href: adminPath('/payments'), label: 'Paiements', icon: CreditCard },
+  { href: adminPath('/deliveries'), label: 'Livraisons', icon: Truck },
+  { href: adminPath('/stocks'), label: 'Stocks', icon: Warehouse },
+  { href: adminPath('/notifications'), label: 'Notifications', icon: Bell },
 ]
 
 function NavLink({ link, isActive }: { link: (typeof mainLinks)[number]; isActive: boolean }) {
@@ -102,7 +103,7 @@ export function AdminSidebar() {
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
-    router.push('/admin/login')
+    router.push(adminPath('/login'))
   }
 
   return (
@@ -175,7 +176,7 @@ export function AdminSidebar() {
           href="/admin/settings"
           className={cn(
             'mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-            pathname.startsWith('/admin/settings')
+            pathname.startsWith(adminPath('/settings'))
               ? 'bg-sidebar-accent text-sidebar-accent-foreground'
               : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
           )}

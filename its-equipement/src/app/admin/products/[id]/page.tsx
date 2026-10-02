@@ -19,7 +19,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { ArrowLeft, Save, Plus, Trash2, ImageIcon, Package, Settings, Info, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Plus, Trash2, ImageIcon, Package, Settings, Info, Loader2, Upload } from 'lucide-react'
+import { adminPath } from '@/lib/admin-path'
+import { useRef } from 'react'
 
 interface Category {
   id: string
@@ -65,6 +67,7 @@ interface Product {
   categoryId: string
   isPersonalizable: boolean
   showOnHome?: boolean
+  homeSection?: string | null
   minQuantity: number
   isActive: boolean
   createdAt: string
@@ -102,6 +105,7 @@ export default function ProduitDetailPage() {
   const [categoryId, setCategoryId] = useState('')
   const [isPersonalizable, setIsPersonalizable] = useState(false)
   const [showOnHome, setShowOnHome] = useState(false)
+  const [homeSection, setHomeSection] = useState<string>('AUTO')
   const [minQuantity, setMinQuantity] = useState(1)
   const [isActive, setIsActive] = useState(true)
   // Réductions par palier de quantité (chargées depuis le produit, éditables)
@@ -123,6 +127,8 @@ export default function ProduitDetailPage() {
   const [imageSaving, setImageSaving] = useState(false)
   const [deleteImageId, setDeleteImageId] = useState<string | null>(null)
   const [deleteImageLoading, setDeleteImageLoading] = useState(false)
+  const [galleryUploading, setGalleryUploading] = useState(false)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   const [persoDialogOpen, setPersoDialogOpen] = useState(false)
   const [persoForm, setPersoForm] = useState({ ...emptyPerso })
@@ -146,6 +152,7 @@ export default function ProduitDetailPage() {
         setCategoryId(res.data.categoryId)
         setIsPersonalizable(res.data.isPersonalizable)
         setShowOnHome(Boolean(res.data.showOnHome))
+        setHomeSection(res.data.homeSection === 'EPI' || res.data.homeSection === 'VETEMENTS' ? res.data.homeSection : 'AUTO')
         setMinQuantity(res.data.minQuantity)
         setIsActive(res.data.isActive)
         setDiscountTiers(
@@ -194,6 +201,7 @@ export default function ProduitDetailPage() {
         categoryId,
         isPersonalizable,
         showOnHome,
+        homeSection: homeSection === 'AUTO' ? null : homeSection,
         minQuantity,
         isActive,
         quantityDiscounts: discountTiers
@@ -287,6 +295,46 @@ export default function ProduitDetailPage() {
     }
   }
 
+  /** Téléverse une (ou plusieurs) image(s) depuis la galerie du téléphone ou du PC,
+   * puis l'ajoute immédiatement au produit. */
+  const handleGalleryUpload = async (files: FileList) => {
+    setGalleryUploading(true)
+    let added = 0
+    try {
+      for (const file of Array.from(files)) {
+        const fd = new FormData()
+        fd.append('file', file)
+        const uploadRes = await fetch('/api/admin/upload-image', { method: 'POST', body: fd })
+        const uploadJson = (await uploadRes.json()) as {
+          success: boolean
+          error?: string
+          data?: { url: string; originalName?: string }
+        }
+        if (!uploadJson.success || !uploadJson.data) {
+          toast.error(uploadJson.error ?? `Échec de l'envoi de « ${file.name} »`)
+          continue
+        }
+        const nextOrder = Math.max(0, ...(product?.images ?? []).map((i) => i.sortOrder)) + 1 + added
+        const addRes = await adminPost<ProductImage>(`/api/admin/products/${productId}/images`, {
+          url: uploadJson.data.url,
+          altText: file.name.replace(/\.[^.]+$/, '').slice(0, 120),
+          sortOrder: nextOrder,
+        })
+        if (addRes.success) added++
+        else toast.error(addRes.error ?? `Échec de l'ajout de « ${file.name} »`)
+      }
+      if (added > 0) {
+        toast.success(added > 1 ? `${added} images ajoutées.` : 'Image ajoutée avec succès.')
+        loadProduct()
+      }
+    } catch {
+      toast.error('Erreur pendant le téléversement')
+    } finally {
+      setGalleryUploading(false)
+      if (galleryInputRef.current) galleryInputRef.current.value = ''
+    }
+  }
+
   const handleDeleteImage = async () => {
     if (!deleteImageId) return
     setDeleteImageLoading(true)
@@ -360,7 +408,7 @@ export default function ProduitDetailPage() {
       const res = await adminDelete(`/api/admin/products/${productId}`)
       if (res.success) {
         toast.success('Produit supprimé avec succès')
-        router.push('/admin/products')
+        router.push(adminPath('/products'))
       } else {
         toast.error(res.error ?? 'Erreur lors de la suppression')
       }
@@ -391,7 +439,7 @@ export default function ProduitDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-12">
         <p className="text-muted-foreground">Produit introuvable</p>
-        <Button variant="outline" onClick={() => router.push('/admin/products')}>
+        <Button variant="outline" onClick={() => router.push(adminPath('/products'))}>
           <ArrowLeft className="mr-2 size-4" />
           Retour aux produits
         </Button>
@@ -402,7 +450,7 @@ export default function ProduitDetailPage() {
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => router.push('/admin/products')}>
+        <Button variant="outline" size="icon" onClick={() => router.push(adminPath('/products'))}>
           <ArrowLeft className="size-4" />
         </Button>
         <div className="flex-1">
@@ -584,6 +632,21 @@ export default function ProduitDetailPage() {
                   />
                   <Label htmlFor="showOnHome">Afficher sur l&apos;accueil</Label>
                 </div>
+                {showOnHome && (
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="homeSection" className="whitespace-nowrap text-sm">Section :</Label>
+                    <Select value={homeSection} onValueChange={setHomeSection}>
+                      <SelectTrigger id="homeSection" className="h-9 w-[200px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EPI">EPI, sélection terrain</SelectItem>
+                        <SelectItem value="VETEMENTS">Vêtements et chaussures</SelectItem>
+                        <SelectItem value="AUTO">Automatique (catégorie)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <Switch id="isActive" checked={isActive} onCheckedChange={setIsActive} />
                   <Label htmlFor="isActive">Actif</Label>
@@ -661,14 +724,45 @@ export default function ProduitDetailPage() {
 
         <TabsContent value="images">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
               <CardTitle>Images ({product.images.length})</CardTitle>
-              <Button size="sm" onClick={() => { setImageForm({ ...emptyImage }); setImageDialogOpen(true) }}>
-                <Plus className="mr-2 size-4" />
-                Ajouter
-              </Button>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  id="product-gallery-file"
+                  onChange={(e) => {
+                    const files = e.target.files
+                    if (files && files.length > 0) void handleGalleryUpload(files)
+                  }}
+                />
+                <Button
+                  size="sm"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={galleryUploading}
+                >
+                  {galleryUploading ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-2 size-4" />
+                  )}
+                  Depuis la galerie
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setImageForm({ ...emptyImage }); setImageDialogOpen(true) }}>
+                  <Plus className="mr-2 size-4" />
+                  Par lien
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
+              <p className="mb-3 text-xs text-muted-foreground">
+                « Depuis la galerie » ouvre vos photos (téléphone ou ordinateur) et les ajoute
+                directement au produit. Vous pouvez en sélectionner plusieurs à la fois. Pour supprimer
+                une image, survolez-la et cliquez sur la corbeille.
+              </p>
               {product.images.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">Aucune image ajoutée</p>
               ) : (

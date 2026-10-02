@@ -221,3 +221,117 @@ export async function sendOrderTelegramNotification(orderId: string): Promise<Te
     return { success: false, error: e instanceof Error ? e.message : 'Erreur inconnue' }
   }
 }
+
+/* ==========================================================================
+ * Demandes de devis (formulaire « Demande de devis ») et messages de contact :
+ * comme pour les commandes web, chaque demande est poussée sur Telegram.
+ * Jamais bloquant : une erreur d'envoi n'échoue jamais la requête client.
+ * ========================================================================== */
+
+/**
+ * Envoie la notification Telegram d'une demande de devis (quote request).
+ * Journalise le résultat dans la table Notification (canal TELEGRAM).
+ */
+export async function sendQuoteRequestTelegramNotification(quoteRequestId: string): Promise<TelegramResult> {
+  if (!isTelegramConfigured()) {
+    return { success: false, error: 'Telegram non configure' }
+  }
+
+  try {
+    const qr = await db.quoteRequest.findUnique({
+      where: { id: quoteRequestId },
+      include: {
+        client: true,
+        items: true,
+      },
+    })
+    if (!qr) {
+      return { success: false, error: 'Demande de devis introuvable' }
+    }
+
+    const lines: string[] = []
+    lines.push('📝 <b>NOUVELLE DEMANDE DE DEVIS</b>')
+    lines.push(`Référence : <b>${esc(qr.reference)}</b>`)
+    lines.push('')
+    lines.push('👤 <b>Client</b>')
+    lines.push(`Société : ${esc(qr.client.companyName)}`)
+    lines.push(`Contact : ${esc(qr.client.contactName)}`)
+    if (qr.client.phone) lines.push(`Téléphone : ${esc(qr.client.phone)}`)
+    if (qr.client.email) lines.push(`Email : ${esc(qr.client.email)}`)
+    if (qr.client.city) lines.push(`Ville : ${esc(qr.client.city)}`)
+    if (qr.notes) lines.push(`Notes : ${esc(qr.notes)}`)
+    lines.push('')
+    lines.push('📦 <b>Produits demandés</b>')
+    for (const item of qr.items) {
+      lines.push(`• ${esc(item.productName)} × ${item.quantity}`)
+    }
+    lines.push('')
+    lines.push(
+      `🔔 <b>Action :</b> préparer un devis et recontacter ${esc(qr.client.contactName || qr.client.companyName)}.`
+    )
+
+    const result = await sendTelegramMessage(lines.join('\n'))
+
+    await db.notification.create({
+      data: {
+        type: 'QUOTE_REQUEST_CREATED',
+        channel: 'TELEGRAM',
+        to: process.env.TELEGRAM_CHAT_ID ?? '',
+        message: lines.join('\n'),
+        status: result.success ? 'SENT' : 'FAILED',
+        response: result.success ? { messageId: result.messageId } : { error: result.error },
+        sentAt: result.success ? new Date() : undefined,
+        quoteRequestId,
+      },
+    })
+
+    return result
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Erreur inconnue' }
+  }
+}
+
+/**
+ * Envoie la notification Telegram d'un message de contact.
+ * Journalise le résultat dans la table Notification (canal TELEGRAM).
+ */
+export async function sendContactTelegramNotification(contactMessageId: string): Promise<TelegramResult> {
+  if (!isTelegramConfigured()) {
+    return { success: false, error: 'Telegram non configure' }
+  }
+
+  try {
+    const msg = await db.contactMessage.findUnique({ where: { id: contactMessageId } })
+    if (!msg) {
+      return { success: false, error: 'Message de contact introuvable' }
+    }
+
+    const lines: string[] = []
+    lines.push('✉️ <b>NOUVEAU MESSAGE DE CONTACT</b>')
+    lines.push('')
+    lines.push(`Nom : ${esc(msg.name)}`)
+    if (msg.phone) lines.push(`Téléphone : ${esc(msg.phone)}`)
+    if (msg.email) lines.push(`Email : ${esc(msg.email)}`)
+    lines.push(`Sujet : ${esc(msg.subject)}`)
+    lines.push('')
+    lines.push(esc(msg.message).slice(0, 3500))
+
+    const result = await sendTelegramMessage(lines.join('\n'))
+
+    await db.notification.create({
+      data: {
+        type: 'CONTACT_MESSAGE',
+        channel: 'TELEGRAM',
+        to: process.env.TELEGRAM_CHAT_ID ?? '',
+        message: lines.join('\n'),
+        status: result.success ? 'SENT' : 'FAILED',
+        response: result.success ? { messageId: result.messageId } : { error: result.error },
+        sentAt: result.success ? new Date() : undefined,
+      },
+    })
+
+    return result
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Erreur inconnue' }
+  }
+}

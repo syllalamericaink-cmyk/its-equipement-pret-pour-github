@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import Link from 'next/link'
+import { adminPath } from '@/lib/admin-path'
 
 const STATUSES = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED'] as const
 
@@ -98,7 +99,7 @@ export default function DevisPage() {
   }, [])
 
   const handleRowClick = useCallback((item: Quote) => {
-    router.push(`/admin/quotes/${item.id}`)
+    router.push(adminPath(`/quotes/${item.id}`))
   }, [router])
 
   const columns = [
@@ -106,7 +107,7 @@ export default function DevisPage() {
       key: 'quoteNumber',
       header: 'Devis',
       render: (item: Quote) => (
-        <Link href={`/admin/quotes/${item.id}`} className="font-medium text-primary hover:underline">
+        <Link href={adminPath(`/quotes/${item.id}`)} className="font-medium text-primary hover:underline">
           {item.quoteNumber}
         </Link>
       ),
@@ -125,7 +126,7 @@ export default function DevisPage() {
       key: 'quoteRequest',
       header: 'Demande',
       render: (item: Quote) => (
-        <Link href={`/admin/quote-requests/${item.quoteRequest.id}`} className="text-sm text-primary hover:underline">
+        <Link href={adminPath(`/quote-requests/${item.quoteRequest.id}`)} className="text-sm text-primary hover:underline">
           {item.quoteRequest.reference}
         </Link>
       ),

@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
-import { adminFetch, adminPut } from '@/lib/admin-api'
+import { adminFetch, adminPut, adminPost, adminPatch, adminDelete } from '@/lib/admin-api'
+import { ConfirmDialog } from '@/components/admin/confirm-dialog'
 import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,6 +27,8 @@ import {
   XCircle,
   AlertTriangle,
   ExternalLink,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 
 interface Setting {
@@ -46,7 +50,7 @@ interface AdminProfile {
   createdAt: string
 }
 
-type CategoryKey = 'entreprise' | 'facturation' | 'whatsapp' | 'systeme' | 'compte' | 'integrations'
+type CategoryKey = 'entreprise' | 'facturation' | 'whatsapp' | 'systeme' | 'compte' | 'integrations' | 'administration'
 
 /** Correspondance clé → onglet (alignée sur prisma/seed.ts). */
 const CATEGORY_MAP: Record<string, Exclude<CategoryKey, 'compte'>> = {
@@ -77,6 +81,7 @@ const CATEGORIES: { key: CategoryKey; label: string }[] = [
   { key: 'whatsapp', label: 'WhatsApp' },
   { key: 'systeme', label: 'Système' },
   { key: 'integrations', label: 'Intégrations' },
+  { key: 'administration', label: 'Administration' },
   { key: 'compte', label: 'Mon compte' },
 ]
 
@@ -385,6 +390,261 @@ function CategorySettings({
   )
 }
 
+/* ============================== Administration ============================== */
+
+interface AdminUser {
+  id: string
+  name: string
+  email: string
+  role: string
+  isActive: boolean
+  lastLogin: string | null
+  createdAt: string
+}
+
+/** Créer / lister / désactiver / supprimer des comptes administrateurs. */
+function AdminsPanel() {
+  const [users, setUsers] = useState<AdminUser[] | null>(null)
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'ADMIN' })
+  const [saving, setSaving] = useState(false)
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null)
+
+  const load = useCallback(async () => {
+    const res = await adminFetch<AdminUser[]>('/api/admin/users')
+    if (res.success && res.data) setUsers(res.data)
+    else toast.error(res.error ?? 'Erreur lors du chargement des comptes')
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const res = await adminFetch<AdminUser[]>('/api/admin/users')
+      if (!cancelled) {
+        if (res.success && res.data) setUsers(res.data)
+        else toast.error(res.error ?? 'Erreur lors du chargement des comptes')
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  const handleCreate = async () => {
+    if (!form.name.trim() || !form.email.trim() || form.password.length < 8) {
+      toast.error('Nom, email valides et mot de passe de 8 caractères minimum requis.')
+      return
+    }
+    setSaving(true)
+    const res = await adminPost<AdminUser>('/api/admin/users', form)
+    setSaving(false)
+    if (res.success) {
+      toast.success(`Compte « ${form.name} » créé.`)
+      setForm({ name: '', email: '', password: '', role: 'ADMIN' })
+      void load()
+    } else {
+      toast.error(res.error ?? 'Erreur lors de la création')
+    }
+  }
+
+  const handleToggle = async (user: AdminUser) => {
+    setBusyId(user.id)
+    const res = await adminPatch<AdminUser>(`/api/admin/users/${user.id}`, { isActive: !user.isActive })
+    setBusyId(null)
+    if (res.success) void load()
+    else toast.error(res.error ?? 'Erreur lors de la modification')
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setBusyId(deleteTarget.id)
+    const res = await adminDelete(`/api/admin/users/${deleteTarget.id}`)
+    setBusyId(null)
+    setDeleteTarget(null)
+    if (res.success) {
+      toast.success('Compte supprimé.')
+      void load()
+    } else {
+      toast.error(res.error ?? 'Erreur lors de la suppression')
+    }
+  }
+
+  if (users === null) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-muted-foreground">Chargement…</CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Créer un compte administrateur</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="admin-name">Nom</Label>
+            <Input
+              id="admin-name"
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              placeholder="Ex. : Secrétaire"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="admin-email">Email (identifiant de connexion)</Label>
+            <Input
+              id="admin-email"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+              placeholder="ex@exemple.ci"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="admin-password">Mot de passe (8 caractères minimum)</Label>
+            <Input
+              id="admin-password"
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Rôle</Label>
+            <Select value={form.role} onValueChange={(v) => setForm((p) => ({ ...p, role: v }))}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ADMIN">Administrateur — accès complet</SelectItem>
+                <SelectItem value="VIEWER">Observateur — consultation seule</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+        <CardFooter className="justify-end border-t pt-6">
+          <Button onClick={handleCreate} disabled={saving}>
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+            Créer le compte
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Comptes existants ({users.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {users.map((user) => (
+            <div key={user.id} className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">
+                  {user.name}
+                  <Badge variant="outline" className="ml-2">{user.role}</Badge>
+                  {!user.isActive && <Badge variant="secondary" className="ml-1">Désactivé</Badge>}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busyId === user.id}
+                onClick={() => handleToggle(user)}
+              >
+                {user.isActive ? 'Désactiver' : 'Réactiver'}
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={busyId === user.id}
+                onClick={() => setDeleteTarget(user)}
+              >
+                Supprimer
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Supprimer ce compte ?"
+        description={
+          deleteTarget
+            ? `Le compte « ${deleteTarget.name} » (${deleteTarget.email}) ne pourra plus se connecter. Cette action est définitive.`
+            : ''
+        }
+        confirmLabel="Supprimer"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
+    </div>
+  )
+}
+
+/** Remise à zéro de toutes les données commerciales, en conservant produits et bannières. */
+function ResetDataPanel() {
+  const [confirmText, setConfirmText] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const handleReset = async () => {
+    setSaving(true)
+    const res = await adminPost<{ deletedRecords: number }>('/api/admin/reset-data', {
+      confirm: 'REINITIALISER',
+    })
+    setSaving(false)
+    if (res.success) {
+      toast.success(`Données remises à zéro (${res.data?.deletedRecords ?? 0} enregistrements supprimés).`)
+      setConfirmText('')
+    } else {
+      toast.error(res.error ?? 'Erreur lors de la réinitialisation')
+    }
+  }
+
+  return (
+    <Card className="border-destructive/40">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg text-destructive">
+          <AlertTriangle className="h-5 w-5" />
+          Remise à zéro des données (sauf produits)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Supprime <b>définitivement</b> : commandes, devis, demandes de devis, clients, paiements,
+          livraisons et messages de contact — ainsi que les logos clients joints aux commandes.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Conserve : <b>produits</b>, catégories, bannières d&apos;accueil, paramètres, comptes et images.
+        </p>
+        <div className="space-y-2">
+          <Label htmlFor="reset-confirm">
+            Tapez <b>REINITIALISER</b> pour confirmer
+          </Label>
+          <Input
+            id="reset-confirm"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="REINITIALISER"
+          />
+        </div>
+      </CardContent>
+      <CardFooter className="justify-end border-t pt-6">
+        <Button
+          variant="destructive"
+          disabled={saving || confirmText !== 'REINITIALISER'}
+          onClick={handleReset}
+        >
+          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+          Réinitialiser les données
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+
 function AccountSettings() {
   const [profile, setProfile] = useState<AdminProfile | null>(null)
   const [currentPassword, setCurrentPassword] = useState('')
@@ -562,6 +822,11 @@ export default function ParametresPage() {
                 <AccountSettings />
               ) : cat.key === 'integrations' ? (
                 <IntegrationsPanel />
+              ) : cat.key === 'administration' ? (
+                <div className="space-y-6">
+                  <AdminsPanel />
+                  <ResetDataPanel />
+                </div>
               ) : (
                 <CategorySettings
                   category={cat.key}

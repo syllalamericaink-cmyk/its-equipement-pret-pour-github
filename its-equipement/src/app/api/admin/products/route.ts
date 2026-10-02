@@ -1,4 +1,5 @@
 import { requireAdmin } from '@/lib/api-auth'
+import { ensureProductHomeSectionColumn } from '@/lib/product-columns'
 import { getProducts, createProduct } from '@/lib/services/product.service'
 import { productSchema } from '@/lib/validation'
 import { success, error, getPaginationParams, buildMeta, serverError } from '@/lib/api-response'
@@ -38,6 +39,8 @@ export async function POST(request: NextRequest) {
     const { error: authError, session } = await requireAdmin(request)
     if (authError) return authError
 
+    await ensureProductHomeSectionColumn()
+
     const body = await request.json()
     const parsed = productSchema.safeParse(body)
     if (!parsed.success) {
@@ -53,6 +56,7 @@ export async function POST(request: NextRequest) {
       basePrice: parsed.data.basePrice,
       isPersonalizable: parsed.data.isPersonalizable,
       showOnHome: parsed.data.showOnHome ?? false,
+      homeSection: parsed.data.homeSection ?? null,
       minQuantity: parsed.data.minQuantity ?? 1,
       isActive: parsed.data.isActive ?? true,
       category: { connect: { id: parsed.data.categoryId } },

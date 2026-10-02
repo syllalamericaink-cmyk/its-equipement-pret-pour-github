@@ -1,7 +1,8 @@
 import { db } from '@/lib/db'
 import { success, error, serverError } from '@/lib/api-response'
 import { checkApiRateLimit } from '@/lib/api-auth'
-import type { NextRequest } from 'next/server'
+import { sendContactTelegramNotification } from '@/lib/services/telegram.service'
+import { after, type NextRequest } from 'next/server'
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -37,6 +38,11 @@ export async function POST(request: NextRequest) {
         message,
       },
       select: { id: true },
+    })
+
+    // Notification Telegram immédiate — non bloquante.
+    after(async () => {
+      await sendContactTelegramNotification(contactMessage.id)
     })
 
     return success({ id: contactMessage.id })

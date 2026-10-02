@@ -25,6 +25,19 @@ export interface HeroSlideData {
   text?: string | null
   ctaLabel?: string | null
   href?: string | null
+  objectPosition?: string | null
+}
+
+/** Convertit la valeur admin (top/center/bottom) en CSS object-position. */
+function objectPositionCss(value: string | null | undefined): string {
+  switch (value) {
+    case 'top':
+      return 'center top'
+    case 'bottom':
+      return 'center bottom'
+    default:
+      return 'center center'
+  }
 }
 
 const DELAY_MS = 5000
@@ -208,7 +221,8 @@ export function HeroCarousel({ slides }: { slides: HeroSlideData[] }) {
                 src={slide.url!}
                 alt={slide.altText}
                 loading={i === 0 ? 'eager' : 'lazy'}
-                className="h-full w-full object-cover"
+                style={{ objectPosition: objectPositionCss(slide.objectPosition) }}
+                className="h-full w-full object-cover object-center"
               />
             </SmartLink>
           ) : slide.url ? (
@@ -217,7 +231,8 @@ export function HeroCarousel({ slides }: { slides: HeroSlideData[] }) {
                 src={slide.url}
                 alt={slide.altText}
                 loading={i === 0 ? 'eager' : 'lazy'}
-                className="h-full w-full object-cover"
+                style={{ objectPosition: objectPositionCss(slide.objectPosition) }}
+                className="h-full w-full object-cover object-center"
               />
               {hasCaption && (
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent p-4 pb-16 pt-14 md:p-6 md:pb-14 md:pt-20">

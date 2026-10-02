@@ -39,6 +39,7 @@ export async function PATCH(
       text?: string
       ctaLabel?: string
       href?: string
+      objectPosition?: string
       isActive?: boolean
       move?: 'up' | 'down'
     }
@@ -68,6 +69,9 @@ export async function PATCH(
         ...(body.text !== undefined ? { text: body.text.trim().slice(0, 220) || null } : {}),
         ...(body.ctaLabel !== undefined ? { ctaLabel: body.ctaLabel.trim().slice(0, 40) || null } : {}),
         ...(body.href !== undefined ? { href: body.href.trim().slice(0, 300) || null } : {}),
+        ...(body.objectPosition !== undefined
+          ? { objectPosition: ['top', 'center', 'bottom'].includes(body.objectPosition) ? body.objectPosition : 'center' }
+          : {}),
         ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
       },
     })
@@ -80,6 +84,7 @@ export async function PATCH(
       text: updated.text,
       ctaLabel: updated.ctaLabel,
       href: updated.href,
+      objectPosition: updated.objectPosition ?? 'center',
       sortOrder: updated.sortOrder,
       isActive: updated.isActive,
     })

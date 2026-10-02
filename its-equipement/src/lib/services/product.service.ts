@@ -1,4 +1,4 @@
-import { db } from '../db'
+import { db, ensureSoftColumns } from '../db'
 import type { Prisma } from '@prisma/client'
 
 export async function getProducts(params: {
@@ -11,6 +11,7 @@ export async function getProducts(params: {
   includeInactive?: boolean
   personalizable?: boolean
 }) {
+  await ensureSoftColumns()
   const where: Prisma.ProductWhereInput = {}
   if (params.search) {
     const q = params.search
@@ -58,6 +59,7 @@ export async function getProducts(params: {
 }
 
 export async function getProductById(id: string, includeInactive = false) {
+  await ensureSoftColumns()
   return db.product.findUnique({
     where: { id },
     include: {
@@ -76,6 +78,7 @@ export async function getProductById(id: string, includeInactive = false) {
 }
 
 export async function getProductBySlug(slug: string) {
+  await ensureSoftColumns()
   return db.product.findUnique({
     where: { slug },
     include: {

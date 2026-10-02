@@ -60,6 +60,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import Link from 'next/link'
+import { adminPath } from '@/lib/admin-path'
 
 const STATUSES = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CANCELLED'] as const
 
@@ -307,7 +308,7 @@ export default function DevisDetailPage() {
     setCreateOrderLoading(false)
     if (res.success && res.data) {
       toast.success('Commande créée avec succès')
-      router.push(`/admin/orders/${res.data.id}`)
+      router.push(adminPath(`/orders/${res.data.id}`))
     } else {
       toast.error(res.error || 'Erreur lors de la création de la commande')
     }
@@ -454,7 +455,7 @@ export default function DevisDetailPage() {
   if (!data) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => router.push('/admin/quotes')}>
+        <Button variant="ghost" onClick={() => router.push(adminPath('/quotes'))}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour
         </Button>
@@ -470,7 +471,7 @@ export default function DevisDetailPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/admin/quotes')}>
+          <Button variant="ghost" size="icon" onClick={() => router.push(adminPath('/quotes'))}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -571,7 +572,7 @@ export default function DevisDetailPage() {
             </div>
             <div className="border-t pt-3">
               <p className="text-sm text-muted-foreground">Demande de devis</p>
-              <Link href={`/admin/quote-requests/${data.quoteRequest.id}`} className="text-sm font-medium text-primary hover:underline">
+              <Link href={adminPath(`/quote-requests/${data.quoteRequest.id}`)} className="text-sm font-medium text-primary hover:underline">
                 {data.quoteRequest.reference}
               </Link>
             </div>
@@ -774,7 +775,7 @@ export default function DevisDetailPage() {
                   <div className="flex items-center gap-3">
                     <span className="font-medium">{formatCurrency(order.totalAmountTTC)}</span>
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/admin/orders/${order.id}`}>
+                      <Link href={adminPath(`/orders/${order.id}`)}>
                         <ExternalLink className="mr-2 h-4 w-4" />
                         Voir
                       </Link>

@@ -108,6 +108,9 @@ export const productSchema = z.object({
   isPersonalizable: z.boolean(),
   // Afficher le produit dans les rails « sélection terrain » de l'accueil
   showOnHome: z.boolean().optional(),
+  // Section d'accueil : EPI = « EPI, sélection terrain », VETEMENTS = « Vêtements et chaussures ».
+  // null / absent = répartition automatique par type de catégorie.
+  homeSection: z.enum(['EPI', 'VETEMENTS']).nullable().optional(),
   minQuantity: z.number().int().positive().optional(),
   isActive: z.boolean().optional(),
   // Réductions par palier de quantité : « à partir de minQuantity unités → -discountPercent % »

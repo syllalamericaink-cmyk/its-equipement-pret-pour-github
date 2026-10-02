@@ -1,4 +1,4 @@
-import { db } from '../db'
+import { db, ensureSoftColumns } from '../db'
 import { findOrCreateClient } from './client.service'
 import type { Prisma } from '@prisma/client'
 
@@ -16,6 +16,7 @@ async function calculateItemPrice(
   productVariantId: string | null | undefined,
   quantity: number
 ): Promise<{ unitPrice: number; productBasePrice: number; productName: string; variantName?: string }> {
+  await ensureSoftColumns()
   const product = await db.product.findUnique({
     where: { id: productId },
     include: { variants: true },

@@ -45,6 +45,7 @@ import {
   BadgePercent,
 } from 'lucide-react'
 import Link from 'next/link'
+import { adminPath } from '@/lib/admin-path'
 
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -348,7 +349,7 @@ export default function CommandeDetailPage() {
   if (!data) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => router.push('/admin/commandes')}>
+        <Button variant="ghost" onClick={() => router.push(adminPath('/commandes'))}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour
         </Button>
@@ -361,7 +362,7 @@ export default function CommandeDetailPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/admin/commandes')}>
+          <Button variant="ghost" size="icon" onClick={() => router.push(adminPath('/commandes'))}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -610,7 +611,7 @@ export default function CommandeDetailPage() {
                 <StatusBadge status={data.quote.status} />
               </div>
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/admin/quotes/${data.quote.id}`}>
+                <Link href={adminPath(`/quotes/${data.quote.id}`)}>
                   <ExternalLink className="mr-2 h-4 w-4" />
                   Voir le devis
                 </Link>

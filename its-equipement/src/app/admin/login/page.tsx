@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { adminPath } from '@/lib/admin-path'
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/admin/dashboard'
+  const callbackUrl = searchParams.get('callbackUrl') || adminPath('/dashboard')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

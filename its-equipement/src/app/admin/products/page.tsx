@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select'
 import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { adminPath } from '@/lib/admin-path'
 
 interface Variant {
   id: string
@@ -39,6 +40,7 @@ interface Product {
   basePrice: number
   isPersonalizable: boolean
   showOnHome: boolean
+  homeSection: string | null
   minQuantity: number
   isActive: boolean
   createdAt: string
@@ -133,15 +135,11 @@ export default function ProduitsPage() {
   }, [])
 
   const handleRowClick = useCallback((product: Product) => {
-    router.push(`/admin/products/${product.id}`)
+    router.push(adminPath(`/products/${product.id}`))
   }, [router])
 
   /** Bascule rapide « Afficher sur l'accueil » sans ouvrir la fiche produit. */
-  const handleToggleHome = useCallback(async (product: Product, value: boolean) => {
-    // Mise à jour optimiste : l'UI réagit immédiatement
-    setProducts((prev) =>
-      prev.map((p) => (p.id === product.id ? { ...p, showOnHome: value } : p))
-    )
+  const persistProduct = useCallback(async (product: Product, patch: Partial<Product>) => {
     const res = await adminPut(`/api/admin/products/${product.id}`, {
       name: product.name,
       slug: product.slug,
@@ -150,10 +148,20 @@ export default function ProduitsPage() {
       basePrice: product.basePrice,
       categoryId: product.category?.id,
       isPersonalizable: product.isPersonalizable,
-      showOnHome: value,
+      showOnHome: patch.showOnHome ?? product.showOnHome,
+      homeSection: patch.homeSection !== undefined ? patch.homeSection : (product.homeSection ?? null),
       minQuantity: product.minQuantity,
       isActive: product.isActive,
     })
+    return res
+  }, [])
+
+  const handleToggleHome = useCallback(async (product: Product, value: boolean) => {
+    // Mise à jour optimiste : l'UI réagit immédiatement
+    setProducts((prev) =>
+      prev.map((p) => (p.id === product.id ? { ...p, showOnHome: value } : p))
+    )
+    const res = await persistProduct(product, { showOnHome: value })
     if (res.success) {
       toast.success(value ? `« ${product.name} » affiché sur l'accueil.` : `« ${product.name} » retiré de l'accueil.`)
     } else {
@@ -163,7 +171,30 @@ export default function ProduitsPage() {
       )
       toast.error(res.error ?? 'Erreur lors de la mise à jour.')
     }
-  }, [])
+  }, [persistProduct])
+
+  /** Choisit la section d'accueil du produit : EPI terrain ou Vêtements & chaussures. */
+  const handleSetSection = useCallback(async (product: Product, value: string) => {
+    const homeSection = value === 'AUTO' ? null : value
+    setProducts((prev) =>
+      prev.map((p) => (p.id === product.id ? { ...p, homeSection } : p))
+    )
+    const res = await persistProduct(product, { homeSection })
+    if (res.success) {
+      toast.success(
+        value === 'EPI'
+          ? `« ${product.name} » ira dans « EPI, sélection terrain ».`
+          : value === 'VETEMENTS'
+            ? `« ${product.name} » ira dans « Vêtements et chaussures ».`
+            : `« ${product.name} » : section automatique.`
+      )
+    } else {
+      setProducts((prev) =>
+        prev.map((p) => (p.id === product.id ? { ...p, homeSection: product.homeSection } : p))
+      )
+      toast.error(res.error ?? 'Erreur lors de la mise à jour.')
+    }
+  }, [persistProduct])
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return
@@ -243,6 +274,28 @@ export default function ProduitsPage() {
       ),
     },
     {
+      key: 'homeSection',
+      header: 'Section accueil',
+      render: (p: Product) => (
+        <div onClick={(e) => e.stopPropagation()} className="min-w-[150px]">
+          <Select
+            value={p.homeSection === 'EPI' || p.homeSection === 'VETEMENTS' ? p.homeSection : 'AUTO'}
+            onValueChange={(v) => handleSetSection(p, v)}
+            disabled={!p.showOnHome}
+          >
+            <SelectTrigger className="h-8 w-full text-xs" aria-label={`Section d'accueil de ${p.name}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="EPI">EPI, sélection terrain</SelectItem>
+              <SelectItem value="VETEMENTS">Vêtements et chaussures</SelectItem>
+              <SelectItem value="AUTO">Automatique (catégorie)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      ),
+    },
+    {
       key: 'isActive',
       header: 'Statut',
       render: (p: Product) => (
@@ -307,8 +360,8 @@ export default function ProduitsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Produits"
-        description="Gestion du catalogue produits."
-        action={{ label: 'Nouveau produit', href: '/admin/products/new' }}
+        description="Catalogue. Cochez « Accueil » pour exposer un produit sur la page d'accueil, puis choisissez sa section : EPI terrain ou Vêtements et chaussures."
+        action={{ label: 'Nouveau produit', href: adminPath('/products/new') }}
       />
       <DataTable<Product>
         columns={columns}
