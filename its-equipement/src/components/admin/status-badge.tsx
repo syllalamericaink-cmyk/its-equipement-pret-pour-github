@@ -109,7 +109,7 @@ export function StatusBadge({ status }: { status: string }) {
   const label = statusLabels[status] ?? status
 
   return (
-    <Badge variant="outline" className={color}>
+    <Badge variant="outline" className={`whitespace-nowrap ${color}`}>
       {label}
     </Badge>
   )

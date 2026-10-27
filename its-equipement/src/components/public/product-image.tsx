@@ -26,7 +26,7 @@ const RULES: [RegExp, LucideIcon][] = [
   [/protection|epi|epc|s[ée]curit[ée]/i, ShieldCheck],
 ]
 
-function iconFor(names: (string | null | undefined)[]): LucideIcon {
+export function iconFor(names: (string | null | undefined)[]): LucideIcon {
   for (const name of names) {
     if (!name) continue
     for (const [re, icon] of RULES) if (re.test(name)) return icon

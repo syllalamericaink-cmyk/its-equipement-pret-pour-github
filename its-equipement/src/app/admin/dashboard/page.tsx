@@ -5,7 +5,6 @@ import Link from 'next/link'
 import {
   ClipboardList,
   ShoppingCart,
-  Banknote,
   Package,
   CalendarClock,
   Inbox,
@@ -118,7 +117,6 @@ function getKpiCards(data: DashboardData): KpiCard[] {
   )
   const webDelivered = data.publicOrdersByStatus?.LIVREE ?? 0
   const pendingRequests = data.quoteRequestsByStatus?.PENDING ?? 0
-  const revenue = data.revenue ?? 0
 
   return [
     {
@@ -163,13 +161,6 @@ function getKpiCards(data: DashboardData): KpiCard[] {
       accent: 'text-green-600',
       iconBg: 'bg-green-100',
     },
-    {
-      label: "Chiffre d'affaires encaissé",
-      value: formatCurrency(revenue),
-      icon: <Banknote className="h-5 w-5" />,
-      accent: 'text-teal-600',
-      iconBg: 'bg-teal-100',
-    },
   ]
 }
 
@@ -177,19 +168,15 @@ function KpiGrid({ data }: { data: DashboardData }) {
   const cards = getKpiCards(data)
 
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       {cards.map((card) => (
-        <Card key={card.label} className="gap-4 py-4">
-          <CardContent className="flex items-center gap-4 p-0 px-4">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${card.iconBg} ${card.accent}`}>
-              {card.icon}
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm text-muted-foreground">{card.label}</p>
-              <p className={`text-lg font-semibold ${card.accent}`}>{card.value}</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div key={card.label} className="flex flex-col justify-between gap-3 border border-its-border bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-[0.82rem] font-medium leading-snug text-its-gray">{card.label}</p>
+            <span className={`grid h-9 w-9 shrink-0 place-items-center ${card.iconBg} ${card.accent}`}>{card.icon}</span>
+          </div>
+          <p className="font-display text-3xl font-bold leading-none text-its-dark">{card.value}</p>
+        </div>
       ))}
     </div>
   )
@@ -197,8 +184,8 @@ function KpiGrid({ data }: { data: DashboardData }) {
 
 function KpiGridSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      {Array.from({ length: 7 }).map((_, i) => (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      {Array.from({ length: 6 }).map((_, i) => (
         <Card key={i} className="gap-4 py-4">
           <CardContent className="flex items-center gap-4 p-0 px-4">
             <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
@@ -404,10 +391,8 @@ export default function AdminDashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Tableau de bord</h1>
-          <p className="mt-2 text-muted-foreground">
-            Vue d&apos;ensemble des commandes web et de l&apos;activité du site.
-          </p>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-its-dark sm:text-3xl">Bonjour</h1>
+          <p className="mt-1 text-its-gray">Voici l’activité de votre boutique.</p>
         </div>
         <div className="flex items-center gap-2">
           <p className="hidden text-sm text-muted-foreground sm:block">
@@ -433,17 +418,16 @@ export default function AdminDashboardPage() {
       </div>
 
       {data && (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 bg-its-dark p-5 text-white sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-semibold">À traiter maintenant</p>
-              <p className="text-sm text-muted-foreground">
-                Concentrez-vous d’abord sur les demandes qui bloquent le traitement commercial.
+              <p className="font-display text-lg font-bold">À traiter maintenant</p>
+              <p className="text-sm text-white/70">
+                Commencez par les demandes qui attendent une réponse.
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               {(data.publicOrdersByStatus?.NOUVELLE_COMMANDE ?? 0) > 0 && (
-                <Button asChild size="sm">
+                <Button asChild size="sm" className="bg-its-lime text-its-dark hover:bg-its-lime-dark">
                   <Link href={adminPath("/commandes")}>
                     {data.publicOrdersByStatus.NOUVELLE_COMMANDE} nouvelle(s) commande(s)
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -451,7 +435,7 @@ export default function AdminDashboardPage() {
                 </Button>
               )}
               {(data.quoteRequestsByStatus?.PENDING ?? 0) > 0 && (
-                <Button asChild size="sm" variant="outline">
+                <Button asChild size="sm" variant="outline" className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white">
                   <Link href={adminPath("/quote-requests")}>
                     {data.quoteRequestsByStatus.PENDING} demande(s) de devis
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -460,13 +444,12 @@ export default function AdminDashboardPage() {
               )}
               {(data.publicOrdersByStatus?.NOUVELLE_COMMANDE ?? 0) === 0 &&
                 (data.quoteRequestsByStatus?.PENDING ?? 0) === 0 && (
-                  <span className="text-sm font-medium text-emerald-700">
+                  <span className="text-sm font-medium text-its-lime">
                     Rien d’urgent pour le moment.
                   </span>
                 )}
             </div>
-          </CardContent>
-        </Card>
+        </div>
       )}
 
       {/* Raccourcis du quotidien : ce que l'admin fait le plus souvent */}
@@ -481,9 +464,11 @@ export default function AdminDashboardPage() {
           <Link
             key={a.href}
             href={a.href}
-            className="flex min-h-[64px] flex-col justify-center gap-1 rounded-lg border p-3 transition-colors hover:border-primary/40 hover:bg-muted/60"
+            className="group flex min-h-[72px] items-center gap-3 border border-its-border bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-its-dark hover:shadow-md"
           >
-            <a.icon className="h-4 w-4 text-primary" aria-hidden="true" />
+            <span className="grid h-9 w-9 shrink-0 place-items-center bg-its-cream text-its-dark transition-colors group-hover:bg-its-lime">
+              <a.icon className="h-4 w-4" aria-hidden="true" />
+            </span>
             <span className="text-sm font-medium leading-tight">{a.label}</span>
           </Link>
         ))}
@@ -495,7 +480,7 @@ export default function AdminDashboardPage() {
         <KpiGrid data={data} />
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 2xl:grid-cols-[3fr_2fr]">
         {loading ? (
           <>
             <TableSkeleton />

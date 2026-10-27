@@ -203,3 +203,70 @@
     display: none;
   }
 }
+
+/* ===================== Animations du site (marketplace) =====================
+   Toutes désactivées si l'utilisateur demande moins d'animations. */
+@keyframes its-reveal-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+/* Apparition douce des blocs au chargement (jamais masqués durablement :
+   le contenu reste visible pour l'impression et les moteurs de recherche). */
+.its-reveal {
+  animation: its-reveal-in 0.45s ease-out both;
+}
+.its-reveal:nth-of-type(2) { animation-delay: 60ms; }
+.its-reveal:nth-of-type(3) { animation-delay: 120ms; }
+
+@keyframes its-wiggle {
+  0%, 82%, 100% { transform: rotate(0); }
+  86% { transform: rotate(-14deg); }
+  90% { transform: rotate(12deg); }
+  94% { transform: rotate(-8deg); }
+  97% { transform: rotate(5deg); }
+}
+.its-wiggle { animation: its-wiggle 3.2s ease-in-out infinite; transform-origin: 50% 60%; }
+
+@keyframes its-ring {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.its-ring { animation: its-ring 2.4s ease-out infinite; }
+
+/* Barre de progression (page de chargement) */
+@keyframes its-progress {
+  0% { transform: translateX(-100%) scaleX(0.3); }
+  50% { transform: translateX(10%) scaleX(0.6); }
+  100% { transform: translateX(110%) scaleX(0.3); }
+}
+.its-progress { animation: its-progress 1.3s ease-in-out infinite; transform-origin: left; }
+
+/* Casque qui « tombe » sur la page d'erreur */
+@keyframes its-drop {
+  0% { transform: translateY(-40px) rotate(-12deg); opacity: 0; }
+  60% { transform: translateY(6px) rotate(4deg); opacity: 1; }
+  80% { transform: translateY(-3px) rotate(-2deg); }
+  100% { transform: none; }
+}
+.its-drop { animation: its-drop 0.9s cubic-bezier(.2,.8,.2,1) both; }
+
+@keyframes its-pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.its-pulse-soft { animation: its-pulse-soft 1.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .its-reveal, .its-wiggle, .its-ring, .its-progress, .its-drop, .its-pulse-soft {
+    animation: none !important;
+  }
+}
+
+/* ===================== Administration aux couleurs ITS =====================
+   :has() applique aussi le thème aux fenêtres (dialogues, menus) rendues hors
+   de .its-admin. */
+body:has(.its-admin) {
+  --primary: #151a1d;
+  --primary-foreground: #ffffff;
+  --ring: #c4e434;
+}

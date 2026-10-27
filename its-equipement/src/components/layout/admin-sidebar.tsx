@@ -17,172 +17,158 @@ import {
   Mail,
   Images,
   ChevronDown,
+  ExternalLink,
+  type LucideIcon,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { adminPath } from '@/lib/admin-path'
 
 /* ============================== Navigation ==============================
- * Volontairement minimaliste : les 7 liens du quotidien en haut,
- * tout le reste regroupé dans « Avancé » (replié par défaut).
- * Toutes les pages restent accessibles, simplement rangées.
+ * Les liens du quotidien en haut, le reste dans « Avancé » (replié).
  * ====================================================================== */
 
-const mainLinks = [
+export interface AdminNavLink {
+  href: string
+  label: string
+  icon: LucideIcon
+}
+
+export const mainLinks: AdminNavLink[] = [
   { href: adminPath('/dashboard'), label: 'Tableau de bord', icon: LayoutDashboard },
-  { href: adminPath('/hero'), label: "Bannières d'accueil", icon: Images },
+  { href: adminPath('/commandes'), label: 'Commandes', icon: Inbox },
+  { href: adminPath('/quote-requests'), label: 'Demandes de devis', icon: ClipboardList },
+  { href: adminPath('/messages'), label: 'Messages', icon: Mail },
   { href: adminPath('/products'), label: 'Produits', icon: Package },
   { href: adminPath('/categories'), label: 'Catégories', icon: FolderTree },
-  { href: adminPath('/quote-requests'), label: 'Demandes de devis', icon: ClipboardList },
-  { href: adminPath('/commandes'), label: 'Commandes', icon: Inbox },
-  { href: adminPath('/messages'), label: 'Messages', icon: Mail },
+  { href: adminPath('/hero'), label: "Bannières d'accueil", icon: Images },
 ]
 
-const advancedLinks = [
+export const advancedLinks: AdminNavLink[] = [
   { href: adminPath('/clients'), label: 'Clients', icon: Users },
   { href: adminPath('/notifications'), label: 'Notifications', icon: Bell },
 ]
 
-function NavLink({ link, isActive }: { link: (typeof mainLinks)[number]; isActive: boolean }) {
+export const settingsLink: AdminNavLink = { href: adminPath('/settings'), label: 'Paramètres', icon: Settings }
+
+export function isLinkActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(href + '/')
+}
+
+function NavLink({
+  link,
+  isActive,
+  onNavigate,
+}: {
+  link: AdminNavLink
+  isActive: boolean
+  onNavigate?: () => void
+}) {
   const Icon = link.icon
   return (
-    <Tooltip delayDuration={0}>
-      <TooltipTrigger asChild>
-        <Link
-          href={link.href}
-          className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
-            ${isActive
-              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-              : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-            }`}
-        >
-          {/* Barre lime : marque l'item actif (charte ITS) */}
-          {isActive && (
-            <span
-              aria-hidden="true"
-              className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-its-lime"
-            />
-          )}
-          <Icon className={`h-4 w-4 ${isActive ? 'text-its-dark' : ''}`} />
-          <span className="truncate">{link.label}</span>
-        </Link>
-      </TooltipTrigger>
-      <TooltipContent side="right" className="lg:hidden">
-        {link.label}
-      </TooltipContent>
-    </Tooltip>
+    <Link
+      href={link.href}
+      onClick={onNavigate}
+      aria-current={isActive ? 'page' : undefined}
+      className={cn(
+        'relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors',
+        isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white',
+      )}
+    >
+      {isActive && <span aria-hidden="true" className="absolute inset-y-1.5 left-0 w-1 bg-its-lime" />}
+      <Icon className={cn('h-[18px] w-[18px] shrink-0', isActive ? 'text-its-lime' : '')} aria-hidden="true" />
+      <span className="truncate">{link.label}</span>
+    </Link>
   )
 }
 
-export function AdminSidebar() {
+/** Barre latérale sombre de l'administration (fixe sur ordinateur, panneau sur mobile). */
+export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const { data: session } = useSession()
-  const [advancedOpen, setAdvancedOpen] = useState(false)
-
-  const advancedActive = advancedLinks.some(
-    (l) => pathname === l.href || pathname.startsWith(l.href + '/')
-  )
+  const advancedActive = advancedLinks.some((l) => isLinkActive(pathname, l.href))
+  const [advancedOpen, setAdvancedOpen] = useState(advancedActive)
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
     router.push(adminPath('/login'))
   }
 
+  const initials = (session?.user?.name || 'A')
+    .split(/\s+/)
+    .map((p) => p[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+
   return (
-    <div className="flex h-full flex-col border-r bg-sidebar">
-      <div className="flex h-14 items-center gap-2 border-b px-4">
-        {/* Vrai logo ITS & DG */}
-        <img
-          src="/logo-its-equipement.jpg"
-          alt=""
-          aria-hidden="true"
-          className="h-8 w-8 shrink-0 rounded object-cover"
-        />
-        <span className="font-bold text-sidebar-foreground">ITS Équipement</span>
-        <span className="ml-auto text-xs text-sidebar-muted-foreground">Admin</span>
+    <div className="flex h-full flex-col bg-its-dark text-white">
+      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4">
+        <img src="/logo-its-equipement.jpg" alt="" aria-hidden="true" className="h-9 w-9 shrink-0 rounded object-cover" />
+        <span className="flex flex-col leading-tight">
+          <span className="font-display text-base font-bold tracking-tight">ITS ÉQUIPEMENT</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-its-lime">Administration</span>
+        </span>
       </div>
 
-      <ScrollArea className="flex-1 py-2">
-        <nav className="flex flex-col gap-1 px-2">
+      <nav className="flex-1 overflow-y-auto py-3" aria-label="Administration">
+        <p className="px-4 pb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">Au quotidien</p>
+        <div className="flex flex-col">
           {mainLinks.map((link) => (
-            <NavLink
-              key={link.href}
-              link={link}
-              isActive={pathname === link.href || pathname.startsWith(link.href + '/')}
-            />
+            <NavLink key={link.href} link={link} isActive={isLinkActive(pathname, link.href)} onNavigate={onNavigate} />
           ))}
+        </div>
 
-          {/* ---- Groupe Avancé (replié par défaut) ---- */}
-          <button
-            type="button"
-            onClick={() => setAdvancedOpen((v) => !v)}
-            aria-expanded={advancedOpen}
-            className="mt-3 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/50"
-          >
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${advancedOpen ? 'rotate-0' : '-rotate-90'}`}
-            />
-            Avancé
-            {!advancedOpen && advancedActive && (
-              <span aria-hidden="true" className="ml-auto h-2 w-2 rounded-full bg-its-lime" />
-            )}
-          </button>
-          {advancedOpen && (
-            <div className="ml-3 flex flex-col gap-0.5 border-l border-sidebar-accent pl-2">
-              {advancedLinks.map((link) => (
-                <NavLink
-                  key={link.href}
-                  link={link}
-                  isActive={pathname === link.href || pathname.startsWith(link.href + '/')}
-                />
-              ))}
-            </div>
-          )}
-        </nav>
-      </ScrollArea>
-
-      <Separator />
-
-      <div className="p-3">
-        {session?.user && (
-          <div className="mb-2 rounded-md bg-sidebar-accent/50 px-3 py-2">
-            <p className="text-xs font-medium text-sidebar-accent-foreground truncate">
-              {session.user.name}
-            </p>
-            <p className="text-xs text-sidebar-muted-foreground truncate">
-              {session.user.email}
-            </p>
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((v) => !v)}
+          aria-expanded={advancedOpen}
+          className="mt-4 flex w-full items-center gap-2 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 transition-colors hover:text-white/70"
+        >
+          Avancé
+          <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', advancedOpen ? '' : '-rotate-90')} aria-hidden="true" />
+          {!advancedOpen && advancedActive && <span aria-hidden="true" className="ml-auto h-2 w-2 rounded-full bg-its-lime" />}
+        </button>
+        {advancedOpen && (
+          <div className="flex flex-col">
+            {advancedLinks.map((link) => (
+              <NavLink key={link.href} link={link} isActive={isLinkActive(pathname, link.href)} onNavigate={onNavigate} />
+            ))}
           </div>
         )}
-        <Link
-          href={adminPath("/settings")}
-          className={cn(
-            'mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-            pathname.startsWith(adminPath('/settings'))
-              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-              : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
-          )}
+      </nav>
+
+      <div className="shrink-0 border-t border-white/10 p-3">
+        <NavLink link={settingsLink} isActive={isLinkActive(pathname, settingsLink.href)} onNavigate={onNavigate} />
+        <a
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
         >
-          <Settings className="h-4 w-4" />
-          Paramètres
-        </Link>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start gap-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          onClick={handleSignOut}
-        >
-          <LogOut className="h-4 w-4" />
-          Déconnexion
-        </Button>
+          <ExternalLink className="h-[18px] w-[18px]" aria-hidden="true" />
+          Voir le site
+        </a>
+        {session?.user && (
+          <div className="mt-2 flex items-center gap-3 bg-white/5 p-2.5">
+            <span className="grid h-9 w-9 shrink-0 place-items-center bg-its-lime text-sm font-bold text-its-dark">
+              {initials}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">{session.user.name}</span>
+              <span className="block truncate text-xs text-white/50">{session.user.email}</span>
+            </span>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="grid h-9 w-9 shrink-0 place-items-center text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+              aria-label="Déconnexion"
+              title="Déconnexion"
+            >
+              <LogOut className="h-[18px] w-[18px]" aria-hidden="true" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

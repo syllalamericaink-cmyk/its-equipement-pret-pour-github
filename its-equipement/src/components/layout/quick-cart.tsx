@@ -51,9 +51,9 @@ export function QuickCart() {
   const total = subtotal()
   const hasPricedItems = items.some((i) => i.unitPrice > 0)
 
-  const goDevis = () => {
+  const go = (href: string) => {
     setOpen(false)
-    router.push('/#devis')
+    router.push(href)
   }
 
   return (
@@ -64,11 +64,11 @@ export function QuickCart() {
           type="button"
           onClick={() => setOpen(true)}
           className="fixed inset-x-3 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] z-40 flex min-h-[48px] items-center justify-between gap-2 bg-its-dark px-4 py-2 text-left text-white shadow-lg md:hidden"
-          aria-label={`${count} produit${count > 1 ? 's' : ''} dans ma demande, ouvrir le panier rapide`}
+          aria-label={`${count} produit${count > 1 ? 's' : ''} dans le panier, ouvrir le panier`}
         >
           <span className="flex items-center gap-2 text-sm font-semibold">
             <ShoppingBasket className="h-5 w-5 text-its-lime" aria-hidden="true" />
-            {count} produit{count > 1 ? 's' : ''} dans ma demande
+            {count} produit{count > 1 ? 's' : ''} dans le panier
           </span>
           <span className="bg-its-lime px-3 py-1.5 text-[0.8rem] font-bold text-its-dark">Voir</span>
         </button>
@@ -81,12 +81,12 @@ export function QuickCart() {
         >
           <SheetHeader className="border-b border-its-border bg-its-dark px-4 py-3.5 pr-12">
             <SheetTitle className="font-display text-lg font-bold text-white">
-              Ma demande de devis
+              Mon panier
             </SheetTitle>
             <SheetDescription className="text-[0.85rem] text-white/70">
               {count > 0
                 ? `${count} produit${count > 1 ? 's' : ''} sélectionné${count > 1 ? 's' : ''} — ajustez les quantités si besoin.`
-                : 'Votre demande est vide pour le moment.'}
+                : 'Votre panier est vide pour le moment.'}
             </SheetDescription>
           </SheetHeader>
 
@@ -94,7 +94,7 @@ export function QuickCart() {
             <div className="overflow-y-auto px-4 py-8 text-center">
               <ShoppingBasket className="mx-auto h-10 w-10 text-its-gray" aria-hidden="true" />
               <p className="mt-3 text-sm text-its-gray">
-                Ajoutez des produits avec le bouton « + Devis » pour préparer votre demande.
+                Ajoutez des produits avec le bouton « Ajouter au panier ».
               </p>
               <Button
                 className="mt-4 min-h-[48px] w-full bg-its-lime font-semibold text-its-dark hover:bg-its-lime-dark"
@@ -162,7 +162,7 @@ export function QuickCart() {
                           </span>
                           <button
                             type="button"
-                            aria-label={`Retirer ${item.productName} de ma demande`}
+                            aria-label={`Retirer ${item.productName} du panier`}
                             onClick={() => removeItem(item.id)}
                             className="grid h-9 w-9 place-items-center text-its-gray transition-colors hover:text-its-dark"
                           >
@@ -182,21 +182,27 @@ export function QuickCart() {
                     <b className="font-display text-lg font-bold text-its-dark">{formatCurrency(total)}</b>
                   </p>
                 )}
-                <Button
-                  onClick={goDevis}
-                  className="flex min-h-[50px] w-full items-center justify-center bg-its-lime font-semibold text-its-dark hover:bg-its-lime-dark"
-                >
-                  Continuer ma demande
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => go('/commande')}
+                    className="flex min-h-[50px] w-full items-center justify-center bg-its-lime font-semibold text-its-dark hover:bg-its-lime-dark"
+                  >
+                    Commander
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => go('/devis')}
+                    className="flex min-h-[50px] w-full items-center justify-center border-[1.5px] border-its-dark font-semibold text-its-dark transition-colors hover:bg-its-light"
+                  >
+                    Demander un devis
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setOpen(false)
-                    router.push('/panier')
-                  }}
-                  className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 border-[1.5px] border-its-dark font-semibold text-its-dark transition-colors hover:bg-its-light"
+                  onClick={() => go('/panier')}
+                  className="mt-1 flex min-h-[40px] w-full items-center justify-center text-sm font-medium text-its-gray underline-offset-4 hover:text-its-dark hover:underline"
                 >
-                  Panier complet et commande
+                  Voir le panier complet
                 </button>
               </div>
             </>

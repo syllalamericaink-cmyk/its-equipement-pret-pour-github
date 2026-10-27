@@ -66,7 +66,7 @@ const FALLBACK_BANNERS: HeroSlideData[] = [
     title: 'Vos couleurs sur chaque tenue.',
     text: 'Broderie, sérigraphie, transfert. Bon à tirer avant production.',
     ctaLabel: 'Personnaliser',
-    href: '/#personnalisation',
+    href: '/produits?personalizable=1',
   },
   {
     id: 'fallback-3',

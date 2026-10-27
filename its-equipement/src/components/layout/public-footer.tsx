@@ -7,7 +7,7 @@ const offreLinks = [
   { href: '/produits', label: 'EPC' },
   { href: '/produits', label: 'Vêtements de travail' },
   { href: '/produits', label: 'Chaussures' },
-  { href: '/#personnalisation', label: 'Personnalisation' },
+  { href: '/produits?personalizable=1', label: 'Personnalisation' },
 ]
 
 const entrepriseLinks = [

@@ -73,6 +73,10 @@ export async function middleware(request: NextRequest) {
     (pathname === `/${ADMIN_SEGMENT}` || pathname.startsWith(`/${ADMIN_SEGMENT}/`))
 
   if (isCustomAdmin) {
+    // La page de connexion reste accessible sans session (sinon boucle de redirection)
+    if (pathname === `/${ADMIN_SEGMENT}/login`) {
+      return NextResponse.rewrite(new URL('/admin/login' + request.nextUrl.search, request.url))
+    }
     // Garde d'authentification sur l'URL publique avant réécriture
     const token = await getToken({ req: request, secret: AUTH_SECRET })
     if (!token || !token.id) {

@@ -1,15 +1,27 @@
 'use client'
 
-import { ProductImage as ProductPhoto, isUsableImageUrl } from '@/components/public/product-image'
-import { useEffect, useMemo, useState } from 'react'
+import { createElement, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Check, MessageCircle, Plus } from 'lucide-react'
+import {
+  BadgeCheck,
+  Check,
+  ChevronRight,
+  Clock,
+  LayoutGrid,
+  MessageCircle,
+  Palette,
+  Phone,
+  ShoppingCart,
+  Truck,
+  Wallet,
+} from 'lucide-react'
+import { toast } from 'sonner'
 import { publicFetch } from '@/lib/public-api'
 import { useCartStore } from '@/stores/cart-store'
-import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { HeroCarousel, type HeroSlideData } from '@/components/home/hero-carousel'
-import { HomeQuoteForm } from '@/components/home/home-quote-form'
+import { ProductImage as ProductPhoto, isUsableImageUrl, iconFor } from '@/components/public/product-image'
+import { openQuickCart } from '@/components/layout/quick-cart'
 import { CONTACT_PHONE, CONTACT_EMAIL, CONTACT_ADDRESS, CONTACT_WHATSAPP } from '@/constants'
 
 /* ============================= types API ============================= */
@@ -48,39 +60,28 @@ interface Product {
   images: ProductImage[]
 }
 
-/* ======================= données statiques (maquette) ======================= */
+/* ============================= données ============================= */
 
-const MARQUAGES = [
-  { nom: 'Broderie', desc: 'Durable : polos, vestes, chemises, casquettes.' },
-  { nom: 'Sérigraphie', desc: 'Séries et marquages simples à fort impact.' },
-  { nom: 'Transfert', desc: 'Logos détaillés, petites séries, textiles techniques.' },
-]
+const TEL_HREF = `tel:${CONTACT_PHONE.replace(/\s/g, '')}`
 
-const SERVICES = [
-  { badge: '24–48 h', titre: 'Retour de devis', desc: 'Quantités, normes et délais clarifiés.' },
-  { badge: 'ABJ + CI', titre: 'Livraison nationale', desc: 'Abidjan et toute la Côte d’Ivoire.' },
-  { badge: '1 BAT', titre: 'Validation marquage', desc: 'Rendu approuvé avant lancement.' },
-  { badge: 'B2B', titre: 'Volumes d’équipe', desc: 'Pensé pour les achats professionnels.' },
-]
-
-const ETAPES = [
-  { titre: 'Vous décrivez le besoin', desc: 'Produits, usages, quantités, tailles, normes, date.' },
-  { titre: 'Nous cadrons la demande', desc: 'Vérification et références adaptées.' },
-  { titre: 'Vous validez le devis', desc: 'Prix, délais, livraison et BAT confirmés.' },
-  { titre: 'Nous préparons la livraison', desc: 'Commande organisée pour votre destination.' },
+const TRUST = [
+  { icon: Truck, titre: 'Livraison partout en CI', desc: 'Abidjan et intérieur du pays' },
+  { icon: Clock, titre: 'Devis sous 24–48 h', desc: 'Prix et délais confirmés' },
+  { icon: Wallet, titre: 'Paiement à la livraison', desc: 'Aucun paiement en ligne' },
+  { icon: Palette, titre: 'Marquage de votre logo', desc: 'Bon à tirer validé avant production' },
 ]
 
 const FAQ = [
-  { q: 'Quel délai pour recevoir mon devis ?', a: 'Comptez 24 à 48 h après votre demande.' },
+  { q: 'Quel délai pour recevoir mon devis ?', a: 'Comptez 24 à 48 h après votre demande. Par téléphone, c’est encore plus rapide.' },
   { q: 'Livrez-vous en dehors d’Abidjan ?', a: 'Oui, partout en Côte d’Ivoire.' },
-  { q: 'Quel format de logo fournir ?', a: 'Un fichier vectoriel : PDF, SVG ou AI.' },
+  { q: 'Comment se passe le paiement ?', a: 'Aucun paiement en ligne : un commercial confirme votre commande, puis vous payez selon les modalités convenues.' },
+  { q: 'Quel format de logo fournir ?', a: 'Un fichier vectoriel : PDF, SVG ou AI. Une photo nette convient pour une première étude.' },
   {
     q: 'Je ne trouve pas ma référence',
-    a: 'Envoyez une fiche technique, une photo ou les normes recherchées : nous étudions une solution équivalente.',
+    a: 'Appelez-nous ou envoyez une photo ou la fiche technique sur WhatsApp : nous trouvons un équivalent.',
   },
 ]
 
-/** Pastilles « Secteurs accompagnés » (maquette v5) — défilement continu. */
 const SECTEURS_LIST = [
   'BTP',
   'Industrie',
@@ -107,61 +108,94 @@ function tagCategorie(name: string): string {
 const fmtPrice = (n: number) =>
   new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n) + ' FCFA'
 
-/* ======================= petits composants ======================= */
+/* ======================= composants ======================= */
 
-function SectionHead({ titre, href }: { titre: string; href?: string }) {
+/** Panneau blanc avec barre de titre, à la manière des marketplaces. */
+function Panel({
+  titre,
+  href,
+  accent = false,
+  children,
+  id,
+}: {
+  titre: string
+  href?: string
+  accent?: boolean
+  children: React.ReactNode
+  id?: string
+}) {
   return (
-    <div className="flex items-baseline justify-between px-4 pb-3 lg:px-8">
-      <h2 className="font-display text-[1.35rem] font-bold leading-tight tracking-tight text-its-dark">{titre}</h2>
-      {href && (
-        <Link
-          href={href}
-          className="text-[0.92rem] font-semibold text-its-dark underline decoration-its-lime decoration-[3px] underline-offset-4"
-        >
-          Voir plus
-        </Link>
-      )}
-    </div>
+    <section id={id} className="its-reveal overflow-hidden border border-its-border bg-white shadow-sm">
+      <div
+        className={`flex items-center justify-between gap-3 px-4 py-3 ${
+          accent ? 'bg-its-dark text-white' : 'border-b border-its-border'
+        }`}
+      >
+        <h2 className={`font-display text-lg font-bold tracking-tight sm:text-xl ${accent ? 'text-white' : 'text-its-dark'}`}>
+          {titre}
+        </h2>
+        {href && (
+          <Link
+            href={href}
+            className={`inline-flex items-center gap-1 text-sm font-semibold transition-colors ${
+              accent ? 'text-its-lime hover:text-white' : 'text-its-dark hover:text-its-gray'
+            }`}
+          >
+            Voir tout <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        )}
+      </div>
+      {children}
+    </section>
   )
 }
 
 function ProductCard({ product, added, onAdd }: { product: Product; added: boolean; onAdd: (p: Product) => void }) {
   const image = product.images?.find((img) => isUsableImageUrl(img.url))?.url
   return (
-    <article className="flex w-[150px] shrink-0 snap-start flex-col overflow-hidden border border-its-border bg-white md:w-[210px] lg:w-auto">
-      <Link href={`/produits/${product.slug}`} className="block" aria-label={product.name}>
-        <div className="relative aspect-square bg-its-light">
-          <ProductPhoto src={image} alt={product.name} names={[product.category?.name, product.name]} />
-          <span className="absolute left-2 top-2 bg-its-dark px-2 py-0.5 text-[0.7rem] font-semibold text-white">
-            {tagCategorie(product.category?.name)}
-          </span>
+    <article className="group flex w-[156px] shrink-0 snap-start flex-col border-r border-its-border bg-white transition-shadow duration-200 hover:z-10 hover:shadow-[0_6px_24px_rgba(21,26,29,0.14)] sm:w-[190px] lg:w-auto">
+      <Link href={`/produits/${product.slug}`} className="block p-2 pb-0" aria-label={product.name}>
+        <div className="relative aspect-square overflow-hidden bg-its-light">
+          <ProductPhoto
+            src={image}
+            alt={product.name}
+            names={[product.category?.name, product.name]}
+            className="transition-transform duration-300 group-hover:scale-105"
+          />
+          {product.isPersonalizable && (
+            <span className="absolute left-1.5 top-1.5 bg-its-lime px-1.5 py-0.5 text-[0.68rem] font-bold uppercase tracking-wide text-its-dark">
+              Personnalisable
+            </span>
+          )}
         </div>
       </Link>
-      <div className="flex flex-1 flex-col gap-0.5 p-2.5">
-        <Link href={`/produits/${product.slug}`} className="line-clamp-2 min-h-[2.6em] text-[0.92rem] font-medium leading-snug text-its-dark">
+      <div className="flex flex-1 flex-col gap-1 p-2.5 pt-2">
+        <Link
+          href={`/produits/${product.slug}`}
+          className="line-clamp-2 min-h-[2.6em] text-[0.9rem] leading-snug text-its-dark hover:underline"
+        >
           {product.name}
         </Link>
-        <small className="text-[0.78rem] text-its-gray">{product.category?.name}</small>
-        <span className="mt-1 font-semibold text-its-dark">
-          {product.basePrice > 0 ? fmtPrice(product.basePrice) : 'Sur devis'}
-        </span>
+        <p className="font-display text-[1.1rem] font-bold text-its-dark">
+          {product.basePrice > 0 ? fmtPrice(product.basePrice) : 'Prix sur devis'}
+        </p>
         <button
           type="button"
           onClick={() => onAdd(product)}
-          aria-label={`Ajouter ${product.name} à ma demande de devis`}
-          className={`mt-2 flex min-h-[40px] items-center justify-center gap-1 border-[1.5px] text-[0.88rem] font-semibold transition-colors ${
+          aria-label={added ? `${product.name} est dans le panier` : `Ajouter ${product.name} au panier`}
+          className={`mt-auto flex min-h-[40px] items-center justify-center gap-1.5 text-[0.88rem] font-semibold transition-all ${
             added
-              ? 'border-its-lime bg-its-lime text-its-dark'
-              : 'border-its-dark bg-white text-its-dark hover:bg-its-light'
+              ? 'bg-its-dark text-white'
+              : 'bg-its-lime text-its-dark hover:bg-its-lime-dark sm:opacity-90 sm:group-hover:opacity-100'
           }`}
         >
           {added ? (
             <>
-              <Check className="h-4 w-4" /> Ajouté
+              <Check className="h-4 w-4" aria-hidden="true" /> Dans le panier
             </>
           ) : (
             <>
-              <Plus className="h-4 w-4" /> Devis
+              <ShoppingCart className="h-4 w-4" aria-hidden="true" /> Ajouter au panier
             </>
           )}
         </button>
@@ -170,38 +204,83 @@ function ProductCard({ product, added, onAdd }: { product: Product; added: boole
   )
 }
 
-function ProductRail({ titre, href, products, addedIds, onAdd, loading }: {
+function ProductRail({
+  titre,
+  href,
+  products,
+  addedIds,
+  onAdd,
+  loading,
+  accent,
+  id,
+}: {
   titre: string
   href?: string
   products: Product[]
   addedIds: Set<string>
   onAdd: (p: Product) => void
   loading: boolean
+  accent?: boolean
+  id?: string
 }) {
   return (
-    <section id={titre.includes('Vêtements') ? 'vetements' : 'epi'} className="mt-2.5 bg-white py-4">
-      <SectionHead titre={titre} href={href} />
+    <Panel titre={titre} href={href} accent={accent} id={id}>
       {loading ? (
-        <div className="flex gap-2.5 px-4">
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-[260px] w-[150px] shrink-0 md:w-[210px] lg:w-[260px]" />
+        <div className="flex gap-2 p-2">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-[300px] w-[156px] shrink-0 sm:w-[190px] lg:flex-1" />
           ))}
         </div>
       ) : products.length === 0 ? (
-        <p className="px-4 text-sm text-its-gray">
+        <p className="p-4 text-sm text-its-gray">
           Aucun produit dans cette sélection pour le moment.{' '}
-          <Link href="/demande-devis" className="font-semibold text-its-dark underline decoration-its-lime decoration-[3px]">
-            Décrivez votre besoin
+          <Link href="/produits" className="font-semibold text-its-dark underline decoration-its-lime decoration-[3px]">
+            Voir tout le catalogue
           </Link>
         </p>
       ) : (
-        <div className="flex snap-x gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:px-8 xl:grid-cols-5 2xl:grid-cols-6">
+        <div className="flex snap-x overflow-x-auto bg-white [scrollbar-width:none] lg:grid lg:grid-cols-5 lg:overflow-visible xl:grid-cols-6 [&::-webkit-scrollbar]:hidden">
           {products.map((p) => (
             <ProductCard key={p.id} product={p} added={addedIds.has(p.id)} onAdd={onAdd} />
           ))}
         </div>
       )}
-    </section>
+    </Panel>
+  )
+}
+
+/** Encart d'appel : le devis le plus rapide reste le téléphone. */
+function CallCard({ compact = false }: { compact?: boolean }) {
+  return (
+    <a
+      href={TEL_HREF}
+      className={`group relative flex overflow-hidden bg-its-dark text-white ${
+        compact ? 'flex-col justify-between p-4' : 'items-center gap-4 p-4 sm:p-5'
+      }`}
+      aria-label={`Appeler ${CONTACT_PHONE} pour un devis rapide`}
+    >
+      <span
+        aria-hidden="true"
+        className="its-ring pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full border-[10px] border-its-lime/20"
+      />
+      <span className="grid h-12 w-12 shrink-0 place-items-center bg-its-lime text-its-dark">
+        <Phone className="its-wiggle h-6 w-6" aria-hidden="true" />
+      </span>
+      <span className={compact ? 'mt-3' : 'min-w-0 flex-1'}>
+        <span className="block text-[0.8rem] font-semibold uppercase tracking-wider text-its-lime">
+          Devis express par téléphone
+        </span>
+        <span className="block font-display text-xl font-bold leading-tight sm:text-2xl">{CONTACT_PHONE}</span>
+        {!compact && (
+          <span className="block text-sm text-white/70">Un conseiller vous répond et chiffre votre besoin tout de suite.</span>
+        )}
+      </span>
+      {!compact && (
+        <span className="hidden shrink-0 bg-its-lime px-4 py-2.5 text-sm font-bold text-its-dark transition-colors group-hover:bg-white sm:block">
+          Appeler
+        </span>
+      )}
+    </a>
   )
 }
 
@@ -212,8 +291,9 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [heroSlides, setHeroSlides] = useState<HeroSlideData[]>([])
   const [loading, setLoading] = useState(true)
-  const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
+  const cartItems = useCartStore((s) => s.items)
   const addItem = useCartStore((s) => s.addItem)
+  const addedIds = useMemo(() => new Set(cartItems.map((i) => i.productId)), [cartItems])
 
   useEffect(() => {
     let alive = true
@@ -233,10 +313,9 @@ export default function HomePage() {
     }
   }, [])
 
-  /** Répartition par univers : EPI/EPC/Site d'un côté, textile/chaussures de l'autre.
-   * Si l'admin a marqué des produits « Afficher sur l'accueil », seuls ceux-ci
-   * alimentent les rails. La section de chaque produit est celle choisie dans
-   * l'admin (« homeSection ») ; à défaut, répartition automatique par catégorie. */
+  /** Répartition par univers. Si l'admin a marqué des produits « Afficher sur
+   * l'accueil », seuls ceux-ci alimentent les rails (section choisie dans
+   * l'admin, sinon répartition automatique par catégorie). */
   const { railEpi, railVet } = useMemo(() => {
     const epiTags = ['EPI', 'EPC', 'SITE', 'GAMME']
     const vetTags = ['TEXTILE', 'PIEDS']
@@ -261,101 +340,231 @@ export default function HomePage() {
     }
   }, [products])
 
-  /** Tuiles « Nos univers » : catégories marquées « isFeatured » dans l'admin.
-   * Repli : les 4 univers classiques trouvés par type de catégorie. */
+  /** Catégories pour la colonne de gauche et les pastilles mobiles. */
+  const navCategories = useMemo(
+    () => categories.filter((c) => c._count?.products > 0 || c.isFeatured).slice(0, 10),
+    [categories],
+  )
+
+  /** Tuiles « Nos univers » : catégories marquées « isFeatured » dans l'admin. */
   const universTiles = useMemo(() => {
     const featured = categories.filter((c) => c.isFeatured).slice(0, 8)
-    if (featured.length > 0) {
-      return featured.map((c) => ({
-        titre: c.name,
-        small: c.description?.trim() || 'Découvrir la gamme',
-        href: `/categories/${c.slug}`,
-      }))
-    }
-    const find = (tag: string) => categories.find((c) => tagCategorie(c.name) === tag)
-    return [
-      { titre: 'EPI', small: 'Protection individuelle', href: find('EPI') ? `/categories/${find('EPI')!.slug}` : '/produits' },
-      { titre: 'EPC', small: 'Protection collective', href: find('EPC') ? `/categories/${find('EPC')!.slug}` : '/produits' },
-      { titre: 'Vêtements', small: 'Tenues de travail', href: find('TEXTILE') ? `/categories/${find('TEXTILE')!.slug}` : '/produits' },
-      { titre: 'Chaussures', small: 'Sécurité et confort', href: find('PIEDS') ? `/categories/${find('PIEDS')!.slug}` : '/produits' },
-    ]
-  }, [categories])
+    const list = featured.length > 0 ? featured : navCategories.slice(0, 4)
+    return list.map((c) => ({
+      titre: c.name,
+      small: c.description?.trim() || `${c._count?.products ?? 0} produit${(c._count?.products ?? 0) > 1 ? 's' : ''}`,
+      href: `/categories/${c.slug}`,
+      imageUrl: c.imageUrl,
+    }))
+  }, [categories, navCategories])
 
   const addToCart = (product: Product) => {
+    if (addedIds.has(product.id)) {
+      openQuickCart()
+      return
+    }
     addItem({
       id: `${product.id}-default-${Date.now()}`,
       productId: product.id,
       productName: product.name,
       productSlug: product.slug,
       productSku: product.sku || undefined,
-      productImage: product.images?.[0]?.url ?? '',
+      productImage: product.images?.find((img) => isUsableImageUrl(img.url))?.url ?? '',
       quantity: Math.max(1, Number(product.minQuantity) || 1),
       minQuantity: product.minQuantity,
       unitPrice: product.basePrice,
-      // La personnalisation détaillée se règle sur la fiche produit ou dans le
-      // panier : l'ajout rapide ne l'active pas (sinon le logo serait exigé).
+      // La personnalisation se règle sur la fiche produit ou dans le panier.
       hasPersonalization: false,
       personalizationOptions: [],
       personalization: { impression: false, logo: false, texte: '', emplacement: '' },
     })
-    setAddedIds((prev) => new Set(prev).add(product.id))
-    toast.success(`${product.name} ajouté à votre demande`)
+    toast.success(`${product.name} ajouté au panier`, {
+      action: { label: 'Voir le panier', onClick: () => openQuickCart() },
+    })
   }
 
   return (
-    <div className="pb-6 lg:mx-auto lg:max-w-[1440px]">
-      {/* ========== bandeau info (maquette .strip) ========== */}
-      <div className="flex items-center justify-between gap-2.5 border-b border-its-border bg-its-cream px-4 py-2 text-[0.85rem] text-its-dark">
-        <span>Livraison à Abidjan et partout en Côte d’Ivoire</span>
-        <Link
-          href="#devis"
-          className="whitespace-nowrap font-semibold underline decoration-its-lime decoration-[3px] underline-offset-4"
-        >
-          Devis 24–48 h
-        </Link>
-      </div>
+    <div className="bg-its-cream pb-8">
+      <div className="mx-auto max-w-[1320px] space-y-3 px-0 pt-0 sm:space-y-4 sm:px-3 sm:pt-3 lg:px-4 lg:pt-4">
+        {/* ========== Rangée d'accueil : catégories | carrousel | encarts ========== */}
+        <div className="grid gap-3 lg:grid-cols-[230px_minmax(0,1fr)_250px] lg:gap-4">
+          {/* Catégories (ordinateur) */}
+          <nav
+            aria-label="Catégories"
+            className="hidden border border-its-border bg-white py-2 shadow-sm lg:block"
+          >
+            <ul>
+              {(loading ? [] : navCategories).map((c) => (
+                <li key={c.id}>
+                  <Link
+                    href={`/categories/${c.slug}`}
+                    className="group flex items-center gap-3 px-4 py-2 text-[0.92rem] text-its-dark transition-colors hover:bg-its-cream"
+                  >
+                    {createElement(iconFor([c.name]), {
+                      className: 'h-4 w-4 shrink-0 text-its-gray transition-colors group-hover:text-its-dark',
+                      'aria-hidden': true,
+                    })}
+                    <span className="truncate">{c.name}</span>
+                  </Link>
+                </li>
+              ))}
+              {loading &&
+                [0, 1, 2, 3, 4, 5].map((i) => (
+                  <li key={i} className="px-4 py-2.5">
+                    <Skeleton className="h-4 w-full" />
+                  </li>
+                ))}
+              <li>
+                <Link
+                  href="/produits?personalizable=1"
+                  className="group flex items-center gap-3 px-4 py-2 text-[0.92rem] text-its-dark transition-colors hover:bg-its-cream"
+                >
+                  <Palette className="h-4 w-4 shrink-0 text-its-gray group-hover:text-its-dark" aria-hidden="true" />
+                  Personnalisables
+                </Link>
+              </li>
+              <li className="mt-1 border-t border-its-border pt-1">
+                <Link
+                  href="/produits"
+                  className="group flex items-center gap-3 px-4 py-2 text-[0.92rem] font-semibold text-its-dark transition-colors hover:bg-its-cream"
+                >
+                  <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  Tout le catalogue
+                </Link>
+              </li>
+            </ul>
+          </nav>
 
-      {/* ========== carrousel des bannières (5 s) — maquette v4/v6 ========== */}
-      {/* Images gérées depuis /admin/hero ; bannières colorées en attendant */}
-      <HeroCarousel slides={heroSlides} />
+          {/* Carrousel des bannières (géré dans l'admin) */}
+          <div className="overflow-hidden shadow-sm">
+            <HeroCarousel slides={heroSlides} />
+          </div>
 
-      {/* ========== rails produits (sélection gérée depuis /admin/produits) ========== */}
-      <ProductRail
-        titre="EPI, sélection terrain"
-        href="/produits"
-        products={railEpi}
-        addedIds={addedIds}
-        onAdd={addToCart}
-        loading={loading}
-      />
-      <ProductRail
-        titre="Vêtements et chaussures"
-        href="/produits"
-        products={railVet}
-        addedIds={addedIds}
-        onAdd={addToCart}
-        loading={loading}
-      />
-
-      {/* ========== univers (grille) ========== */}
-      <section id="univers" className="mt-2.5 bg-white py-4">
-        <SectionHead titre="Nos univers" />
-        <div className="grid grid-cols-2 gap-2.5 px-4 md:grid-cols-4 lg:gap-4 lg:px-8">
-          {universTiles.map((t) => (
-            <Link
-              key={t.titre}
-              href={t.href}
-              className="flex min-h-[96px] flex-col justify-between border-l-4 border-its-lime bg-its-cream p-3.5 transition-colors hover:bg-its-light"
+          {/* Encarts (ordinateur) */}
+          <div className="hidden grid-rows-2 gap-4 lg:grid">
+            <CallCard compact />
+            <a
+              href={CONTACT_WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-col justify-between bg-[#1f8f4e] p-4 text-white"
             >
-              <h3 className="font-display text-[1.15rem] font-bold text-its-dark">{t.titre}</h3>
-              <small className="text-[0.82rem] leading-snug text-its-gray">{t.small}</small>
-            </Link>
-          ))}
+              <span className="grid h-12 w-12 place-items-center bg-white/15">
+                <MessageCircle className="h-6 w-6" aria-hidden="true" />
+              </span>
+              <span className="mt-3">
+                <span className="block text-[0.8rem] font-semibold uppercase tracking-wider text-white/80">
+                  Commande WhatsApp
+                </span>
+                <span className="block font-display text-xl font-bold leading-tight">Envoyez votre liste</span>
+                <span className="mt-1 inline-flex items-center gap-1 text-sm font-semibold underline-offset-4 group-hover:underline">
+                  Écrire maintenant <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                </span>
+              </span>
+            </a>
+          </div>
         </div>
 
-        {/* Pastilles « Secteurs accompagnés » défilantes (maquette v5) */}
-        <div className="mt-4">
-          <p className="px-4 pb-2 text-[0.92rem] font-semibold text-its-dark">Secteurs accompagnés</p>
+        {/* Pastilles de catégories (mobile et tablette) */}
+        {navCategories.length > 0 && (
+          <nav aria-label="Catégories" className="lg:hidden">
+            <ul className="flex snap-x gap-2 overflow-x-auto px-3 py-1 [scrollbar-width:none] sm:px-0 [&::-webkit-scrollbar]:hidden">
+              {navCategories.map((c) => (
+                <li key={c.id} className="snap-start">
+                  <Link
+                    href={`/categories/${c.slug}`}
+                    className="flex w-[84px] flex-col items-center gap-1.5 text-center"
+                  >
+                    <span className="grid h-14 w-14 place-items-center border border-its-border bg-white shadow-sm">
+                      {createElement(iconFor([c.name]), { className: 'h-6 w-6 text-its-dark', 'aria-hidden': true })}
+                    </span>
+                    <span className="line-clamp-2 text-[0.75rem] font-medium leading-tight text-its-dark">{c.name}</span>
+                  </Link>
+                </li>
+              ))}
+              <li className="snap-start">
+                <Link href="/produits" className="flex w-[84px] flex-col items-center gap-1.5 text-center">
+                  <span className="grid h-14 w-14 place-items-center bg-its-dark text-its-lime shadow-sm">
+                    <LayoutGrid className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  <span className="text-[0.75rem] font-semibold leading-tight text-its-dark">Tout voir</span>
+                </Link>
+              </li>
+            </ul>
+          </nav>
+        )}
+
+        {/* ========== Engagements ========== */}
+        <ul className="its-reveal grid grid-cols-2 gap-px border-y border-its-border bg-its-border sm:border-x lg:grid-cols-4">
+          {TRUST.map(({ icon: Icon, titre, desc }) => (
+            <li key={titre} className="flex items-center gap-3 bg-white p-3 sm:p-4">
+              <span className="grid h-10 w-10 shrink-0 place-items-center bg-its-cream">
+                <Icon className="h-5 w-5 text-its-dark" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.86rem] font-semibold leading-tight text-its-dark sm:text-[0.95rem]">{titre}</span>
+                <span className="hidden text-[0.8rem] text-its-gray sm:block">{desc}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        {/* ========== Produits ========== */}
+        <ProductRail
+          id="epi"
+          titre="EPI, sélection terrain"
+          href="/produits"
+          products={railEpi}
+          addedIds={addedIds}
+          onAdd={addToCart}
+          loading={loading}
+          accent
+        />
+
+        {/* Devis express (mobile et tablette — sur ordinateur, l'encart est à droite du carrousel) */}
+        <div className="its-reveal px-3 sm:px-0 lg:hidden">
+          <CallCard />
+        </div>
+
+        <ProductRail
+          id="vetements"
+          titre="Vêtements et chaussures"
+          href="/produits"
+          products={railVet}
+          addedIds={addedIds}
+          onAdd={addToCart}
+          loading={loading}
+        />
+
+        {/* ========== Univers ========== */}
+        {universTiles.length > 0 && (
+          <Panel titre="Nos univers" href="/produits" id="univers">
+            <div className="grid grid-cols-2 gap-px bg-white md:grid-cols-4">
+              {universTiles.map((t) => (
+                <Link
+                  key={t.href}
+                  href={t.href}
+                  className="group relative flex aspect-[4/3] flex-col justify-end overflow-hidden bg-its-light"
+                >
+                  <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-105">
+                    <ProductPhoto src={t.imageUrl} alt="" names={[t.titre]} />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-its-dark/85 via-its-dark/20 to-transparent" />
+                  <div className="relative p-3 text-white sm:p-4">
+                    <h3 className="font-display text-lg font-bold leading-tight sm:text-xl">{t.titre}</h3>
+                    <p className="line-clamp-1 text-[0.8rem] text-white/80">{t.small}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </Panel>
+        )}
+
+        {/* ========== Secteurs ========== */}
+        <section className="its-reveal border-y border-its-border bg-white py-3 sm:border-x">
+          <p className="flex items-center gap-2 px-4 pb-2 text-[0.92rem] font-semibold text-its-dark">
+            <BadgeCheck className="h-4 w-4" aria-hidden="true" /> Secteurs accompagnés
+          </p>
           <div className="overflow-hidden">
             <div className="its-marquee flex w-max gap-2">
               {SECTEURS_LIST.map((s) => (
@@ -378,146 +587,64 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ========== personnalisation (bloc sombre) ========== */}
-      <section id="personnalisation" className="mt-2.5 bg-white py-4">
-        <div className="mx-4 bg-its-dark p-5 text-white md:mx-auto md:max-w-3xl lg:max-w-5xl">
-          <h2 className="font-display text-2xl font-bold leading-tight md:text-3xl">Votre identité sur le terrain</h2>
-          <p className="mb-3.5 mt-1.5 text-[0.93rem] text-white/75">
-            Logo, nom de service ou fonction. Un bon à tirer valide le rendu avant production.
-          </p>
-          <div className="grid gap-2">
-            {MARQUAGES.map((m) => (
-              <div key={m.nom} className="bg-its-panel p-3 px-3.5">
-                <b className="block font-display text-base font-bold">{m.nom}</b>
-                <span className="text-[0.86rem] text-white/70">{m.desc}</span>
-              </div>
-            ))}
-          </div>
-          <small className="mt-3 block text-white/60">Logo vectoriel recommandé : PDF, SVG ou AI.</small>
-          <Link
-            href="/produits?personalizable=1"
-            className="mt-3.5 flex min-h-[50px] items-center justify-center bg-its-lime font-semibold text-its-dark transition-colors hover:bg-its-lime-dark"
-          >
-            Voir les produits personnalisables
-          </Link>
-          <Link
-            href="/demande-devis"
-            className="mt-2 flex min-h-[50px] items-center justify-center border border-white/25 font-semibold text-white transition-colors hover:bg-white/10"
-          >
-            Étudier mon projet textile
-          </Link>
-        </div>
-      </section>
-
-      {/* ========== services (tuiles) ========== */}
-      <section className="mt-2.5 bg-white py-4">
-        <SectionHead titre="Des services de qualité" />
-        <div className="grid grid-cols-2 gap-2.5 px-4">
-          {SERVICES.map((s) => (
-            <div key={s.badge} className="border border-its-border p-3.5">
-              <b className="inline-block bg-its-lime px-2 py-0.5 font-display text-[1.5rem] font-bold leading-tight text-its-dark">
-                {s.badge}
-              </b>
-              <strong className="mt-1.5 block text-[0.95rem] font-semibold text-its-dark">{s.titre}</strong>
-              <span className="mt-0.5 block text-[0.82rem] leading-snug text-its-gray">{s.desc}</span>
+        {/* ========== FAQ + contact ========== */}
+        <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
+          <Panel titre="Questions fréquentes">
+            <div className="px-4">
+              {FAQ.map((f, i) => (
+                <details key={i} className={`group ${i > 0 ? 'border-t' : ''} border-its-border`}>
+                  <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 py-2 font-semibold text-its-dark [&::-webkit-details-marker]:hidden">
+                    {f.q}
+                    <span aria-hidden="true" className="text-[1.5rem] leading-none text-its-dark transition-transform duration-200 group-open:rotate-45">
+                      +
+                    </span>
+                  </summary>
+                  <p className="pb-3.5 text-[0.95rem] text-its-gray">{f.a}</p>
+                </details>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
+          </Panel>
 
-      {/* ========== comment ça marche (étapes) ========== */}
-      <section className="mt-2.5 bg-white py-4">
-        <SectionHead titre="Comment ça marche" />
-        <ol className="relative px-4 md:grid md:grid-cols-2 md:gap-x-8">
-          {ETAPES.map((e, i) => (
-            <li key={i} className="relative pb-4 pl-[52px] md:pl-[52px]">
-              <span
-                aria-hidden="true"
-                className="absolute left-0 top-0 grid h-10 w-10 place-items-center bg-its-dark font-display text-[1.1rem] font-bold text-white"
+          <Panel titre="Nous joindre" id="contact">
+            <div className="grid gap-2 p-3 sm:grid-cols-2">
+              <a href={TEL_HREF} className="block border border-its-border p-3 transition-colors hover:bg-its-cream">
+                <small className="block text-[0.78rem] text-its-gray">Téléphone</small>
+                <b className="font-semibold text-its-dark">{CONTACT_PHONE}</b>
+              </a>
+              <a
+                href={CONTACT_WHATSAPP}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block border border-its-border p-3 transition-colors hover:bg-its-cream"
               >
-                {i + 1}
-              </span>
-              <h3 className="font-display text-[1.1rem] font-bold text-its-dark">{e.titre}</h3>
-              <p className="text-[0.92rem] text-its-gray">{e.desc}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {/* ========== bandeau devis (lime) + formulaire court — maquette v5/v6 ========== */}
-      <section id="devis" className="mt-2.5 bg-its-lime py-8 md:py-12">
-        <div className="md:mx-auto md:max-w-3xl lg:max-w-5xl">
-          <div className="px-4">
-            <h2 className="font-display text-[1.7rem] font-bold leading-[1.05] text-its-dark md:text-4xl">
-              Donnez-nous les contraintes. Nous préparons une réponse claire.
-            </h2>
-            <p className="mb-4 mt-2 text-its-dark/80">
-              Produits, volumes, tailles, personnalisation, lieu de livraison. Retour sous 24–48 h.
-            </p>
-          </div>
-          <HomeQuoteForm />
+                <small className="block text-[0.78rem] text-its-gray">WhatsApp</small>
+                <b className="flex items-center gap-1.5 font-semibold text-its-dark">
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                  Écrire sur WhatsApp
+                </b>
+              </a>
+              <a href={`mailto:${CONTACT_EMAIL}`} className="block border border-its-border p-3 transition-colors hover:bg-its-cream">
+                <small className="block text-[0.78rem] text-its-gray">E-mail</small>
+                <b className="break-words font-semibold text-its-dark">{CONTACT_EMAIL}</b>
+              </a>
+              <div className="border border-its-border p-3">
+                <small className="block text-[0.78rem] text-its-gray">Adresse</small>
+                <b className="font-semibold text-its-dark">{CONTACT_ADDRESS}</b>
+              </div>
+            </div>
+            <div className="mx-3 mb-3 h-[180px] overflow-hidden border border-its-border">
+              <iframe
+                loading="lazy"
+                title="Zone de livraison Abidjan"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=-4.10%2C5.28%2C-3.86%2C5.46&layer=mapnik&marker=5.3604%2C-4.0083"
+                className="h-full w-full border-0"
+              />
+            </div>
+          </Panel>
         </div>
-      </section>
-
-      {/* ========== FAQ ========== */}
-      <section className="mt-2.5 bg-white py-4">
-        <SectionHead titre="Questions fréquentes" />
-        <div className="mx-4 md:mx-auto md:max-w-3xl lg:max-w-5xl">
-          {FAQ.map((f, i) => (
-            <details key={i} className={`${i > 0 ? 'border-t' : ''} border-its-border`}>
-              <summary className="flex min-h-[54px] cursor-pointer list-none items-center justify-between gap-3 py-2 font-semibold text-its-dark [&::-webkit-details-marker]:hidden">
-                {f.q}
-                <span aria-hidden="true" className="text-[1.5rem] leading-none text-its-dark">
-                  +
-                </span>
-              </summary>
-              <p className="pb-3.5 text-[0.95rem] text-its-gray">{f.a}</p>
-            </details>
-          ))}
-        </div>
-      </section>
-
-      {/* ========== contact ========== */}
-      <section id="contact" className="mt-2.5 bg-white py-4">
-        <SectionHead titre="Nous joindre" />
-        <div className="grid gap-2 px-4 sm:grid-cols-2 md:grid-cols-4">
-          <a href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`} className="block border border-its-border p-3 px-3.5">
-            <small className="block text-[0.78rem] text-its-gray">Téléphone</small>
-            <b className="font-semibold text-its-dark">{CONTACT_PHONE}</b>
-          </a>
-          <a
-            href={CONTACT_WHATSAPP}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block border border-its-border p-3 px-3.5 transition-colors hover:bg-its-light"
-          >
-            <small className="block text-[0.78rem] text-its-gray">WhatsApp</small>
-            <b className="flex min-h-[24px] items-center gap-1.5 font-semibold text-its-dark">
-              <MessageCircle className="h-4 w-4 text-its-dark" aria-hidden="true" />
-              Écrire sur WhatsApp
-            </b>
-          </a>
-          <a href={`mailto:${CONTACT_EMAIL}`} className="block border border-its-border p-3 px-3.5">
-            <small className="block text-[0.78rem] text-its-gray">E-mail</small>
-            <b className="break-words font-semibold text-its-dark">{CONTACT_EMAIL}</b>
-          </a>
-          <div className="border border-its-border p-3 px-3.5">
-            <small className="block text-[0.78rem] text-its-gray">Adresse</small>
-            <b className="font-semibold text-its-dark">{CONTACT_ADDRESS}</b>
-          </div>
-        </div>
-        <div className="mx-4 mt-3 h-[200px] overflow-hidden border border-its-border md:mx-auto md:max-w-3xl lg:max-w-5xl">
-          <iframe
-            loading="lazy"
-            title="Zone de livraison Abidjan"
-            src="https://www.openstreetmap.org/export/embed.html?bbox=-4.10%2C5.28%2C-3.86%2C5.46&layer=mapnik&marker=5.3604%2C-4.0083"
-            className="h-full w-full border-0"
-          />
-        </div>
-      </section>
+      </div>
     </div>
   )
 }
