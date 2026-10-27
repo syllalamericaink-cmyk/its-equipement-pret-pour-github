@@ -268,7 +268,7 @@ function RecentPublicOrdersTable({ items }: { items: RecentPublicOrder[] }) {
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base">Commandes web récentes</CardTitle>
         <Button asChild size="sm" variant="outline">
-          <Link href="/admin/commandes">Voir toutes</Link>
+          <Link href={adminPath("/commandes")}>Voir toutes</Link>
         </Button>
       </CardHeader>
       <CardContent className="p-0">
@@ -444,7 +444,7 @@ export default function AdminDashboardPage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               {(data.publicOrdersByStatus?.NOUVELLE_COMMANDE ?? 0) > 0 && (
                 <Button asChild size="sm">
-                  <Link href="/admin/commandes">
+                  <Link href={adminPath("/commandes")}>
                     {data.publicOrdersByStatus.NOUVELLE_COMMANDE} nouvelle(s) commande(s)
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -452,7 +452,7 @@ export default function AdminDashboardPage() {
               )}
               {(data.quoteRequestsByStatus?.PENDING ?? 0) > 0 && (
                 <Button asChild size="sm" variant="outline">
-                  <Link href="/admin/quote-requests">
+                  <Link href={adminPath("/quote-requests")}>
                     {data.quoteRequestsByStatus.PENDING} demande(s) de devis
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>

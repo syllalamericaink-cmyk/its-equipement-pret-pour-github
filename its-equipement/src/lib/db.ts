@@ -44,6 +44,17 @@ function runSoftColumns(): Promise<boolean> {
            ADD COLUMN IF NOT EXISTS "href" TEXT,
            ADD COLUMN IF NOT EXISTS "objectPosition" TEXT DEFAULT 'center'`
       )
+      // Compteurs anti-abus partagés (src/lib/rate-limit.ts)
+      await db.$executeRawUnsafe(
+        `CREATE TABLE IF NOT EXISTS "RateLimit" (
+           "key" TEXT NOT NULL PRIMARY KEY,
+           "count" INTEGER NOT NULL DEFAULT 0,
+           "resetAt" TIMESTAMP(3) NOT NULL
+         )`
+      )
+      await db.$executeRawUnsafe(
+        `CREATE INDEX IF NOT EXISTS "RateLimit_resetAt_idx" ON "RateLimit"("resetAt")`
+      )
       return true
     } catch (err) {
       // Base momentanément indisponible : les routes critiques rappellent

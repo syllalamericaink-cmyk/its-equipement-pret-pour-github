@@ -1,8 +1,9 @@
 'use client'
 
+import { ProductImage as ProductPhoto, isUsableImageUrl } from '@/components/public/product-image'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Check, MessageCircle, Package, Plus } from 'lucide-react'
+import { Check, MessageCircle, Plus } from 'lucide-react'
 import { publicFetch } from '@/lib/public-api'
 import { useCartStore } from '@/stores/cart-store'
 import { toast } from 'sonner'
@@ -110,7 +111,7 @@ const fmtPrice = (n: number) =>
 
 function SectionHead({ titre, href }: { titre: string; href?: string }) {
   return (
-    <div className="flex items-baseline justify-between px-4 pb-3">
+    <div className="flex items-baseline justify-between px-4 pb-3 lg:px-8">
       <h2 className="font-display text-[1.35rem] font-bold leading-tight tracking-tight text-its-dark">{titre}</h2>
       {href && (
         <Link
@@ -125,19 +126,12 @@ function SectionHead({ titre, href }: { titre: string; href?: string }) {
 }
 
 function ProductCard({ product, added, onAdd }: { product: Product; added: boolean; onAdd: (p: Product) => void }) {
-  const image = product.images?.[0]?.url
+  const image = product.images?.find((img) => isUsableImageUrl(img.url))?.url
   return (
-    <article className="flex w-[150px] shrink-0 snap-start flex-col overflow-hidden border border-its-border bg-white md:w-[210px]">
+    <article className="flex w-[150px] shrink-0 snap-start flex-col overflow-hidden border border-its-border bg-white md:w-[210px] lg:w-auto">
       <Link href={`/produits/${product.slug}`} className="block" aria-label={product.name}>
         <div className="relative aspect-square bg-its-light">
-          {image ? (
-
-            <img src={image} alt={product.name} loading="lazy" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-its-gray">
-              <Package className="h-8 w-8" />
-            </div>
-          )}
+          <ProductPhoto src={image} alt={product.name} names={[product.category?.name, product.name]} />
           <span className="absolute left-2 top-2 bg-its-dark px-2 py-0.5 text-[0.7rem] font-semibold text-white">
             {tagCategorie(product.category?.name)}
           </span>
@@ -190,7 +184,7 @@ function ProductRail({ titre, href, products, addedIds, onAdd, loading }: {
       {loading ? (
         <div className="flex gap-2.5 px-4">
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-[260px] w-[150px] shrink-0 md:w-[210px]" />
+            <Skeleton key={i} className="h-[260px] w-[150px] shrink-0 md:w-[210px] lg:w-[260px]" />
           ))}
         </div>
       ) : products.length === 0 ? (
@@ -201,7 +195,7 @@ function ProductRail({ titre, href, products, addedIds, onAdd, loading }: {
           </Link>
         </p>
       ) : (
-        <div className="flex snap-x gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex snap-x gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:px-8 xl:grid-cols-5 2xl:grid-cols-6">
           {products.map((p) => (
             <ProductCard key={p.id} product={p} added={addedIds.has(p.id)} onAdd={onAdd} />
           ))}
@@ -309,7 +303,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:mx-auto lg:max-w-[1440px]">
       {/* ========== bandeau info (maquette .strip) ========== */}
       <div className="flex items-center justify-between gap-2.5 border-b border-its-border bg-its-cream px-4 py-2 text-[0.85rem] text-its-dark">
         <span>Livraison à Abidjan et partout en Côte d’Ivoire</span>
@@ -346,7 +340,7 @@ export default function HomePage() {
       {/* ========== univers (grille) ========== */}
       <section id="univers" className="mt-2.5 bg-white py-4">
         <SectionHead titre="Nos univers" />
-        <div className="grid grid-cols-2 gap-2.5 px-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 px-4 md:grid-cols-4 lg:gap-4 lg:px-8">
           {universTiles.map((t) => (
             <Link
               key={t.titre}
@@ -389,20 +383,20 @@ export default function HomePage() {
 
       {/* ========== personnalisation (bloc sombre) ========== */}
       <section id="personnalisation" className="mt-2.5 bg-white py-4">
-        <div className="mx-4 bg-its-dark p-5 text-white md:mx-auto md:max-w-3xl">
+        <div className="mx-4 bg-its-dark p-5 text-white md:mx-auto md:max-w-3xl lg:max-w-5xl">
           <h2 className="font-display text-2xl font-bold leading-tight md:text-3xl">Votre identité sur le terrain</h2>
-          <p className="mb-3.5 mt-1.5 text-[0.93rem] text-its-slate">
+          <p className="mb-3.5 mt-1.5 text-[0.93rem] text-white/75">
             Logo, nom de service ou fonction. Un bon à tirer valide le rendu avant production.
           </p>
           <div className="grid gap-2">
             {MARQUAGES.map((m) => (
               <div key={m.nom} className="bg-its-panel p-3 px-3.5">
                 <b className="block font-display text-base font-bold">{m.nom}</b>
-                <span className="text-[0.86rem] text-its-slate">{m.desc}</span>
+                <span className="text-[0.86rem] text-white/70">{m.desc}</span>
               </div>
             ))}
           </div>
-          <small className="mt-3 block text-its-slate">Logo vectoriel recommandé : PDF, SVG ou AI.</small>
+          <small className="mt-3 block text-white/60">Logo vectoriel recommandé : PDF, SVG ou AI.</small>
           <Link
             href="/produits?personalizable=1"
             className="mt-3.5 flex min-h-[50px] items-center justify-center bg-its-lime font-semibold text-its-dark transition-colors hover:bg-its-lime-dark"
@@ -455,7 +449,7 @@ export default function HomePage() {
 
       {/* ========== bandeau devis (lime) + formulaire court — maquette v5/v6 ========== */}
       <section id="devis" className="mt-2.5 bg-its-lime py-8 md:py-12">
-        <div className="md:mx-auto md:max-w-3xl">
+        <div className="md:mx-auto md:max-w-3xl lg:max-w-5xl">
           <div className="px-4">
             <h2 className="font-display text-[1.7rem] font-bold leading-[1.05] text-its-dark md:text-4xl">
               Donnez-nous les contraintes. Nous préparons une réponse claire.
@@ -471,7 +465,7 @@ export default function HomePage() {
       {/* ========== FAQ ========== */}
       <section className="mt-2.5 bg-white py-4">
         <SectionHead titre="Questions fréquentes" />
-        <div className="mx-4 md:mx-auto md:max-w-3xl">
+        <div className="mx-4 md:mx-auto md:max-w-3xl lg:max-w-5xl">
           {FAQ.map((f, i) => (
             <details key={i} className={`${i > 0 ? 'border-t' : ''} border-its-border`}>
               <summary className="flex min-h-[54px] cursor-pointer list-none items-center justify-between gap-3 py-2 font-semibold text-its-dark [&::-webkit-details-marker]:hidden">
@@ -515,7 +509,7 @@ export default function HomePage() {
             <b className="font-semibold text-its-dark">{CONTACT_ADDRESS}</b>
           </div>
         </div>
-        <div className="mx-4 mt-3 h-[200px] overflow-hidden border border-its-border md:mx-auto md:max-w-3xl">
+        <div className="mx-4 mt-3 h-[200px] overflow-hidden border border-its-border md:mx-auto md:max-w-3xl lg:max-w-5xl">
           <iframe
             loading="lazy"
             title="Zone de livraison Abidjan"

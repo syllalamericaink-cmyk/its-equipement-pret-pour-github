@@ -627,3 +627,12 @@ model PublicOrderStatusHistory {
   @@index([publicOrderId])
   @@index([createdAt])
 }
+
+// Compteurs anti-abus partagés entre toutes les instances Vercel (src/lib/rate-limit.ts)
+model RateLimit {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}

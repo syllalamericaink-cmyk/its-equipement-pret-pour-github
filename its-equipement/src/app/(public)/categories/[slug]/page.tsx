@@ -1,5 +1,6 @@
 'use client'
 
+import { ProductImage as ProductPhoto, isUsableImageUrl } from '@/components/public/product-image'
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { decodeSlug } from '@/lib/slug'
@@ -316,18 +317,12 @@ function CategoriePage() {
                 onClick={() => router.push(`/produits/${product.slug}`)}
               >
                 <div className="relative h-44 sm:h-48 bg-muted overflow-hidden">
-                  {product.images.length > 0 && product.images[0].url ? (
-                    <div
-                      className="h-full w-full bg-cover bg-center transition-transform group-hover:scale-105"
-                      style={{ backgroundImage: `url(${product.images[0].url})` }}
-                      role="img"
-                      aria-label={product.images[0].altText || product.name}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <Package className="size-10 text-muted-foreground/30" />
-                    </div>
-                  )}
+                  <ProductPhoto
+                    src={product.images.find((img) => isUsableImageUrl(img.url))?.url}
+                    alt={product.images[0]?.altText || product.name}
+                    names={[product.category?.name, product.name]}
+                    className="transition-transform group-hover:scale-105"
+                  />
                   {product.isPersonalizable && (
                     <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5">
                       Personnalisable

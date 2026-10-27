@@ -1,5 +1,6 @@
 'use client'
 
+import { ProductImage as ProductPhoto, isUsableImageUrl } from '@/components/public/product-image'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -172,7 +173,8 @@ export default function ProductDetailPage() {
   if (notFound) return <NotFoundState />
   if (!product) return <NotFoundState />
 
-  const sortedImages = [...product.images].sort((a, b) => a.sortOrder - b.sortOrder)
+  // Les liens qui ne sont pas des images (page de recherche Bing…) sont ignorés
+  const sortedImages = [...product.images].filter((img) => isUsableImageUrl(img.url)).sort((a, b) => a.sortOrder - b.sortOrder)
   const activeVariants = product.variants.filter((v) => v.isActive)
   const activePersonalizationOptions = product.personalizationOptions.filter((o) => o.isActive)
 
@@ -272,11 +274,12 @@ export default function ProductDetailPage() {
             {sortedImages.length > 0 ? (
               <>
                 <div className="relative aspect-square w-full">
-                  <div
-                    className="w-full h-full bg-cover bg-center"
-                    style={{ backgroundImage: `url(${sortedImages[selectedImageIndex].url})` }}
-                    role="img"
-                    aria-label={sortedImages[selectedImageIndex].altText || product.name}
+                  <ProductPhoto
+                    src={sortedImages[selectedImageIndex].url}
+                    alt={sortedImages[selectedImageIndex].altText || product.name}
+                    names={[product.category?.name, product.name]}
+                    fit="contain"
+                    eager
                   />
                 </div>
                 {sortedImages.length > 1 && (
@@ -332,12 +335,7 @@ export default function ProductDetailPage() {
                       : 'border-transparent hover:border-muted-foreground/30'
                   }`}
                 >
-                  <div
-                    className="w-full h-full bg-cover bg-center"
-                    style={{ backgroundImage: `url(${img.url})` }}
-                    role="img"
-                    aria-label={img.altText || `${product.name} - vignette ${idx + 1}`}
-                  />
+                  <ProductPhoto src={img.url} alt="" names={[product.category?.name, product.name]} />
                 </button>
               ))}
             </div>

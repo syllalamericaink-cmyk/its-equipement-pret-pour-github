@@ -1,3 +1,5 @@
+import { NextResponse } from 'next/server'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import { createQuoteRequest } from '@/lib/services/quote-request.service'
 import { sendQuoteRequestTelegramNotification } from '@/lib/services/telegram.service'
 import { quoteRequestSchema } from '@/lib/validation'
@@ -19,6 +21,10 @@ function checkQuoteRequestRateLimit(ip: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
+    // Limite partagée entre toutes les instances (stockée en base)
+    if (!(await rateLimit(`quote-request:${getClientIp(request.headers)}`, 5, 600))) {
+      return NextResponse.json({ success: false, error: 'Trop de demandes de devis. Réessayez plus tard.' }, { status: 429 })
+    }
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
     if (!checkQuoteRequestRateLimit(ip)) {
       return error('Trop de demandes de devis. Réessayez plus tard.', 429)

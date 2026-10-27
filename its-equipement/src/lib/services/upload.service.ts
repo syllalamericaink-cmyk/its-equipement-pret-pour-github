@@ -1,4 +1,25 @@
+import sharp from 'sharp'
 import { db } from '../db'
+
+// Photos affichées sur le site : redimensionnées et converties en WebP pour
+// un chargement rapide sur mobile. Les logos clients (impression) restent intacts.
+const OPTIMIZE: Record<string, { maxSize: number }> = {
+  'product-image': { maxSize: 1600 },
+  'hero-image': { maxSize: 2400 },
+}
+
+async function optimizeImage(buffer: Buffer, maxSize: number): Promise<Buffer | null> {
+  try {
+    return await sharp(buffer, { failOn: 'error' })
+      .rotate() // respecte l'orientation des photos de téléphone
+      .resize({ width: maxSize, height: maxSize, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toBuffer()
+  } catch (err) {
+    console.error('[upload] Optimisation impossible, original conservé:', err)
+    return null // fichier illisible par sharp : on garde l'original
+  }
+}
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -32,19 +53,28 @@ export async function uploadFile(
     throw new Error('Fichier trop volumineux (maximum 4 Mo)')
   }
 
-  const bytes = await file.arrayBuffer()
-  const buffer = Buffer.from(bytes)
-  const base64 = buffer.toString('base64')
+  let buffer: Buffer = Buffer.from(await file.arrayBuffer())
+  let mimeType = file.type
+  let safeName = file.name.replace(/[^\w.\-() ]+/g, '_').slice(0, 180) || 'fichier'
 
-  const safeName = file.name.replace(/[^\w.\-() ]+/g, '_').slice(0, 180) || 'fichier'
+  const optimize = file.type.startsWith('image/') ? OPTIMIZE[entityType] : undefined
+  if (optimize) {
+    const optimized = await optimizeImage(buffer, optimize.maxSize)
+    if (optimized && optimized.length < buffer.length) {
+      buffer = optimized
+      mimeType = 'image/webp'
+      safeName = safeName.replace(/\.[a-z0-9]+$/i, '') + '.webp'
+    }
+  }
+  const base64 = buffer.toString('base64')
 
   const upload = await db.upload.create({
     data: {
       filename: `${Date.now()}-${safeName}`,
       originalName: safeName,
       url: '',
-      mimeType: file.type,
-      size: file.size,
+      mimeType,
+      size: buffer.length,
       entityType: entityType.slice(0, 50),
       entityId: entityId ?? null,
       data: base64,

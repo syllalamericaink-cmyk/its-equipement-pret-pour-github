@@ -1,3 +1,5 @@
+import { NextResponse } from 'next/server'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import { success, error, serverError } from '@/lib/api-response'
 import { uploadFile } from '@/lib/services/upload.service'
 import { checkApiRateLimit } from '@/lib/api-auth'
@@ -5,6 +7,10 @@ import type { NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
+    // Limite partagée entre toutes les instances (stockée en base)
+    if (!(await rateLimit(`upload:${getClientIp(request.headers)}`, 10, 600))) {
+      return NextResponse.json({ success: false, error: 'Trop de fichiers envoyés. Réessayez dans quelques minutes.' }, { status: 429 })
+    }
     if (!checkApiRateLimit(request)) {
       return error('Trop de requêtes. Réessayez dans une minute.', 429)
     }

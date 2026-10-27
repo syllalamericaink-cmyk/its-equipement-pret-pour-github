@@ -1,3 +1,5 @@
+import { NextResponse } from 'next/server'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import { db } from '@/lib/db'
 import { success, error, serverError } from '@/lib/api-response'
 import { checkApiRateLimit } from '@/lib/api-auth'
@@ -8,6 +10,10 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function POST(request: NextRequest) {
   try {
+    // Limite partagée entre toutes les instances (stockée en base)
+    if (!(await rateLimit(`contact:${getClientIp(request.headers)}`, 5, 600))) {
+      return NextResponse.json({ success: false, error: 'Trop de messages envoyés. Réessayez dans quelques minutes.' }, { status: 429 })
+    }
     if (!checkApiRateLimit(request)) {
       return error('Trop de requêtes. Réessayez dans une minute.', 429)
     }

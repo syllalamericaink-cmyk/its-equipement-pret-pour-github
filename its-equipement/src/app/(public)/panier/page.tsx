@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { ProductImage as ProductPhoto } from '@/components/public/product-image'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ShoppingBag, Minus, Plus, Trash2, FileText, MessageCircle, Clock, BadgePercent } from 'lucide-react'
 import { useCartStore, itemMinQuantity } from '@/stores/cart-store'
@@ -55,15 +56,14 @@ export default function PanierPage() {
     return { pct, total: discountedLineTotal(unitPrice, quantity, pct) }
   }
 
-  const totals = useMemo(() => {
-    let base = 0
-    let discounted = 0
-    for (const item of items) {
-      base += item.unitPrice * item.quantity
-      discounted += lineInfo(item.productId, item.unitPrice, item.quantity).total
-    }
-    return { base, discounted, savings: Math.max(0, base - discounted) }
-  }, [items, discountsByProduct])
+  // Calcul léger : pas besoin de mémorisation (le compilateur React s'en charge)
+  let baseTotal = 0
+  let discountedTotal = 0
+  for (const item of items) {
+    baseTotal += item.unitPrice * item.quantity
+    discountedTotal += lineInfo(item.productId, item.unitPrice, item.quantity).total
+  }
+  const totals = { base: baseTotal, discounted: discountedTotal, savings: Math.max(0, baseTotal - discountedTotal) }
 
   if (items.length === 0) {
     return (
@@ -124,12 +124,9 @@ export default function PanierPage() {
                 return (
                   <TableRow key={item.id}>
                     <TableCell>
-                      <div
-                        className="size-16 rounded-lg bg-muted shrink-0 bg-cover bg-center"
-                        style={{
-                          backgroundImage: `url(${item.productImage || '/placeholder.svg'})`,
-                        }}
-                      />
+                      <div className="size-16 rounded-lg bg-muted shrink-0 overflow-hidden">
+                        <ProductPhoto src={item.productImage} alt="" names={[item.productName]} />
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
@@ -216,12 +213,9 @@ export default function PanierPage() {
           return (
             <div key={item.id} className="rounded-lg border p-4">
               <div className="flex gap-4">
-                <div
-                  className="size-16 rounded-lg bg-muted shrink-0 bg-cover bg-center"
-                  style={{
-                    backgroundImage: `url(${item.productImage || '/placeholder.svg'})`,
-                  }}
-                />
+                <div className="size-16 rounded-lg bg-muted shrink-0 overflow-hidden">
+                        <ProductPhoto src={item.productImage} alt="" names={[item.productName]} />
+                      </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">

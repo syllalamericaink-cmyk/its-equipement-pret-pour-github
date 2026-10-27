@@ -4,6 +4,7 @@ import Credentials from 'next-auth/providers/credentials'
 import { db } from './db'
 import { AUTH_SECRET } from './auth-secret'
 import { adminPath } from '@/lib/admin-path'
+import { rateLimit, getClientIp } from './rate-limit'
 
 const BCRYPT_SALT_ROUNDS = 12
 
@@ -15,9 +16,21 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Mot de passe', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null
+        }
+
+        // Anti force brute partagé entre toutes les instances :
+        // 5 essais / 15 min par IP, 10 essais / 15 min par compte.
+        const ip = getClientIp(req?.headers ?? {})
+        const email = credentials.email.trim().toLowerCase()
+        const [ipOk, accountOk] = await Promise.all([
+          rateLimit(`login-ip:${ip}`, 5, 900),
+          rateLimit(`login-account:${email}`, 10, 900),
+        ])
+        if (!ipOk || !accountOk) {
+          throw new Error('Trop de tentatives. Réessayez dans 15 minutes.')
         }
 
         const admin = await db.admin.findUnique({

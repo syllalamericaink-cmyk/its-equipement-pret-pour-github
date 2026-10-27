@@ -8,14 +8,9 @@ import {
   LayoutDashboard,
   Package,
   FolderTree,
-  FileText,
   ClipboardList,
-  ShoppingCart,
   Users,
-  CreditCard,
-  Truck,
   Bell,
-  Warehouse,
   Settings,
   LogOut,
   Inbox,
@@ -51,12 +46,7 @@ const mainLinks = [
 ]
 
 const advancedLinks = [
-  { href: adminPath('/quotes'), label: 'Devis (ancien flux)', icon: FileText },
-  { href: adminPath('/orders'), label: 'Commandes (ancien flux)', icon: ShoppingCart },
   { href: adminPath('/clients'), label: 'Clients', icon: Users },
-  { href: adminPath('/payments'), label: 'Paiements', icon: CreditCard },
-  { href: adminPath('/deliveries'), label: 'Livraisons', icon: Truck },
-  { href: adminPath('/stocks'), label: 'Stocks', icon: Warehouse },
   { href: adminPath('/notifications'), label: 'Notifications', icon: Bell },
 ]
 
@@ -173,7 +163,7 @@ export function AdminSidebar() {
           </div>
         )}
         <Link
-          href="/admin/settings"
+          href={adminPath("/settings")}
           className={cn(
             'mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
             pathname.startsWith(adminPath('/settings'))

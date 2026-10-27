@@ -1,5 +1,6 @@
 'use client'
 
+import { ProductImage as ProductPhoto } from '@/components/public/product-image'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Minus, Plus, ShoppingBasket, Trash2 } from 'lucide-react'
@@ -114,12 +115,7 @@ export function QuickCart() {
                     <li key={item.id} className="flex gap-3 py-3">
                       <div className="h-16 w-16 shrink-0 overflow-hidden border border-its-border bg-its-light">
                         {item.productImage ? (
-                          <img
-                            src={item.productImage}
-                            alt=""
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                          />
+                          <ProductPhoto src={item.productImage} alt="" names={[item.productName]} />
                         ) : (
                           <div className="grid h-full w-full place-items-center text-its-gray">
                             <ShoppingBasket className="h-5 w-5" aria-hidden="true" />

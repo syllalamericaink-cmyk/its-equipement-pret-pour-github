@@ -14,7 +14,10 @@ import { adminPath } from '@/lib/admin-path'
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || adminPath('/dashboard')
+  // Uniquement une page de l'administration : jamais un site externe
+  const rawCallback = searchParams.get('callbackUrl') ?? ''
+  const callbackUrl =
+    rawCallback.startsWith(adminPath('/')) && !rawCallback.startsWith('//') ? rawCallback : adminPath('/dashboard')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -35,7 +38,7 @@ function LoginForm() {
     setLoading(false)
 
     if (result?.error) {
-      setError('Identifiants incorrects.')
+      setError(result.error.startsWith('Trop de tentatives') ? result.error : 'Identifiants incorrects.')
       return
     }
 

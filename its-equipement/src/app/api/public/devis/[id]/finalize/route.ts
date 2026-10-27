@@ -1,3 +1,5 @@
+import { NextResponse } from 'next/server'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import { success, error, serverError } from '@/lib/api-response'
 import { sendOrderNotification } from '@/lib/services/public-order.service'
 import { sendOrderTelegramNotification } from '@/lib/services/telegram.service'
@@ -30,6 +32,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Limite partagée entre toutes les instances (stockée en base)
+    if (!(await rateLimit(`finalize:${getClientIp(request.headers)}`, 10, 600))) {
+      return NextResponse.json({ success: false, error: 'Trop de tentatives. Réessayez dans quelques minutes.' }, { status: 429 })
+    }
     if (!checkApiRateLimit(request)) {
       return error('Trop de requêtes. Réessayez dans une minute.', 429)
     }
@@ -56,13 +62,19 @@ export async function POST(
       return error('Ce devis a ete annule et ne peut plus etre finalise')
     }
 
+    // Processus : le client accepte le devis (DEVIS_ENVOYE → DEVIS_ACCEPTE).
+    // Le commercial confirme ensuite la commande depuis l'admin.
+    if (devis.status !== 'DEVIS_ENVOYE') {
+      return error('Ce devis ne peut plus etre confirme en ligne. Contactez-nous sur WhatsApp.')
+    }
+
     const orderNumber = await generateOrderNumber()
 
     await db.publicOrder.update({
       where: { id },
       data: {
         orderNumber,
-        status: 'NOUVELLE_COMMANDE',
+        status: 'DEVIS_ACCEPTE',
       },
     })
 
@@ -70,7 +82,7 @@ export async function POST(
       data: {
         publicOrderId: id,
         fromStatus: devis.status,
-        toStatus: 'NOUVELLE_COMMANDE',
+        toStatus: 'DEVIS_ACCEPTE',
         changedBy: 'client',
       },
     })
