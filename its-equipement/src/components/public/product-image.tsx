@@ -74,14 +74,18 @@ export function ProductImageFallback({
   )
 }
 
-/** Photo produit avec chargement différé et visuel de secours. */
+/**
+ * Photo produit avec chargement différé et visuel de secours.
+ * Par défaut la photo est affichée en entier (« contain ») sur fond blanc,
+ * sans être rognée, quel que soit son format.
+ */
 export function ProductImage({
   src,
   alt,
   names,
   className,
   fallbackClassName,
-  fit = 'cover',
+  fit = 'contain',
   eager = false,
 }: {
   src?: string | null

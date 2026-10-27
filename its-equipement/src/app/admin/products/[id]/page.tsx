@@ -775,7 +775,7 @@ export default function ProduitDetailPage() {
                           <img
                             src={img.url}
                             alt={img.altText}
-                            className="size-full object-cover"
+                            className="size-full object-contain bg-white"
                           />
                         </div>
                         <div className="p-2">

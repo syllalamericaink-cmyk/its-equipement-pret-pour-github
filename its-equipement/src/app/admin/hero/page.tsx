@@ -323,7 +323,7 @@ export default function AdminHeroPage() {
                   src={item.url}
                   alt={item.altText ?? 'Image bannière'}
                   style={{ objectPosition: posCss }}
-                  className="h-full w-full object-cover object-center"
+                  className="h-full w-full object-contain object-center"
                 />
                 <div className="absolute left-2 top-2 flex gap-1">
                   {index === 0 && item.isActive && <Badge>1re image affichée</Badge>}

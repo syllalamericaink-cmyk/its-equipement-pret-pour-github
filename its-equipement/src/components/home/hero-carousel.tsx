@@ -28,16 +28,28 @@ export interface HeroSlideData {
   objectPosition?: string | null
 }
 
-/** Convertit la valeur admin (top/center/bottom) en CSS object-position. */
-function objectPositionCss(value: string | null | undefined): string {
-  switch (value) {
-    case 'top':
-      return 'center top'
-    case 'bottom':
-      return 'center bottom'
-    default:
-      return 'center center'
-  }
+/**
+ * Bannière affichée en entier (jamais rognée) : la photo est centrée en
+ * « contain », et une copie floutée de la même photo remplit les bords.
+ */
+function HeroPicture({ src, alt, eager }: { src: string; alt: string; eager: boolean }) {
+  return (
+    <div className="relative h-full w-full overflow-hidden">
+      <img
+        src={src}
+        alt=""
+        aria-hidden="true"
+        loading={eager ? 'eager' : 'lazy'}
+        className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-xl"
+      />
+      <img
+        src={src}
+        alt={alt}
+        loading={eager ? 'eager' : 'lazy'}
+        className="relative h-full w-full object-contain"
+      />
+    </div>
+  )
 }
 
 const DELAY_MS = 5000
@@ -217,23 +229,11 @@ export function HeroCarousel({ slides }: { slides: HeroSlideData[] }) {
               className="block h-full w-full"
               ariaLabel={slide.ctaLabel ?? slide.altText}
             >
-              <img
-                src={slide.url!}
-                alt={slide.altText}
-                loading={i === 0 ? 'eager' : 'lazy'}
-                style={{ objectPosition: objectPositionCss(slide.objectPosition) }}
-                className="h-full w-full object-cover object-center"
-              />
+              <HeroPicture src={slide.url!} alt={slide.altText} eager={i === 0} />
             </SmartLink>
           ) : slide.url ? (
             <>
-              <img
-                src={slide.url}
-                alt={slide.altText}
-                loading={i === 0 ? 'eager' : 'lazy'}
-                style={{ objectPosition: objectPositionCss(slide.objectPosition) }}
-                className="h-full w-full object-cover object-center"
-              />
+              <HeroPicture src={slide.url} alt={slide.altText} eager={i === 0} />
               {hasCaption && (
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent p-4 pb-16 pt-14 md:p-6 md:pb-14 md:pt-20">
                   <div className="max-w-3xl">
