@@ -11,7 +11,7 @@ import { AUTH_SECRET } from './auth-secret'
  * Les devis créés avant la mise en place de ce jeton restent accessibles
  * par leur identifiant, pour ne pas casser les liens déjà ouverts.
  */
-export const DEVIS_TOKEN_SINCE = new Date('2026-10-28T00:00:00Z')
+export const DEVIS_TOKEN_SINCE = new Date('2026-10-28T09:33:00Z')
 
 export function signDevisId(id: string): string {
   return createHmac('sha256', AUTH_SECRET).update(`devis:${id}`).digest('base64url').slice(0, 32)
