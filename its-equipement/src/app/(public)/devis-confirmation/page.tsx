@@ -13,6 +13,7 @@ function DevisConfirmationContent() {
   const router = useRouter()
   const ref = searchParams.get('ref') || null
   const devisId = searchParams.get('id') || null
+  const accessToken = searchParams.get('t') || ''
   const [finalizing, setFinalizing] = useState(false)
   const [generatingPdf, setGeneratingPdf] = useState(false)
 
@@ -36,7 +37,7 @@ function DevisConfirmationContent() {
     }
     setGeneratingPdf(true)
     try {
-      const res = await fetch(`/api/public/devis/${devisId}/pdf`)
+      const res = await fetch(`/api/public/devis/${devisId}/pdf?t=${encodeURIComponent(accessToken)}`)
       if (!res.ok) {
         toast.error('Erreur de génération du PDF')
         setGeneratingPdf(false)
@@ -71,7 +72,7 @@ function DevisConfirmationContent() {
     }
     setFinalizing(true)
     try {
-      const res = await fetch(`/api/public/devis/${devisId}/finalize`, { method: 'POST' })
+      const res = await fetch(`/api/public/devis/${devisId}/finalize?t=${encodeURIComponent(accessToken)}`, { method: 'POST' })
       const json = await res.json()
       if (!json.success) {
         toast.error(json.error || 'Erreur lors de la finalisation')

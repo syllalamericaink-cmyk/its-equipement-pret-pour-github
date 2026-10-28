@@ -29,6 +29,28 @@ const ALLOWED_MIME_TYPES = [
   'application/pdf',
 ]
 
+/**
+ * Vérifie les premiers octets du fichier : le type annoncé par le navigateur
+ * ne suffit pas (un fichier HTML renommé en .png serait sinon accepté).
+ */
+function matchesSignature(buf: Buffer, mime: string): boolean {
+  const ascii = (start: number, end: number) => buf.subarray(start, end).toString('latin1')
+  switch (mime) {
+    case 'image/jpeg':
+      return buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff
+    case 'image/png':
+      return ascii(1, 4) === 'PNG' && buf[0] === 0x89
+    case 'image/webp':
+      return ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP'
+    case 'image/avif':
+      return ascii(4, 8) === 'ftyp'
+    case 'application/pdf':
+      return ascii(0, 5) === '%PDF-'
+    default:
+      return false
+  }
+}
+
 const MAX_FILE_SIZE = 4 * 1024 * 1024 // 4 Mo — stocké en base64 dans la base (compatible Vercel)
 
 /**
@@ -54,6 +76,9 @@ export async function uploadFile(
   }
 
   let buffer: Buffer = Buffer.from(await file.arrayBuffer())
+  if (!matchesSignature(buffer, file.type)) {
+    throw new Error('Le contenu du fichier ne correspond pas à son format')
+  }
   let mimeType = file.type
   let safeName = file.name.replace(/[^\w.\-() ]+/g, '_').slice(0, 180) || 'fichier'
 

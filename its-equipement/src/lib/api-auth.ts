@@ -3,6 +3,7 @@ import { unauthorized } from './api-response'
 import { db } from './db'
 import { AUTH_SECRET } from './auth-secret'
 import type { NextRequest } from 'next/server'
+import { passwordFingerprint } from './password-fingerprint'
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT_WINDOW = 60 * 1000
@@ -48,9 +49,27 @@ export async function requireAdmin(request: NextRequest) {
       return { error: unauthorized(), session: null }
     }
 
-    const admin = await db.admin.findUnique({ where: { id: token.id as string }, select: { id: true, isActive: true, role: true } })
+    const admin = await db.admin.findUnique({ where: { id: token.id as string }, select: { id: true, isActive: true, role: true, password: true } })
     if (!admin || !admin.isActive) {
       return { error: unauthorized(), session: null }
+    }
+
+    // Session émise avant un changement de mot de passe : refusée.
+    // (Les anciennes sessions sans empreinte expirent d'elles-mêmes sous 8 h.)
+    if (token.pwv && token.pwv !== passwordFingerprint(admin.password)) {
+      return { error: unauthorized(), session: null }
+    }
+
+    // Le rôle VIEWER est en lecture seule sur toute l'API d'administration.
+    const method = request.method.toUpperCase()
+    if (admin.role === 'VIEWER' && method !== 'GET' && method !== 'HEAD') {
+      return {
+        error: new Response(JSON.stringify({ success: false, error: 'Compte en lecture seule' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+        session: null,
+      }
     }
 
     const session = {

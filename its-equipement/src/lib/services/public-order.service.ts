@@ -37,6 +37,40 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   ANNULEE: [],
 }
 
+/**
+ * Limites de taille des commandes / devis publics : empêche de remplir la
+ * base avec des requêtes géantes. Les valeurs restent larges pour un usage normal.
+ */
+const TEXT_LIMITS: Record<string, number> = {
+  clientName: 120,
+  clientFirstName: 120,
+  clientPhone: 30,
+  clientEmail: 200,
+  companyName: 200,
+  companyInfo: 1000,
+  personalizationSummary: 2000,
+  city: 100,
+  commune: 100,
+  address: 300,
+  deliveryComment: 1000,
+}
+
+function checkPublicOrderLimits(data: Record<string, unknown> & { items: { quantity: number; personalizationData?: unknown }[] }) {
+  if (data.items.length > 50) throw new BusinessError('Maximum 50 produits par commande')
+  for (const [field, max] of Object.entries(TEXT_LIMITS)) {
+    const value = data[field]
+    if (typeof value === 'string' && value.length > max) {
+      throw new BusinessError(`Un des champs est trop long (${max} caractères maximum)`)
+    }
+  }
+  for (const item of data.items) {
+    if (Number(item.quantity) > 100000) throw new BusinessError('Quantité trop élevée')
+    if (item.personalizationData && JSON.stringify(item.personalizationData).length > 4000) {
+      throw new BusinessError('Détails de personnalisation trop longs')
+    }
+  }
+}
+
 export async function createPublicOrder(data: {
   clientName: string
   clientFirstName?: string
@@ -69,6 +103,7 @@ export async function createPublicOrder(data: {
   }[]
 }) {
   if (!data.items.length) throw new BusinessError('La commande doit contenir au moins un produit')
+  checkPublicOrderLimits(data)
 
   // Server is the source of truth: never trust prices, names, variants or
   // totals sent by the browser.

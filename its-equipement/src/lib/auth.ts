@@ -5,6 +5,7 @@ import { db } from './db'
 import { AUTH_SECRET } from './auth-secret'
 import { adminPath } from '@/lib/admin-path'
 import { rateLimit, getClientIp } from './rate-limit'
+import { passwordFingerprint } from './password-fingerprint'
 
 const BCRYPT_SALT_ROUNDS = 12
 
@@ -56,6 +57,7 @@ export const authOptions: NextAuthOptions = {
           email: admin.email,
           name: admin.name,
           role: admin.role,
+          pwv: passwordFingerprint(admin.password),
         }
       },
     }),
@@ -65,6 +67,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.role = user.role ?? 'VIEWER'
+        token.pwv = user.pwv
       }
       return token
     },

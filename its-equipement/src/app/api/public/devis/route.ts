@@ -7,6 +7,7 @@ import { sendOrderTelegramNotification } from '@/lib/services/telegram.service'
 import { syncOrderToSheets } from '@/lib/services/google-sheets.service'
 import { checkApiRateLimit } from '@/lib/api-auth'
 import { after, type NextRequest } from 'next/server'
+import { signDevisId } from '@/lib/devis-token'
 
 export async function POST(request: NextRequest) {
   try {
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
       ])
     })
 
-    return success({ devisNumber: order.devisNumber, id: order.id })
+    return success({ devisNumber: order.devisNumber, id: order.id, token: signDevisId(order.id) })
   } catch (err) {
     if (err instanceof BusinessError) return error(err.message)
     console.error('[public/devis] Erreur creation devis:', err)

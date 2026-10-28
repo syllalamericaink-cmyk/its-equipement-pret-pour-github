@@ -7,6 +7,7 @@ import { syncOrderToSheets } from '@/lib/services/google-sheets.service'
 import { checkApiRateLimit } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { after, type NextRequest } from 'next/server'
+import { canAccessDevis } from '@/lib/devis-token'
 
 async function generateOrderNumber(): Promise<string> {
   const year = new Date().getFullYear()
@@ -46,7 +47,7 @@ export async function POST(
       where: { id },
     })
 
-    if (!devis) {
+    if (!devis || !canAccessDevis(devis, request.nextUrl.searchParams.get('t'))) {
       return error('Devis introuvable', 404)
     }
 

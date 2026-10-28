@@ -130,7 +130,7 @@ export default function DevisPage() {
         return
       }
       clearCart()
-      router.push(`/devis-confirmation?ref=${json.data.devisNumber}&id=${json.data.id}`)
+      router.push(`/devis-confirmation?ref=${encodeURIComponent(json.data.devisNumber)}&id=${json.data.id}&t=${json.data.token}`)
     } catch {
       toast.error('Erreur de connexion. Réessayez.')
       setSubmitting(false)

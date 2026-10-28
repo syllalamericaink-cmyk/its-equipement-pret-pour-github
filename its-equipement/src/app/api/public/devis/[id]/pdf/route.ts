@@ -4,6 +4,8 @@ import { montantEnLettresCfa } from '@/lib/number-to-words'
 import type { NextRequest } from 'next/server'
 import PDFDocument from 'pdfkit'
 import path from 'path'
+import { canAccessDevis } from '@/lib/devis-token'
+import { checkApiRateLimit } from '@/lib/api-auth'
 
 /**
  * PDF de devis au format du modèle officiel « ITS & DGE » :
@@ -61,6 +63,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!checkApiRateLimit(request)) {
+    return error('Trop de requêtes. Réessayez dans une minute.', 429)
+  }
   try {
     const { id } = await params
 
@@ -69,7 +74,7 @@ export async function GET(
       include: { items: { orderBy: { createdAt: 'asc' } } },
     })
 
-    if (!devis || !devis.devisNumber) {
+    if (!devis || !devis.devisNumber || !canAccessDevis(devis, request.nextUrl.searchParams.get('t'))) {
       return error('Devis introuvable', 404)
     }
 
